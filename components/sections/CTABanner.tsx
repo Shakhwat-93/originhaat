@@ -5,73 +5,66 @@ import { ShoppingBag, MessageCircle, ArrowRight, Sparkles, Shield, Truck, Credit
 
 export function CTABanner() {
   return (
-    <section className="relative py-20 md:py-28 overflow-hidden bg-[#0a0a0f]">
-      {/* ── Animated gradient orbs ── */}
+    <section
+      className="relative py-20 md:py-28 overflow-hidden"
+      style={{
+        background: 'linear-gradient(135deg, #fff7f3 0%, #fff1eb 40%, #fde8dc 100%)',
+      }}
+    >
+      {/* ── Decorative blurred circles ── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-20"
+        className="pointer-events-none absolute -top-20 -right-20 w-96 h-96 rounded-full"
         style={{
-          background: 'radial-gradient(circle, #ff6b35 0%, transparent 70%)',
-          filter: 'blur(60px)',
-          animation: 'ctaOrb1 8s ease-in-out infinite alternate',
+          background: 'radial-gradient(circle, rgba(255,107,53,0.18) 0%, transparent 70%)',
+          filter: 'blur(40px)',
         }}
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -bottom-32 -right-32 w-[600px] h-[600px] rounded-full opacity-15"
+        className="pointer-events-none absolute -bottom-20 -left-20 w-80 h-80 rounded-full"
         style={{
-          background: 'radial-gradient(circle, #f97316 0%, transparent 70%)',
-          filter: 'blur(80px)',
-          animation: 'ctaOrb2 10s ease-in-out infinite alternate',
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-8"
-        style={{
-          background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)',
-          filter: 'blur(100px)',
+          background: 'radial-gradient(circle, rgba(249,115,22,0.14) 0%, transparent 70%)',
+          filter: 'blur(50px)',
         }}
       />
 
-      {/* ── Subtle grid pattern overlay ── */}
+      {/* ── Subtle dot pattern ── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                            linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
+          backgroundImage: 'radial-gradient(circle, rgba(255,107,53,0.12) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
         }}
       />
 
       <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8 text-center">
 
         {/* ── Badge ── */}
-        <div className="inline-flex items-center gap-2 mb-8">
+        <div className="inline-flex items-center gap-2 mb-7">
           <span
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold tracking-widest uppercase"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase"
             style={{
-              background: 'rgba(255,107,53,0.15)',
-              border: '1px solid rgba(255,107,53,0.35)',
-              color: '#ff6b35',
-              backdropFilter: 'blur(8px)',
+              background: 'rgba(255,107,53,0.12)',
+              border: '1.5px solid rgba(255,107,53,0.30)',
+              color: '#e55520',
             }}
           >
-            <Sparkles size={12} />
+            <Sparkles size={11} />
             সীমিত সময়ের অফার
           </span>
         </div>
 
         {/* ── Headline ── */}
         <h2
-          className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight tracking-tight mb-5"
-          style={{ color: '#f5f5f5' }}
+          className="text-3xl sm:text-4xl md:text-[2.75rem] font-extrabold leading-tight tracking-tight mb-4"
+          style={{ color: '#1a1a1a' }}
         >
           আজই অর্ডার করুন,{' '}
           <span
             style={{
-              background: 'linear-gradient(135deg, #ff6b35, #f97316, #fbbf24)',
+              background: 'linear-gradient(135deg, #ff6b35 20%, #f97316 60%, #f59e0b 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -81,30 +74,36 @@ export function CTABanner() {
           </span>
         </h2>
 
-        {/* ── Subtext ── */}
-        <p className="text-base md:text-lg mb-2" style={{ color: 'rgba(255,255,255,0.6)' }}>
+        {/* ── Sub-headline ── */}
+        <p
+          className="text-base md:text-lg font-medium mb-2"
+          style={{ color: '#4b2e1a' }}
+        >
           প্রথম অর্ডারে অতিরিক্ত ছাড় + ফ্রি ডেলিভারি
         </p>
-        <p className="text-sm mb-10" style={{ color: 'rgba(255,255,255,0.35)' }}>
+        <p className="text-sm mb-10" style={{ color: '#9a6b52' }}>
           অফার সীমিত সময়ের জন্য — দেরি না করে এখনই কিনুন।
         </p>
 
         {/* ── CTA Buttons ── */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+          {/* Primary */}
           <Link
             href="/#best-sellers"
-            className="group relative inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-base text-white transition-all duration-300"
+            className="group inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-base text-white transition-all duration-300"
             style={{
               background: 'linear-gradient(135deg, #ff6b35, #ea580c)',
-              boxShadow: '0 4px 24px rgba(255,107,53,0.40)',
+              boxShadow: '0 6px 28px rgba(255,107,53,0.38)',
             }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 8px 32px rgba(255,107,53,0.60)';
-              (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)';
+              const el = e.currentTarget as HTMLAnchorElement;
+              el.style.boxShadow = '0 10px 36px rgba(255,107,53,0.55)';
+              el.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLAnchorElement).style.boxShadow = '0 4px 24px rgba(255,107,53,0.40)';
-              (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
+              const el = e.currentTarget as HTMLAnchorElement;
+              el.style.boxShadow = '0 6px 28px rgba(255,107,53,0.38)';
+              el.style.transform = 'translateY(0)';
             }}
           >
             <ShoppingBag size={18} />
@@ -112,26 +111,29 @@ export function CTABanner() {
             <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
 
+          {/* Secondary */}
           <a
             href="https://wa.me/8801XXXXXXXXX?text=হ্যালো!%20আমি%20অর্ডার%20করতে%20চাই।"
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-base transition-all duration-300"
             style={{
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.14)',
-              color: 'rgba(255,255,255,0.88)',
-              backdropFilter: 'blur(8px)',
+              background: '#ffffff',
+              border: '1.5px solid #e5e7eb',
+              color: '#1a1a1a',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
             }}
             onMouseEnter={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.12)';
-              (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.28)';
-              (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(-2px)';
+              const el = e.currentTarget as HTMLAnchorElement;
+              el.style.borderColor = '#ff6b35';
+              el.style.boxShadow = '0 4px 20px rgba(255,107,53,0.18)';
+              el.style.transform = 'translateY(-2px)';
             }}
             onMouseLeave={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.06)';
-              (e.currentTarget as HTMLAnchorElement).style.borderColor = 'rgba(255,255,255,0.14)';
-              (e.currentTarget as HTMLAnchorElement).style.transform = 'translateY(0)';
+              const el = e.currentTarget as HTMLAnchorElement;
+              el.style.borderColor = '#e5e7eb';
+              el.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
+              el.style.transform = 'translateY(0)';
             }}
           >
             <MessageCircle size={18} style={{ color: '#25D366' }} />
@@ -148,11 +150,12 @@ export function CTABanner() {
           ].map(({ icon: Icon, label }) => (
             <span
               key={label}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold"
               style={{
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.10)',
-                color: 'rgba(255,255,255,0.45)',
+                background: '#ffffff',
+                border: '1px solid rgba(255,107,53,0.18)',
+                color: '#6b4226',
+                boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
               }}
             >
               <Icon size={11} style={{ color: '#ff6b35' }} />
@@ -161,18 +164,6 @@ export function CTABanner() {
           ))}
         </div>
       </div>
-
-      {/* ── keyframe animations ── */}
-      <style>{`
-        @keyframes ctaOrb1 {
-          from { transform: translate(0, 0) scale(1); }
-          to   { transform: translate(40px, 30px) scale(1.15); }
-        }
-        @keyframes ctaOrb2 {
-          from { transform: translate(0, 0) scale(1); }
-          to   { transform: translate(-30px, -40px) scale(1.1); }
-        }
-      `}</style>
     </section>
   );
 }
