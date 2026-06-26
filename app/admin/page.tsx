@@ -1,20 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Package, ShoppingBag, TrendingUp, Users, ArrowRight, Eye } from 'lucide-react';
+import { Package, ShoppingBag, TrendingUp, Users, ArrowRight, Eye, RefreshCw } from 'lucide-react';
 import { products } from '@/data/products';
+import { supabase } from '@/lib/supabase';
 
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
 
-const mockOrders = [
-  { id: 'OH-001', name: 'রাহেলা বেগম', phone: '01711234567', district: 'ঢাকা', total: 799, status: 'pending', date: '২০২৪-১১-২২' },
-  { id: 'OH-002', name: 'তানভীর আহমেদ', phone: '01811234567', district: 'চট্টগ্রাম', total: 1299, status: 'confirmed', date: '২০২৪-১১-২২' },
-  { id: 'OH-003', name: 'সাবিনা আক্তার', phone: '01911234567', district: 'সিলেট', total: 2499, status: 'shipped', date: '২০২৪-১১-২১' },
-  { id: 'OH-004', name: 'নাজমুল হাসান', phone: '01611234567', district: 'রাজশাহী', total: 599, status: 'delivered', date: '২০২৪-১১-২১' },
-  { id: 'OH-005', name: 'ফারহানা ইসলাম', phone: '01511234567', district: 'খুলনা', total: 897, status: 'pending', date: '২০২৪-১১-২০' },
-];
+type DbOrder = {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  phone: string;
+  district: string;
+  grand_total: number;
+  status: string;
+  created_at: string;
+  oh_order_items?: { product_name: string; quantity: number; price: number }[];
+};
 
 const statusColors: Record<string, string> = {
   pending: 'bg-[#fef3c7] text-[#92400e]',
@@ -39,7 +44,23 @@ export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products'>('dashboard');
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState<DbOrder[]>([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+
+  const fetchOrders = useCallback(async () => {
+    setLoadingOrders(true);
+    const { data, error: err } = await supabase
+      .from('oh_orders')
+      .select('*, oh_order_items(*)')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (!err && data) setOrders(data);
+    setLoadingOrders(false);
+  }, []);
+
+  useEffect(() => {
+    if (authenticated) fetchOrders();
+  }, [authenticated, fetchOrders]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +71,8 @@ export default function AdminDashboard() {
     }
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    await supabase.from('oh_orders').update({ status: newStatus }).eq('id', orderId);
     setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
   };
 
@@ -142,10 +164,10 @@ export default function AdminDashboard() {
           <div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               {[
-                { icon: <ShoppingBag size={22} />, label: 'মোট অর্ডার', value: '৩৪৭', color: 'text-[#ff6b35] bg-[#fff3ef]' },
-                { icon: <TrendingUp size={22} />, label: 'আজকের বিক্রয়', value: '৳৪৫,২৩০', color: 'text-[#ff6b35] bg-[#fff3ef]' },
+                { icon: <ShoppingBag size={22} />, label: 'মোট অর্ডার', value: String(orders.length), color: 'text-[#ff6b35] bg-[#fff3ef]' },
+                { icon: <TrendingUp size={22} />, label: 'আজকের অর্ডার', value: String(orders.filter(o => new Date(o.created_at).toDateString() === new Date().toDateString()).length), color: 'text-[#ff6b35] bg-[#fff3ef]' },
                 { icon: <Package size={22} />, label: 'পণ্যের সংখ্যা', value: String(products.length), color: 'text-[#3b82f6] bg-[#eff6ff]' },
-                { icon: <Users size={22} />, label: 'মোট গ্রাহক', value: '১,২৩৪', color: 'text-[#8b5cf6] bg-[#f5f3ff]' },
+                { icon: <Users size={22} />, label: 'অপেক্ষমান', value: String(orders.filter(o => o.status === 'pending').length), color: 'text-[#8b5cf6] bg-[#f5f3ff]' },
               ].map((stat, i) => (
                 <div key={i} className="bg-white rounded-2xl border border-[#e5e7eb] p-5">
                   <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${stat.color.split(' ').slice(1).join(' ')}`}>
@@ -175,12 +197,12 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#f3f4f6]">
-                    {orders.slice(0, 3).map((order) => (
+                    {orders.slice(0, 5).map((order) => (
                       <tr key={order.id}>
-                        <td className="py-3 pr-4 font-mono font-bold text-[#ff6b35]">{order.id}</td>
-                        <td className="py-3 pr-4 font-medium text-[#111827]">{order.name}</td>
+                        <td className="py-3 pr-4 font-mono font-bold text-[#ff6b35]">{order.order_number}</td>
+                        <td className="py-3 pr-4 font-medium text-[#111827]">{order.customer_name}</td>
                         <td className="py-3 pr-4 text-[#6b7280]">{order.district}</td>
-                        <td className="py-3 pr-4 font-bold text-[#374151]">৳{order.total}</td>
+                        <td className="py-3 pr-4 font-bold text-[#374151]">৳{order.grand_total}</td>
                         <td className="py-3">
                           <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${statusColors[order.status]}`}>
                             {statusLabels[order.status]}
@@ -188,6 +210,9 @@ export default function AdminDashboard() {
                         </td>
                       </tr>
                     ))}
+                    {orders.length === 0 && !loadingOrders && (
+                      <tr><td colSpan={5} className="py-8 text-center text-[#9ca3af]">এখনো কোনো অর্ডার নেই</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -198,7 +223,13 @@ export default function AdminDashboard() {
         {/* Orders Tab */}
         {activeTab === 'orders' && (
           <div className="bg-white rounded-2xl border border-[#e5e7eb] p-5">
-            <h2 className="font-bold text-[#111827] mb-5">সকল অর্ডার</h2>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-bold text-[#111827]">সকল অর্ডার ({orders.length})</h2>
+              <button onClick={fetchOrders} disabled={loadingOrders} className="flex items-center gap-2 text-sm text-[#ff6b35] font-semibold hover:underline disabled:opacity-50">
+                <RefreshCw size={14} className={loadingOrders ? 'animate-spin' : ''} />
+                রিফ্রেশ
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -211,12 +242,12 @@ export default function AdminDashboard() {
                 <tbody className="divide-y divide-[#f3f4f6]">
                   {orders.map((order) => (
                     <tr key={order.id} className="hover:bg-[#f8f9fa] transition-colors">
-                      <td className="py-3.5 pr-4 font-mono font-bold text-[#ff6b35] whitespace-nowrap">{order.id}</td>
-                      <td className="py-3.5 pr-4 font-medium text-[#111827] whitespace-nowrap">{order.name}</td>
+                      <td className="py-3.5 pr-4 font-mono font-bold text-[#ff6b35] whitespace-nowrap">{order.order_number}</td>
+                      <td className="py-3.5 pr-4 font-medium text-[#111827] whitespace-nowrap">{order.customer_name}</td>
                       <td className="py-3.5 pr-4 text-[#6b7280] whitespace-nowrap">{order.phone}</td>
                       <td className="py-3.5 pr-4 text-[#6b7280]">{order.district}</td>
-                      <td className="py-3.5 pr-4 font-bold text-[#374151] whitespace-nowrap">৳{order.total}</td>
-                      <td className="py-3.5 pr-4 text-[#6b7280] whitespace-nowrap">{order.date}</td>
+                      <td className="py-3.5 pr-4 font-bold text-[#374151] whitespace-nowrap">৳{order.grand_total}</td>
+                      <td className="py-3.5 pr-4 text-[#6b7280] whitespace-nowrap">{new Date(order.created_at).toLocaleDateString('bn-BD')}</td>
                       <td className="py-3.5 pr-4">
                         <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${statusColors[order.status]}`}>
                           {statusLabels[order.status]}
@@ -235,6 +266,9 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ))}
+                  {orders.length === 0 && !loadingOrders && (
+                    <tr><td colSpan={8} className="py-12 text-center text-[#9ca3af]">এখনো কোনো অর্ডার নেই</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>

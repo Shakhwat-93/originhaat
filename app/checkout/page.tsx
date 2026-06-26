@@ -49,8 +49,28 @@ export default function CheckoutPage() {
   const onSubmit = async (data: CheckoutFormData) => {
     setIsSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Save order to Supabase via API
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: data.name,
+          phone: data.phone,
+          address: data.address,
+          district: data.district,
+          note: data.note,
+          items,
+          subtotal: totalPrice,
+          delivery_charge: deliveryCharge,
+          grand_total: grandTotal,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Order failed');
+      }
 
       // Build WhatsApp message
       const orderItems = items.map((item) => ({
@@ -68,9 +88,9 @@ export default function CheckoutPage() {
         grandTotal
       );
 
-      // Store order in localStorage for success page
+      // Store order details in localStorage for success page
       const order = {
-        id: `OH-${Date.now()}`,
+        id: result.order_number,
         ...data,
         items,
         total: grandTotal,
