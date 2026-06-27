@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Save, Plus, Trash2, Upload, RefreshCw, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface Category {
   id: string;
@@ -188,6 +189,13 @@ export default function ProductForm({ productId }: ProductFormProps) {
       return;
     }
 
+    const confirmResult = await showConfirmAlert(
+      'Are you sure?',
+      'Do you want to save this product?',
+      'Yes, save'
+    );
+    if (!confirmResult.isConfirmed) return;
+
     setLoading(true);
 
     try {
@@ -264,10 +272,11 @@ export default function ProductForm({ productId }: ProductFormProps) {
         }
       }
 
+      await showSuccessAlert('Success!', 'Product has been saved successfully.');
       router.push('/admin/products');
     } catch (err: any) {
       console.error(err);
-      alert(err.message || 'Failed to save product.');
+      showErrorAlert('Error!', err.message || 'Failed to save product.');
     } finally {
       setLoading(false);
     }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Image as ImageIcon, Plus, Trash2, RefreshCw, Upload, Save, ToggleLeft, ToggleRight } from 'lucide-react';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface Banner {
   id: string;
@@ -78,9 +79,16 @@ export default function AdminBannersPage() {
   const handleAddBanner = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!imageUrl) {
-      alert('Banner image is required');
+      showErrorAlert('Error!', 'Banner image is required');
       return;
     }
+
+    const confirmResult = await showConfirmAlert(
+      'Are you sure?',
+      'Do you want to create this banner?',
+      'Yes, create'
+    );
+    if (!confirmResult.isConfirmed) return;
 
     setSubmitting(true);
     try {
@@ -97,6 +105,8 @@ export default function AdminBannersPage() {
 
       if (error) throw error;
       
+      showSuccessAlert('Success!', 'Banner added successfully.');
+
       // Reset form
       setTitle('');
       setSubtitle('');
@@ -106,7 +116,8 @@ export default function AdminBannersPage() {
 
       fetchBanners();
     } catch (err: any) {
-      alert(err.message || 'Failed to add banner.');
+      console.error(err);
+      showErrorAlert('Error!', err.message || 'Failed to add banner.');
     } finally {
       setSubmitting(false);
     }
@@ -128,7 +139,12 @@ export default function AdminBannersPage() {
   };
 
   const handleDeleteBanner = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this banner?')) return;
+    const result = await showConfirmAlert(
+      'Are you sure?',
+      'You are about to delete this banner. This action cannot be undone!',
+      'Yes, delete it'
+    );
+    if (!result.isConfirmed) return;
 
     setBanners(prev => prev.filter(b => b.id !== id));
     

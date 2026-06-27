@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, RefreshCw, Upload, Save, X, ToggleLeft, ToggleRight } from 'lucide-react';
-import { showConfirmAlert } from '@/lib/alerts';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface Category {
   id: string;
@@ -111,6 +111,14 @@ export default function AdminCategoriesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const confirmResult = await showConfirmAlert(
+      'Are you sure?',
+      editingId ? 'Do you want to save changes to this category?' : 'Do you want to create this category?',
+      'Yes, save'
+    );
+    if (!confirmResult.isConfirmed) return;
+
     setSubmitting(true);
 
     try {
@@ -137,10 +145,12 @@ export default function AdminCategoriesPage() {
         if (error) throw error;
       }
 
+      showSuccessAlert('Success!', editingId ? 'Category changes saved successfully.' : 'Category created successfully.');
       resetForm();
       fetchCategories();
     } catch (err: any) {
-      alert(err.message || 'Failed to save category.');
+      console.error(err);
+      showErrorAlert('Error!', err.message || 'Failed to save category.');
     } finally {
       setSubmitting(false);
     }

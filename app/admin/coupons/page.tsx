@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Tag, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { showConfirmAlert } from '@/lib/alerts';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface Coupon {
   id: string;
@@ -42,16 +42,34 @@ export default function CouponsPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const confirmResult = await showConfirmAlert(
+      'Are you sure?',
+      'Do you want to create this discount coupon?',
+      'Yes, create'
+    );
+    if (!confirmResult.isConfirmed) return;
+
     setSaving(true);
-    await supabase.from('oh_coupons').insert({
-      ...form,
-      code: form.code.toUpperCase(),
-      expires_at: form.expires_at || null,
-    });
-    setShowForm(false);
-    setForm({ code: '', discount_type: 'percent', discount_value: 10, min_order: 0, max_uses: 0, expires_at: '' });
-    fetchCoupons();
-    setSaving(false);
+    try {
+      const { error } = await supabase.from('oh_coupons').insert({
+        ...form,
+        code: form.code.toUpperCase(),
+        expires_at: form.expires_at || null,
+      });
+
+      if (error) throw error;
+
+      showSuccessAlert('Success!', 'Coupon created successfully.');
+      setShowForm(false);
+      setForm({ code: '', discount_type: 'percent', discount_value: 10, min_order: 0, max_uses: 0, expires_at: '' });
+      fetchCoupons();
+    } catch (err: any) {
+      console.error(err);
+      showErrorAlert('Error!', err.message || 'Failed to create coupon.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleActive = async (id: string, current: boolean) => {

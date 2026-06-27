@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2 } from 'lucide-react';
-import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface Settings {
   site_name: string;
@@ -67,6 +67,14 @@ export default function AdminSettingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const confirmResult = await showConfirmAlert(
+      'Are you sure?',
+      'Do you want to save these changes to site settings?',
+      'Yes, save'
+    );
+    if (!confirmResult.isConfirmed) return;
+
     setSaving(true);
     setStatus(null);
 
