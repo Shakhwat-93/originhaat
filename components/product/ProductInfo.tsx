@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { Product } from '@/types';
-import { calculateDiscount, formatBDTNumeric, getStockStatus, generateWhatsAppURL, generateOrderWhatsAppMessage } from '@/lib/utils';
+import { calculateDiscount, formatBDTNumeric, getStockStatus } from '@/lib/utils';
 import { Star, Minus, Plus, ShoppingCart, Zap, Truck, Shield, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -13,6 +14,7 @@ interface ProductInfoProps {
 }
 
 export function ProductInfo({ product }: ProductInfoProps) {
+  const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const addItem = useCartStore((s) => s.addItem);
   const showToast = useUIStore((s) => s.showToast);
@@ -27,16 +29,9 @@ export function ProductInfo({ product }: ProductInfoProps) {
     showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
-  const handleWhatsAppOrder = () => {
-    const msg = generateOrderWhatsAppMessage(
-      'গ্রাহক',
-      'আলোচনার জন্য',
-      'আলোচনার জন্য',
-      'ঢাকা',
-      [{ name: product.name_bn, qty: quantity, price: product.price }],
-      product.price * quantity
-    );
-    window.open(generateWhatsAppURL('8801XXXXXXXXX', msg), '_blank');
+  const handleOrderNow = () => {
+    addItem(product, quantity);
+    router.push('/checkout');
   };
 
   return (
@@ -172,12 +167,11 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <span className="text-sm text-[#6b7280]">মোট: {formatBDTNumeric(product.price * quantity)}</span>
       </div>
 
-      {/* CTAs */}
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <button
-          onClick={handleWhatsAppOrder}
+          onClick={handleOrderNow}
           disabled={product.stock === 0}
-          className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b35] hover:bg-[#e55520] disabled:bg-[#d1d5db] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+          className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b35] hover:bg-[#e55520] disabled:bg-[#d1d5db] text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
         >
           <Zap size={20} />
           অর্ডার করুন

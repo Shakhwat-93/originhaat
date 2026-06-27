@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { Product } from '@/types';
-import { formatBDTNumeric, generateWhatsAppURL, generateOrderWhatsAppMessage } from '@/lib/utils';
+import { formatBDTNumeric } from '@/lib/utils';
 import { ShoppingCart, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -15,6 +16,7 @@ interface StickyProductCTAProps {
 }
 
 export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
+  const router = useRouter();
   const [visible, setVisible] = useState(false);
   const addItem = useCartStore((s) => s.addItem);
   const showToast = useUIStore((s) => s.showToast);
@@ -32,16 +34,9 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
     showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
-  const handleWhatsAppOrder = () => {
-    const msg = generateOrderWhatsAppMessage(
-      'গ্রাহক',
-      'আলোচনার জন্য',
-      'আলোচনার জন্য',
-      'ঢাকা',
-      [{ name: product.name_bn, qty: quantity, price: product.price }],
-      product.price * quantity
-    );
-    window.open(generateWhatsAppURL('8801XXXXXXXXX', msg), '_blank');
+  const handleOrderNow = () => {
+    addItem(product, quantity);
+    router.push('/checkout');
   };
 
   return (
@@ -62,9 +57,9 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={handleWhatsAppOrder}
+              onClick={handleOrderNow}
               disabled={product.stock === 0}
-              className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b35] hover:bg-[#e55520] disabled:bg-[#d1d5db] text-white font-bold py-3.5 rounded-xl text-base transition-colors active:scale-95"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b35] hover:bg-[#e55520] disabled:bg-[#d1d5db] text-white font-bold py-3.5 rounded-xl text-base transition-colors active:scale-95 cursor-pointer"
             >
               <Zap size={18} />
               অর্ডার করুন
