@@ -155,7 +155,7 @@ export const products: Product[] = [
     price: 1599,
     original_price: 2800,
     images: [
-      'https://images.unsplash.com/photo-1609592424109-dd9892f1b17c?w=600&q=80',
+      'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&q=80',
     ],
     category: 'মোবাইল এক্সেসরিজ',
     category_slug: 'mobile-accessories',
