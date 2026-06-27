@@ -172,14 +172,14 @@ export function HeroSection({ banners }: HeroSectionProps) {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
             <span className="font-semibold text-white/90">
-              আজ <span className="text-[#ff6b35]">৩৪৭</span> জন অর্ডার করেছেন
+              রিয়েলটাইম <span className="text-[#ff6b35]">৩০০+</span> মানুষ কেনাকাটা করছেন
             </span>
           </div>
 
           {/* Flash sale text / banner */}
           <div className="flex items-center gap-2 bg-[#ff6b35]/20 border border-[#ff6b35]/30 px-3 py-1 rounded-full text-sm">
             <Zap size={14} className="text-[#ff6b35] fill-[#ff6b35]" />
-            <span className="text-white font-medium">ফ্ল্যাশ ডিল অফার শেষ হবে:</span>
+            <span className="text-white font-medium">হট ডিল অফার শেষ হতে বাকি:</span>
             <span className="text-[#ff6b35] font-bold font-mono tracking-wider">
               {pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}
             </span>
