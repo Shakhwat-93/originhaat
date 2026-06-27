@@ -200,7 +200,8 @@ export default function AdminCategoriesPage() {
         <div className="lg:col-span-2">
           <div className="bg-white rounded-2xl border border-gray-200 p-6 overflow-hidden">
             <h2 className="font-bold text-gray-900 mb-4">All Categories</h2>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold text-xs uppercase tracking-wider">
@@ -257,6 +258,74 @@ export default function AdminCategoriesPage() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Cards View */}
+            <div className="md:hidden space-y-4">
+              {categories.map((cat) => (
+                <div key={cat.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{cat.icon || '📁'}</span>
+                      <h4 className="font-bold text-gray-900 text-base">{cat.name_bn}</h4>
+                    </div>
+                    <span className="text-xs text-gray-400 font-mono">order: #{cat.sort_order}</span>
+                  </div>
+
+                  {/* 2-Column Grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 border-t border-b border-gray-50">
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">English Name</span>
+                      <span className="text-sm font-semibold text-gray-900 block">{cat.name_en}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Slug</span>
+                      <span className="text-sm font-semibold text-gray-500 font-mono block truncate">{cat.slug}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Status</span>
+                      <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold mt-0.5 ${cat.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                        {cat.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Sort Order</span>
+                      <span className="text-sm font-bold text-gray-900 block">{cat.sort_order}</span>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      onClick={() => handleToggleActive(cat)}
+                      className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer"
+                    >
+                      <span>Active:</span>
+                      {cat.is_active ? <ToggleRight size={22} className="text-emerald-600" /> : <ToggleLeft size={22} className="text-gray-400" />}
+                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleEditClick(cat)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-100"
+                      >
+                        <Edit2 size={15} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(cat.id)}
+                        className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-rose-100"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {categories.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-sm">
+                  No categories found.
+                </div>
+              )}
             </div>
           </div>
         </div>

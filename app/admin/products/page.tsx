@@ -274,7 +274,8 @@ export default function AdminProductsPage() {
           const mainImage = prod.images?.[0] || '';
           const categoryName = categories.find(c => c.id === prod.category_id)?.name_bn || 'Uncategorized';
           return (
-            <div key={prod.id} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm space-y-3">
+            <div key={prod.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+              {/* Header */}
               <div className="flex items-center gap-3">
                 <div className="relative w-12 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">
                   {mainImage ? (
@@ -286,27 +287,44 @@ export default function AdminProductsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-semibold text-gray-950 text-sm line-clamp-1">{prod.name_bn}</h4>
-                  <p className="text-xs text-gray-400 mt-0.5">{categoryName} · {prod.slug}</p>
+                  <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{prod.name_bn}</h4>
+                  <p className="text-xs text-gray-400 mt-0.5">{categoryName}</p>
                 </div>
+                <span className="text-xs text-gray-400 font-mono shrink-0">slug: {prod.slug.substring(0, 8)}...</span>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-gray-600 border-t border-b border-gray-50 py-2.5">
+              {/* 2-Column Grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 border-t border-b border-gray-50">
                 <div>
-                  <span className="font-bold text-gray-900 text-sm">৳{prod.price}</span>
-                  {prod.original_price > prod.price && (
-                    <span className="text-gray-400 line-through ml-1.5">৳{prod.original_price}</span>
-                  )}
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Sales Price</span>
+                  <span className="text-sm font-bold text-gray-900 block">৳{prod.price}</span>
                 </div>
                 <div>
-                  <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Original Price</span>
+                  <span className="text-sm font-medium text-gray-400 line-through block">৳{prod.original_price}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Stock Status</span>
+                  <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold mt-0.5 ${
                     prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : prod.stock > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
                   }`}>
-                    {prod.stock > 0 ? `Stock: ${prod.stock} units` : 'Out of Stock'}
+                    {prod.stock > 0 ? `${prod.stock} units` : 'Out of Stock'}
                   </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Status / Featured</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${prod.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                      {prod.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${prod.is_featured ? 'bg-orange-50 text-[#ff6b35]' : 'bg-gray-100 text-gray-400'}`}>
+                      {prod.is_featured ? 'Featured' : 'Regular'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
+              {/* Footer */}
               <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center gap-4">
                   <button
@@ -320,7 +338,7 @@ export default function AdminProductsPage() {
                     onClick={() => handleToggleActive(prod)}
                     className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer"
                   >
-                    <span>Status:</span>
+                    <span>Active:</span>
                     {prod.is_active ? <ToggleRight size={22} className="text-emerald-600" /> : <ToggleLeft size={22} className="text-gray-400" />}
                   </button>
                 </div>
@@ -328,13 +346,13 @@ export default function AdminProductsPage() {
                 <div className="flex items-center gap-1">
                   <Link
                     href={`/admin/products/${prod.id}`}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-blue-100"
                   >
                     <Edit2 size={15} />
                   </Link>
                   <button
                     onClick={() => handleDelete(prod.id)}
-                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-rose-100"
                   >
                     <Trash2 size={15} />
                   </button>

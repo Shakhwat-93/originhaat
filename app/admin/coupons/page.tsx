@@ -187,54 +187,116 @@ export default function CouponsPage() {
           <p className="text-gray-500">No coupons created yet</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                {['Code', 'Discount', 'Min Order', 'Uses', 'Expiry', 'Status', 'Action'].map(h => (
-                  <th key={h} className="text-left text-gray-500 font-semibold py-3 px-4 text-xs uppercase tracking-wide">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {coupons.map(coupon => (
-                <tr key={coupon.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="py-4 px-4">
-                    <span className="font-mono font-bold text-orange-500 bg-orange-50 px-3 py-1 rounded-lg">
-                      {coupon.code}
-                    </span>
-                  </td>
-                  <td className="py-4 px-4 font-bold text-gray-900">
-                    {coupon.discount_type === 'percent' ? `${coupon.discount_value}%` : `৳${coupon.discount_value}`}
-                  </td>
-                  <td className="py-4 px-4 text-gray-600">
-                    {coupon.min_order > 0 ? `৳${coupon.min_order}` : 'None'}
-                  </td>
-                  <td className="py-4 px-4 text-gray-600">
-                    {coupon.used_count}/{coupon.max_uses === 0 ? '∞' : coupon.max_uses}
-                  </td>
-                  <td className="py-4 px-4 text-gray-600">
-                    {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unlimited'}
-                  </td>
-                  <td className="py-4 px-4">
-                    <button onClick={() => toggleActive(coupon.id, coupon.is_active)} className="cursor-pointer">
-                      {coupon.is_active
-                        ? <ToggleRight size={24} className="text-green-500" />
-                        : <ToggleLeft size={24} className="text-gray-400" />}
-                    </button>
-                  </td>
-                  <td className="py-4 px-4">
-                    <button
-                      onClick={() => deleteCoupon(coupon.id)}
-                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+        <div className="space-y-4">
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50">
+                <tr>
+                  {['Code', 'Discount', 'Min Order', 'Uses', 'Expiry', 'Status', 'Action'].map(h => (
+                    <th key={h} className="text-left text-gray-500 font-semibold py-3 px-4 text-xs uppercase tracking-wide">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {coupons.map(coupon => (
+                  <tr key={coupon.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="py-4 px-4">
+                      <span className="font-mono font-bold text-orange-500 bg-orange-50 px-3 py-1 rounded-lg">
+                        {coupon.code}
+                      </span>
+                    </td>
+                    <td className="py-4 px-4 font-bold text-gray-900">
+                      {coupon.discount_type === 'percent' ? `${coupon.discount_value}%` : `৳${coupon.discount_value}`}
+                    </td>
+                    <td className="py-4 px-4 text-gray-600">
+                      {coupon.min_order > 0 ? `৳${coupon.min_order}` : 'None'}
+                    </td>
+                    <td className="py-4 px-4 text-gray-600">
+                      {coupon.used_count}/{coupon.max_uses === 0 ? '∞' : coupon.max_uses}
+                    </td>
+                    <td className="py-4 px-4 text-gray-600">
+                      {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unlimited'}
+                    </td>
+                    <td className="py-4 px-4">
+                      <button onClick={() => toggleActive(coupon.id, coupon.is_active)} className="cursor-pointer">
+                        {coupon.is_active
+                          ? <ToggleRight size={24} className="text-green-500" />
+                          : <ToggleLeft size={24} className="text-gray-400" />}
+                      </button>
+                    </td>
+                    <td className="py-4 px-4">
+                      <button
+                        onClick={() => deleteCoupon(coupon.id)}
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards View */}
+          <div className="md:hidden space-y-4">
+            {coupons.map((coupon) => (
+              <div key={coupon.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono font-bold text-orange-500 bg-orange-50 px-3 py-1 rounded-lg text-sm">
+                    {coupon.code}
+                  </span>
+                  <span className="text-xs text-gray-400 font-mono">id: {coupon.id.substring(0, 8)}...</span>
+                </div>
+
+                {/* 2-Column Grid */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 border-t border-b border-gray-50">
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Discount</span>
+                    <span className="text-sm font-bold text-gray-900 block">
+                      {coupon.discount_type === 'percent' ? `${coupon.discount_value}%` : `৳${coupon.discount_value}`}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Min Order</span>
+                    <span className="text-sm font-semibold text-gray-900 block">
+                      {coupon.min_order > 0 ? `৳${coupon.min_order}` : 'None'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Uses</span>
+                    <span className="text-sm font-semibold text-gray-900 block">
+                      {coupon.used_count}/{coupon.max_uses === 0 ? '∞' : coupon.max_uses}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Expiry</span>
+                    <span className="text-sm font-semibold text-gray-900 block text-wrap">
+                      {coupon.expires_at ? new Date(coupon.expires_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : 'Unlimited'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-1">
+                  <button onClick={() => toggleActive(coupon.id, coupon.is_active)} className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer">
+                    <span>Active:</span>
+                    {coupon.is_active
+                      ? <ToggleRight size={22} className="text-green-500" />
+                      : <ToggleLeft size={22} className="text-gray-400" />}
+                  </button>
+                  <button
+                    onClick={() => deleteCoupon(coupon.id)}
+                    className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-rose-100"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

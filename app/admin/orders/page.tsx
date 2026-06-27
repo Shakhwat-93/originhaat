@@ -367,28 +367,44 @@ export default function AdminOrdersPage() {
       {/* Orders List (Mobile) */}
       <div className="md:hidden space-y-4">
         {filteredOrders.map((order) => (
-          <div key={order.id} className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm space-y-3">
+          <div key={order.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+            {/* Header */}
             <div className="flex items-center justify-between">
-              <span className="font-mono font-bold text-[#ff6b35] text-sm">#{order.order_number}</span>
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${statusColors[order.status]}`}>
-                {statusLabels[order.status]}
-              </span>
-            </div>
-            
-            <div className="space-y-1 text-xs text-gray-600">
-              <p><span className="font-medium text-gray-800">Customer:</span> {order.customer_name}</p>
-              <p><span className="font-medium text-gray-800">Mobile:</span> {order.phone}</p>
-              <p><span className="font-medium text-gray-800">District:</span> {order.district}</p>
-              <p><span className="font-medium text-gray-800">Address:</span> {order.address}</p>
-              <p><span className="font-medium text-gray-800">Date:</span> {new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+              <h4 className="font-bold text-gray-900 text-base">{order.customer_name}</h4>
+              <span className="text-xs text-gray-400 font-mono">id: #{order.order_number}</span>
             </div>
 
-            <div className="border-t border-gray-100 pt-3 flex items-center justify-between">
-              <span className="font-bold text-gray-950 text-sm">৳{order.grand_total}</span>
-              <div className="flex items-center gap-1.5">
+            {/* 2-Column Grid */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 border-t border-b border-gray-50">
+              <div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Mobile</span>
+                <span className="text-sm font-semibold text-gray-900 block">{order.phone}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">District</span>
+                <span className="text-sm font-semibold text-gray-900 block">{order.district}</span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Date</span>
+                <span className="text-sm font-semibold text-gray-900 block">
+                  {new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Amount</span>
+                <span className="text-sm font-bold text-gray-900 block">৳{order.grand_total}</span>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between pt-1">
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColors[order.status]}`}>
+                {statusLabels[order.status]}
+              </span>
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedOrder(order)}
-                  className="px-2.5 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-semibold hover:bg-blue-100 transition-colors inline-flex items-center gap-1 cursor-pointer"
+                  className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-semibold hover:bg-blue-100 transition-colors inline-flex items-center gap-1 cursor-pointer border border-blue-100"
                 >
                   <Eye size={13} />
                   <span>View</span>
@@ -396,7 +412,7 @@ export default function AdminOrdersPage() {
                 <select
                   value={order.status}
                   onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                  className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#ff6b35] text-black cursor-pointer bg-white"
+                  className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black cursor-pointer bg-white animate-none"
                 >
                   {Object.keys(statusLabels).map(key => (
                     <option key={key} value={key}>{statusLabels[key]}</option>

@@ -167,9 +167,10 @@ export default function AdminBannersPage() {
         <div className="lg:col-span-2 space-y-4">
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
             <h2 className="font-bold text-gray-900 mb-4">All Active Banners</h2>
-            <div className="space-y-4">
+            {/* Banners Desktop List (hidden on mobile) */}
+            <div className="hidden md:block space-y-4">
               {banners.map((banner) => (
-                <div key={banner.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border border-gray-100 rounded-xl gap-4 hover:border-gray-200 transition-colors">
+                <div key={banner.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-xl gap-4 hover:border-gray-200 transition-colors">
                   <div className="flex items-center gap-4">
                     <div className="relative w-24 h-14 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">
                       {banner.image_url ? (
@@ -186,7 +187,7 @@ export default function AdminBannersPage() {
                       <p className="text-[11px] text-gray-500 font-mono mt-1 bg-gray-50 px-1.5 py-0.5 rounded w-fit">Sort: {banner.sort_order}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-50">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => handleToggleActive(banner)}
                       className={`flex items-center gap-1 text-xs font-semibold cursor-pointer ${
@@ -208,6 +209,66 @@ export default function AdminBannersPage() {
               {banners.length === 0 && (
                 <div className="text-center py-12 text-gray-400 text-sm">
                   No banners found. Add a new banner using the form on the right.
+                </div>
+              )}
+            </div>
+
+            {/* Banners Mobile List (hidden on desktop) */}
+            <div className="md:hidden space-y-4">
+              {banners.map((banner) => (
+                <div key={banner.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center gap-3">
+                    <div className="relative w-20 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">
+                      {banner.image_url ? (
+                        <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <ImageIcon size={18} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-gray-900 text-sm truncate">{banner.title || 'Untitled'}</h4>
+                      <p className="text-xs text-gray-400 mt-0.5 truncate">{banner.subtitle || 'No subtitle'}</p>
+                    </div>
+                  </div>
+
+                  {/* 2-Column Grid */}
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 border-t border-b border-gray-50">
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Sort Order</span>
+                      <span className="text-sm font-bold text-gray-900 block">#{banner.sort_order}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Status</span>
+                      <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold mt-0.5 ${banner.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                        {banner.is_active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between pt-1">
+                    <button
+                      onClick={() => handleToggleActive(banner)}
+                      className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer"
+                    >
+                      <span>Active:</span>
+                      {banner.is_active ? <ToggleRight size={22} className="text-emerald-600" /> : <ToggleLeft size={22} className="text-gray-400" />}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteBanner(banner.id)}
+                      className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-rose-100"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {banners.length === 0 && (
+                <div className="text-center py-12 text-gray-400 text-sm">
+                  No banners found.
                 </div>
               )}
             </div>

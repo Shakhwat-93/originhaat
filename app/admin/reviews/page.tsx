@@ -114,8 +114,8 @@ export default function AdminReviewsPage() {
         </button>
       </div>
 
-      {/* Reviews Table */}
-      <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+      {/* Reviews Desktop List (hidden on mobile) */}
+      <div className="hidden md:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-black">
             <thead>
@@ -193,6 +193,92 @@ export default function AdminReviewsPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Reviews Mobile List (hidden on desktop) */}
+      <div className="md:hidden space-y-4">
+        {reviews.map((review) => {
+          const productName = review.oh_products?.name_en || review.oh_products?.name_bn || 'Deleted Product';
+          return (
+            <div key={review.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-gray-900 text-sm truncate max-w-[70%]">{review.customer_name}</h4>
+                <span className="text-xs text-gray-400 font-mono">{review.location}</span>
+              </div>
+
+              {/* 2-Column Grid */}
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 border-t border-b border-gray-50">
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Product</span>
+                  <span className="text-sm font-semibold text-gray-900 block truncate">{productName}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Rating</span>
+                  <div className="flex items-center text-amber-400 gap-0.5 mt-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} size={12} fill={i < review.rating ? 'currentColor' : 'none'} className={i < review.rating ? 'text-amber-400' : 'text-gray-200'} />
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Date</span>
+                  <span className="text-sm font-semibold text-gray-900 block">
+                    {new Date(review.date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Approved / Featured</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${review.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                      {review.is_active ? 'Approved' : 'Pending'}
+                    </span>
+                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${review.is_featured ? 'bg-orange-50 text-[#ff6b35]' : 'bg-gray-100 text-gray-400'}`}>
+                      {review.is_featured ? 'Featured' : 'Regular'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Review Text Box */}
+              <div className="text-xs text-gray-600 bg-gray-50 rounded-xl p-3 border border-gray-100 flex items-start gap-1.5">
+                <MessageSquare size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                <span className="line-clamp-3">{review.body}</span>
+              </div>
+
+              {/* Footer */}
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => handleToggleActive(review)}
+                    className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer"
+                  >
+                    <span>Approved:</span>
+                    {review.is_active ? <ToggleRight size={22} className="text-emerald-600" /> : <ToggleLeft size={22} className="text-gray-400" />}
+                  </button>
+                  <button
+                    onClick={() => handleToggleFeatured(review)}
+                    className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer"
+                  >
+                    <span>Featured:</span>
+                    {review.is_featured ? <ToggleRight size={22} className="text-[#ff6b35]" /> : <ToggleLeft size={22} className="text-gray-400" />}
+                  </button>
+                </div>
+                <button
+                  onClick={() => handleDelete(review.id)}
+                  className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-rose-100"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        {reviews.length === 0 && (
+          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400 text-sm shadow-sm">
+            No reviews found.
+          </div>
+        )}
       </div>
     </div>
   );
