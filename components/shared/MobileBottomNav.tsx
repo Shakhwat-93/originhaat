@@ -62,7 +62,7 @@ export function MobileBottomNav() {
                 href={item.href}
                 className="flex flex-col items-center justify-center z-20 relative -top-4"
               >
-                <div className="w-14 h-14 bg-[#10b981] rounded-full flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(16,185,129,0.3)] hover:bg-[#0e9f6e] transition-all duration-200 active:scale-95">
+                <div className="w-14 h-14 bg-[#ff6b35] rounded-full flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(255,107,53,0.3)] hover:bg-[#e55520] transition-all duration-200 active:scale-95">
                   {item.icon}
                 </div>
               </Link>
@@ -73,7 +73,7 @@ export function MobileBottomNav() {
           const content = (
             <div className="flex flex-col items-center gap-1 cursor-pointer select-none">
               <div className="relative">
-                <div className={cn("transition-colors", isActive ? "text-[#10b981]" : "text-gray-400")}>
+                <div className={cn("transition-colors", isActive ? "text-[#ff6b35]" : "text-gray-400")}>
                   {item.icon}
                 </div>
                 {item.badge !== undefined && item.badge > 0 && (
@@ -82,7 +82,7 @@ export function MobileBottomNav() {
                   </span>
                 )}
               </div>
-              <span className={cn("text-[10px] font-semibold transition-colors", isActive ? "text-[#10b981]" : "text-gray-500")}>
+              <span className={cn("text-[10px] font-semibold transition-colors", isActive ? "text-[#ff6b35]" : "text-gray-500")}>
                 {item.label}
               </span>
             </div>
