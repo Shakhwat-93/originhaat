@@ -9,7 +9,7 @@ interface Settings {
   whatsapp_number: string;
   delivery_charge_inside: number;
   delivery_charge_outside: number;
-  free_delivery_min_amount: number;
+  free_delivery_min_order: number;
   announcement_text: string;
   is_announcement_active: boolean;
   facebook_url: string;
@@ -25,7 +25,7 @@ export default function AdminSettingsPage() {
     whatsapp_number: '8801700000000',
     delivery_charge_inside: 60,
     delivery_charge_outside: 120,
-    free_delivery_min_amount: 2000,
+    free_delivery_min_order: 2000,
     announcement_text: '',
     is_announcement_active: false,
     facebook_url: '',
@@ -195,8 +195,8 @@ export default function AdminSettingsPage() {
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Min Order for Free Delivery (৳)</label>
               <input
                 type="number"
-                name="free_delivery_min_amount"
-                value={settings.free_delivery_min_amount}
+                name="free_delivery_min_order"
+                value={settings.free_delivery_min_order}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
                 required

@@ -30,7 +30,10 @@ export async function getSettings() {
       is_announcement_active: false,
     };
   }
-  return data;
+  return {
+    ...data,
+    free_delivery_min_amount: data.free_delivery_min_order ?? 2000,
+  };
 }
 
 export async function getBanners() {

@@ -29,7 +29,7 @@ export default function CheckoutPage() {
   const [settings, setSettings] = useState({
     delivery_charge_inside: 60,
     delivery_charge_outside: 120,
-    free_delivery_min_amount: 999,
+    free_delivery_min_order: 999,
     whatsapp_number: '8801700000000',
   });
 
@@ -61,7 +61,7 @@ export default function CheckoutPage() {
           setSettings({
             delivery_charge_inside: data.delivery_charge_inside ?? 60,
             delivery_charge_outside: data.delivery_charge_outside ?? 120,
-            free_delivery_min_amount: data.free_delivery_min_amount ?? 999,
+            free_delivery_min_order: data.free_delivery_min_order ?? 999,
             whatsapp_number: data.whatsapp_number || '8801700000000',
           });
         }
@@ -75,7 +75,7 @@ export default function CheckoutPage() {
   // Calculate delivery charge dynamically
   let deliveryCharge = 0;
   if (watchedValues.district) {
-    if (totalPrice >= settings.free_delivery_min_amount) {
+    if (totalPrice >= settings.free_delivery_min_order) {
       deliveryCharge = 0;
     } else {
       const isInsideDhaka = watchedValues.district === 'Dhaka' || watchedValues.district === 'ঢাকা';
