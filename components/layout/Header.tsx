@@ -17,6 +17,12 @@ export function Header() {
   const getTotalItems = useCartStore((s) => s.getTotalItems);
   const { mobileMenuOpen, setMobileMenuOpen } = useUIStore();
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [announcementText, setAnnouncementText] = useState('🚚 ৳৯৯৯+ অর্ডারে ফ্রি ডেলিভারি | ঢাকায় ২৪ ঘণ্টা | সারাদেশে ২-৩ দিন');
   const [announcementActive, setAnnouncementActive] = useState(true);
   const [phone, setPhone] = useState('01XXXXXXXXX');
@@ -43,7 +49,7 @@ export function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const totalItems = getTotalItems();
+  const totalItems = mounted ? getTotalItems() : 0;
 
   return (
     <>

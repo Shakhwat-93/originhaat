@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Grid, Store, ShoppingCart, User } from 'lucide-react';
@@ -9,8 +10,15 @@ import { cn } from '@/lib/utils';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const totalItems = useCartStore((s) => s.getTotalItems)();
+  const getTotalItems = useCartStore((s) => s.getTotalItems);
   const setMobileMenuOpen = useUIStore((s) => s.setMobileMenuOpen);
+
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const totalItems = mounted ? getTotalItems() : 0;
 
   const navItems = [
     {

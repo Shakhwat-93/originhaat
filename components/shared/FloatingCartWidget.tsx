@@ -1,13 +1,21 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingCart } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { formatBDTNumeric } from '@/lib/utils';
 
 export function FloatingCartWidget() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const totalItems = useCartStore((s) => s.getTotalItems)();
   const totalPrice = useCartStore((s) => s.getTotalPrice)();
+
+  if (!mounted) return null;
 
   return (
     <Link
