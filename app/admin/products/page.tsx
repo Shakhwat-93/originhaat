@@ -88,6 +88,20 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleToggleStock = async (prod: Product) => {
+    const newStock = prod.stock > 0 ? 0 : 50;
+    setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: newStock } : p));
+    
+    const { error } = await supabase
+      .from('oh_products')
+      .update({ stock: newStock })
+      .eq('id', prod.id);
+    if (error) {
+      console.error(error);
+      fetchData();
+    }
+  };
+
   const handleDelete = async (id: string) => {
     const result = await showConfirmAlert(
       'Are you sure?',
@@ -217,11 +231,24 @@ export default function AdminProductsPage() {
                     <td className="px-6 py-4 font-bold text-gray-900">৳{prod.price}</td>
                     <td className="px-6 py-4 text-gray-400 line-through">৳{prod.original_price}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                        prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : prod.stock > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
-                      }`}>
-                        {prod.stock > 0 ? `${prod.stock} units` : 'Out of Stock'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleToggleStock(prod)}
+                          className="focus:outline-none cursor-pointer"
+                          title={prod.stock > 0 ? "Set Out of Stock" : "Set In Stock (50 units)"}
+                        >
+                          {prod.stock > 0 ? (
+                            <ToggleRight size={26} className="text-emerald-600" />
+                          ) : (
+                            <ToggleLeft size={26} className="text-gray-400" />
+                          )}
+                        </button>
+                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                          prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : prod.stock > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
+                        }`}>
+                          {prod.stock > 0 ? `${prod.stock} units` : 'Out of Stock'}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
                       <button
@@ -311,11 +338,24 @@ export default function AdminProductsPage() {
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Stock Status</span>
-                  <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold mt-0.5 ${
-                    prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : prod.stock > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
-                  }`}>
-                    {prod.stock > 0 ? `${prod.stock} units` : 'Out of Stock'}
-                  </span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <button
+                      onClick={() => handleToggleStock(prod)}
+                      className="focus:outline-none cursor-pointer"
+                      title={prod.stock > 0 ? "Set Out of Stock" : "Set In Stock (50 units)"}
+                    >
+                      {prod.stock > 0 ? (
+                        <ToggleRight size={22} className="text-emerald-600" />
+                      ) : (
+                        <ToggleLeft size={22} className="text-gray-400" />
+                      )}
+                    </button>
+                    <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${
+                      prod.stock > 10 ? 'bg-emerald-50 text-emerald-700' : prod.stock > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
+                    }`}>
+                      {prod.stock > 0 ? `${prod.stock} units` : 'Out of Stock'}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Status / Featured</span>
