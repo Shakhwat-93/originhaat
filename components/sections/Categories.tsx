@@ -1,8 +1,25 @@
 import Link from 'next/link';
-import { categories } from '@/data/products';
+import { categories as defaultCategories } from '@/data/products';
 import { Grid2x2 } from 'lucide-react';
 
-export function Categories() {
+interface DBCategory {
+  id: string;
+  name_bn: string;
+  name_en: string;
+  slug: string;
+  icon: string;
+  image_url?: string;
+}
+
+interface CategoriesProps {
+  categories?: DBCategory[];
+}
+
+export function Categories({ categories }: CategoriesProps) {
+  const displayCategories = categories && categories.length > 0 
+    ? categories 
+    : defaultCategories;
+
   return (
     <section id="categories" className="py-10 md:py-16 bg-[#fcfdfe]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -11,16 +28,16 @@ export function Categories() {
           <div className="inline-flex items-center gap-2 mb-3 bg-[#fff3ef] px-4 py-1.5 rounded-full border border-[#ff6b35]/10">
             <Grid2x2 size={16} className="text-[#ff6b35]" />
             <span className="text-xs font-bold text-[#ff6b35] uppercase tracking-wider">
-              Categories
+              ক্যাটাগরি
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#111827] tracking-tight">Featured Categories</h2>
-          <p className="text-[#6b7280] mt-2 text-sm md:text-base max-w-md mx-auto">Choose your favorite category and explore top gear</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#111827] tracking-tight">প্রোডাক্ট ক্যাটাগরি</h2>
+          <p className="text-[#6b7280] mt-2 text-sm md:text-base max-w-md mx-auto">পছন্দের ক্যাটাগরি বেছে নিয়ে স্টোরের সেরা ডিল ও নতুন কালেকশন এক্সপ্লোর করুন</p>
         </div>
 
         {/* Category Mobile Horizontal Scroll (Below md) */}
         <div className="flex md:hidden overflow-x-auto gap-4 pb-6 px-1 scrollbar-hide scroll-smooth snap-x snap-mandatory">
-          {categories.map((cat) => (
+          {displayCategories.map((cat) => (
             <Link
               key={cat.id}
               href={`/category/${cat.slug}`}
@@ -30,16 +47,15 @@ export function Categories() {
                 <span className="text-2xl">{cat.icon}</span>
               </div>
               <p className="text-xs font-bold text-[#111827] leading-tight truncate w-full">
-                {cat.name_en}
+                {cat.name_bn}
               </p>
-              <p className="text-[10px] text-gray-400 mt-1 font-medium">{cat.product_count} Products</p>
             </Link>
           ))}
         </div>
 
         {/* Category Grid - Desktop (md and above) */}
         <div className="hidden md:grid grid-cols-6 gap-6">
-          {categories.map((cat) => (
+          {displayCategories.map((cat) => (
             <Link
               key={cat.id}
               href={`/category/${cat.slug}`}
@@ -49,9 +65,8 @@ export function Categories() {
                 <span className="text-3xl">{cat.icon}</span>
               </div>
               <p className="text-sm font-bold text-[#111827] leading-tight line-clamp-1 group-hover:text-[#ff6b35] transition-colors">
-                {cat.name_en}
+                {cat.name_bn}
               </p>
-              <p className="text-xs text-gray-400 mt-1.5 font-medium">{cat.product_count} Products</p>
             </Link>
           ))}
         </div>

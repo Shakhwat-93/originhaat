@@ -18,7 +18,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
   const showToast = useUIStore((s) => s.showToast);
   const discount = calculateDiscount(product.original_price, product.price);
   const stockStatus = getStockStatus(product.stock);
-  const avgRating = product.reviews.length
+  const avgRating = product.reviews && product.reviews.length
     ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length
     : 0;
 
@@ -52,7 +52,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
       </h1>
 
       {/* Rating */}
-      {product.reviews.length > 0 && (
+      {product.reviews && product.reviews.length > 0 && (
         <div className="flex items-center gap-2">
           <div className="flex">
             {[...Array(5)].map((_, i) => (

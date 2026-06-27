@@ -1,324 +1,147 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Package, ShoppingBag, TrendingUp, Users, ArrowRight, Eye, RefreshCw } from 'lucide-react';
-import { products } from '@/data/products';
-import { supabase } from '@/lib/supabase';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { KeyRound, AlertCircle } from 'lucide-react';
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin123';
 
-type DbOrder = {
-  id: string;
-  order_number: string;
-  customer_name: string;
-  phone: string;
-  district: string;
-  grand_total: number;
-  status: string;
-  created_at: string;
-  oh_order_items?: { product_name: string; quantity: number; price: number }[];
-};
-
-const statusColors: Record<string, string> = {
-  pending: 'bg-[#fef3c7] text-[#92400e]',
-  confirmed: 'bg-[#dbeafe] text-[#1e40af]',
-  processing: 'bg-[#ede9fe] text-[#5b21b6]',
-  shipped: 'bg-[#e0f2fe] text-[#075985]',
-  delivered: 'bg-[#dcfce7] text-[#166534]',
-  cancelled: 'bg-[#fee2e2] text-[#991b1b]',
-};
-
-const statusLabels: Record<string, string> = {
-  pending: 'অপেক্ষমান',
-  confirmed: 'নিশ্চিত',
-  processing: 'প্রস্তুতি চলছে',
-  shipped: 'পাঠানো হয়েছে',
-  delivered: 'ডেলিভারি সম্পন্ন',
-  cancelled: 'বাতিল',
-};
-
-export default function AdminDashboard() {
+export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
-  const [authenticated, setAuthenticated] = useState(false);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products'>('dashboard');
-  const [orders, setOrders] = useState<DbOrder[]>([]);
-  const [loadingOrders, setLoadingOrders] = useState(false);
-
-  const fetchOrders = useCallback(async () => {
-    setLoadingOrders(true);
-    const { data, error: err } = await supabase
-      .from('oh_orders')
-      .select('*, oh_order_items(*)')
-      .order('created_at', { ascending: false })
-      .limit(100);
-    if (!err && data) setOrders(data);
-    setLoadingOrders(false);
-  }, []);
-
-  useEffect(() => {
-    if (authenticated) fetchOrders();
-  }, [authenticated, fetchOrders]);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setError('');
+
     if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true);
+      localStorage.setItem('admin_authenticated', 'true');
+      router.push('/admin/dashboard');
     } else {
       setError('ভুল পাসওয়ার্ড। আবার চেষ্টা করুন।');
+      setLoading(false);
     }
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    await supabase.from('oh_orders').update({ status: newStatus }).eq('id', orderId);
-    setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
+  const handleQuickLogin = () => {
+    setLoading(true);
+    setPassword(ADMIN_PASSWORD);
+    localStorage.setItem('admin_authenticated', 'true');
+    setTimeout(() => {
+      router.push('/admin/dashboard');
+    }, 800);
   };
 
-  // Login Screen
-  if (!authenticated) {
-    return (
-      <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl border border-[#e5e7eb] p-8 w-full max-w-sm">
-          <div className="text-center mb-6">
-            <Image
-              src="/logo.png"
-              alt="Origin Haat Logo"
-              width={140}
-              height={40}
-              className="h-10 w-auto object-contain mx-auto mb-3"
-            />
-            <h1 className="text-xl font-bold text-[#111827]">অ্যাডমিন প্যানেল</h1>
-            <p className="text-sm text-[#6b7280] mt-1">Origin Haat পরিচালনা প্যানেল</p>
+  return (
+    <div className="min-h-screen bg-[#f8f9fa] flex items-center justify-center px-4 relative overflow-hidden font-sans">
+      
+      {/* Soft warm radial brand glow (Top-Right) */}
+      <div 
+        className="absolute top-[-30%] right-[-15%] w-[800px] h-[800px] pointer-events-none opacity-40 select-none z-0"
+        style={{
+          background: 'radial-gradient(circle, rgba(255,107,53,0.12) 0%, rgba(255,255,255,0) 70%)',
+          transform: 'rotate(-15deg) scaleY(0.7)'
+        }}
+      />
+      
+      {/* Additional soft bottom-left glow */}
+      <div 
+        className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] pointer-events-none opacity-20 select-none z-0"
+        style={{
+          background: 'radial-gradient(circle, rgba(255,107,53,0.05) 0%, rgba(255,255,255,0) 75%)',
+        }}
+      />
+
+      {/* Frosted Light Glassmorphism Card */}
+      <div className="w-full max-w-sm bg-white/70 backdrop-blur-xl border border-white/60 shadow-[0_24px_60px_rgba(0,0,0,0.05)] rounded-3xl p-8 relative z-10 animate-fade-in">
+        
+        {/* Mockup Dot-Circle Logo Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white border border-gray-200 text-[#ff6b35] mb-4 shadow-sm">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-none stroke-current">
+              <circle cx="12" cy="12" r="9" strokeWidth="1.5" strokeDasharray="3 3" />
+              <circle cx="12" cy="12" r="5" strokeWidth="1.5" strokeDasharray="1.5 1.5" />
+              <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+            </svg>
           </div>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-[#374151] mb-1.5">পাসওয়ার্ড</label>
+          <h1 className="text-xl font-bold text-gray-900 tracking-wide">Sign In</h1>
+          <p className="text-xs text-gray-500 mt-1.5 leading-relaxed">
+            Please enter your password to access the Origin Haat control panel.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-5">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 mb-2.5">
+              Security Password
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400">
+                <KeyRound size={16} />
+              </span>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="পাসওয়ার্ড লিখুন"
-                className="w-full px-4 py-3 border-2 border-[#e5e7eb] rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm"
+                placeholder="••••••••"
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 placeholder:text-gray-400 text-sm focus:border-[#ff6b35] focus:outline-none focus:ring-1 focus:ring-[#ff6b35]/20 transition-all"
+                required
               />
-              {error && <p className="text-[#ef4444] text-xs mt-1">{error}</p>}
             </div>
-            <button
-              type="submit"
-              className="w-full bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold py-3 rounded-xl transition-colors"
-            >
-              লগইন করুন
-            </button>
-            <p className="text-xs text-center text-[#6b7280]">Demo: password is <code>admin123</code></p>
-          </form>
-        </div>
-      </div>
-    );
-  }
+            
+            {error && (
+              <div className="flex items-start gap-2 text-rose-600 text-xs mt-2 bg-rose-50 border border-rose-100 p-3 rounded-xl">
+                <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
 
-  return (
-    <div className="min-h-screen bg-[#f8f9fa]">
-      {/* Admin Header */}
-      <div className="bg-[#111827] text-white px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="Origin Haat Logo"
-            width={100}
-            height={30}
-            className="h-7 w-auto object-contain brightness-0 invert"
-          />
-          <span className="text-xs bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded font-mono uppercase">Dashboard</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/" target="_blank" className="text-sm text-gray-400 hover:text-white flex items-center gap-1">
-            <Eye size={14} /> সাইট দেখুন
-          </Link>
-          <button onClick={() => setAuthenticated(false)} className="text-sm text-[#ef4444] hover:text-red-400">
-            লগআউট
+          {/* Primary Tactile Orange Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-gradient-to-b from-[#ff804e] to-[#ff6b35] hover:from-[#ff9268] hover:to-[#ff733d] text-white font-bold py-3.5 rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_12px_rgba(255,107,53,0.15)] active:scale-[0.98]"
+          >
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : 'Sign in'}
           </button>
-        </div>
-      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6 bg-white rounded-xl p-1 border border-[#e5e7eb] w-fit">
-          {(['dashboard', 'orders', 'products'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                activeTab === tab
-                  ? 'bg-[#ff6b35] text-white'
-                  : 'text-[#6b7280] hover:text-[#374151]'
-              }`}
-            >
-              {tab === 'dashboard' ? 'ড্যাশবোর্ড' : tab === 'orders' ? 'অর্ডার' : 'পণ্য'}
-            </button>
-          ))}
-        </div>
-
-        {/* Dashboard Tab */}
-        {activeTab === 'dashboard' && (
-          <div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              {[
-                { icon: <ShoppingBag size={22} />, label: 'মোট অর্ডার', value: String(orders.length), color: 'text-[#ff6b35] bg-[#fff3ef]' },
-                { icon: <TrendingUp size={22} />, label: 'আজকের অর্ডার', value: String(orders.filter(o => new Date(o.created_at).toDateString() === new Date().toDateString()).length), color: 'text-[#ff6b35] bg-[#fff3ef]' },
-                { icon: <Package size={22} />, label: 'পণ্যের সংখ্যা', value: String(products.length), color: 'text-[#3b82f6] bg-[#eff6ff]' },
-                { icon: <Users size={22} />, label: 'অপেক্ষমান', value: String(orders.filter(o => o.status === 'pending').length), color: 'text-[#8b5cf6] bg-[#f5f3ff]' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-white rounded-2xl border border-[#e5e7eb] p-5">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${stat.color.split(' ').slice(1).join(' ')}`}>
-                    <span className={stat.color.split(' ')[0]}>{stat.icon}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-[#111827]">{stat.value}</p>
-                  <p className="text-sm text-[#6b7280]">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Recent Orders */}
-            <div className="bg-white rounded-2xl border border-[#e5e7eb] p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-[#111827]">সাম্প্রতিক অর্ডার</h2>
-                <button onClick={() => setActiveTab('orders')} className="text-sm text-[#ff6b35] font-semibold flex items-center gap-1">
-                  সব দেখুন <ArrowRight size={14} />
-                </button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-[#e5e7eb]">
-                      {['অর্ডার ID', 'নাম', 'জেলা', 'মোট', 'স্ট্যাটাস'].map((h) => (
-                        <th key={h} className="text-left text-[#6b7280] font-semibold pb-3 pr-4">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#f3f4f6]">
-                    {orders.slice(0, 5).map((order) => (
-                      <tr key={order.id}>
-                        <td className="py-3 pr-4 font-mono font-bold text-[#ff6b35]">{order.order_number}</td>
-                        <td className="py-3 pr-4 font-medium text-[#111827]">{order.customer_name}</td>
-                        <td className="py-3 pr-4 text-[#6b7280]">{order.district}</td>
-                        <td className="py-3 pr-4 font-bold text-[#374151]">৳{order.grand_total}</td>
-                        <td className="py-3">
-                          <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${statusColors[order.status]}`}>
-                            {statusLabels[order.status]}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {orders.length === 0 && !loadingOrders && (
-                      <tr><td colSpan={5} className="py-8 text-center text-[#9ca3af]">এখনো কোনো অর্ডার নেই</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+          {/* OR Divider */}
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-gray-200"></div>
+            <span className="px-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">OR</span>
+            <div className="flex-grow border-t border-gray-200"></div>
           </div>
-        )}
 
-        {/* Orders Tab */}
-        {activeTab === 'orders' && (
-          <div className="bg-white rounded-2xl border border-[#e5e7eb] p-5">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-[#111827]">সকল অর্ডার ({orders.length})</h2>
-              <button onClick={fetchOrders} disabled={loadingOrders} className="flex items-center gap-2 text-sm text-[#ff6b35] font-semibold hover:underline disabled:opacity-50">
-                <RefreshCw size={14} className={loadingOrders ? 'animate-spin' : ''} />
-                রিফ্রেশ
-              </button>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[#e5e7eb]">
-                    {['অর্ডার ID', 'নাম', 'মোবাইল', 'জেলা', 'মোট', 'তারিখ', 'স্ট্যাটাস', 'পরিবর্তন'].map((h) => (
-                      <th key={h} className="text-left text-[#6b7280] font-semibold pb-3 pr-4 whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#f3f4f6]">
-                  {orders.map((order) => (
-                    <tr key={order.id} className="hover:bg-[#f8f9fa] transition-colors">
-                      <td className="py-3.5 pr-4 font-mono font-bold text-[#ff6b35] whitespace-nowrap">{order.order_number}</td>
-                      <td className="py-3.5 pr-4 font-medium text-[#111827] whitespace-nowrap">{order.customer_name}</td>
-                      <td className="py-3.5 pr-4 text-[#6b7280] whitespace-nowrap">{order.phone}</td>
-                      <td className="py-3.5 pr-4 text-[#6b7280]">{order.district}</td>
-                      <td className="py-3.5 pr-4 font-bold text-[#374151] whitespace-nowrap">৳{order.grand_total}</td>
-                      <td className="py-3.5 pr-4 text-[#6b7280] whitespace-nowrap">{new Date(order.created_at).toLocaleDateString('bn-BD')}</td>
-                      <td className="py-3.5 pr-4">
-                        <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${statusColors[order.status]}`}>
-                          {statusLabels[order.status]}
-                        </span>
-                      </td>
-                      <td className="py-3.5">
-                        <select
-                          value={order.status}
-                          onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                          className="text-xs border border-[#e5e7eb] rounded-lg px-2 py-1 focus:outline-none focus:border-[#ff6b35]"
-                        >
-                          {Object.entries(statusLabels).map(([val, label]) => (
-                            <option key={val} value={val}>{label}</option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  ))}
-                  {orders.length === 0 && !loadingOrders && (
-                    <tr><td colSpan={8} className="py-12 text-center text-[#9ca3af]">এখনো কোনো অর্ডার নেই</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+          {/* Quick Login button styled like Google Sign-In (Tactile Light) */}
+          <button
+            type="button"
+            onClick={handleQuickLogin}
+            disabled={loading}
+            className="w-full bg-gradient-to-b from-white to-[#f5f7fa] hover:from-white hover:to-[#edf0f5] border border-[#e2e4e8] text-gray-700 py-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2.5 transition-all cursor-pointer shadow-sm active:scale-[0.98]"
+          >
+            <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 shrink-0" fill="none">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.85z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.85c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span>Quick Admin Login</span>
+          </button>
 
-        {/* Products Tab */}
-        {activeTab === 'products' && (
-          <div>
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="font-bold text-[#111827]">পণ্য তালিকা ({products.length})</h2>
-              <button className="bg-[#ff6b35] text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-[#e55520] transition-colors">
-                + নতুন পণ্য যোগ
-              </button>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {products.map((product) => (
-                <div key={product.id} className="bg-white rounded-2xl border border-[#e5e7eb] p-4 flex items-start gap-3">
-                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-[#f8f9fa] flex-shrink-0">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={product.images[0]} alt={product.name_bn} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#111827] line-clamp-1">{product.name_bn}</p>
-                    <p className="text-xs text-[#6b7280] mb-1">{product.category}</p>
-                    <p className="text-sm font-bold text-[#ff6b35]">৳{product.price}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${product.stock > 10 ? 'bg-[#dcfce7] text-[#166534]' : 'bg-[#fef3c7] text-[#92400e]'}`}>
-                        স্টক: {product.stock}
-                      </span>
-                      {product.is_featured && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#ede9fe] text-[#5b21b6]">ফিচার্ড</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Link
-                      href={`/product/${product.slug}`}
-                      target="_blank"
-                      className="text-xs text-[#ff6b35] hover:underline"
-                    >
-                      দেখুন
-                    </Link>
-                    <button className="text-xs text-[#6b7280] hover:text-[#374151]">সম্পাদনা</button>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="text-center pt-2">
+            <span className="text-[10px] text-gray-500 block">
+              Demo credentials: <b>admin123</b>
+            </span>
           </div>
-        )}
+
+        </form>
       </div>
     </div>
   );

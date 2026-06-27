@@ -154,3 +154,219 @@ h1, h2, h3, h4, h5, h6 {
     padding-bottom: 70px !important;
   }
 }
+
+/* ─── Premium Admin Light Theme (Orange & White) ──────────────── */
+.admin-light {
+  background-color: #f8f9fa !important;
+  color: #1f2937 !important;
+}
+
+.admin-light h1, 
+.admin-light h2, 
+.admin-light h3, 
+.admin-light h4, 
+.admin-light h5, 
+.admin-light h6 {
+  color: #111827 !important;
+}
+
+/* Light Skeuomorphic/Glassmorphic Cards override */
+.admin-light .bg-white {
+  background-color: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02), 0 1px 3px rgba(0, 0, 0, 0.01) !important;
+}
+
+/* Secondary bg updates */
+.admin-light .bg-gray-50,
+.admin-light .bg-gray-100 {
+  background-color: #f9fafb !important;
+}
+
+.admin-light .bg-gray-200 {
+  background-color: #f3f4f6 !important;
+}
+
+/* Border updates */
+.admin-light .border-gray-100, 
+.admin-light .border-gray-200, 
+.admin-light .border-gray-300 {
+  border-color: #e5e7eb !important;
+}
+
+/* Text color overrides */
+.admin-light .text-gray-900,
+.admin-light .text-gray-800,
+.admin-light .text-gray-700,
+.admin-light .text-black {
+  color: #1f2937 !important;
+}
+
+.admin-light .text-gray-500,
+.admin-light .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.admin-light .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+/* Forms & inputs styling (White/Orange focus) */
+.admin-light input,
+.admin-light select,
+.admin-light textarea {
+  background-color: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  color: #111827 !important;
+}
+
+.admin-light input:focus,
+.admin-light select:focus,
+.admin-light textarea:focus {
+  border-color: #ff6b35 !important;
+  box-shadow: 0 0 0 1px rgba(255, 107, 53, 0.15) !important;
+  outline: none !important;
+}
+
+/* Tactile/Skeuomorphic Buttons (Light Theme - Image 4) */
+.btn-tactile-light {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%) !important;
+  color: #374151 !important;
+  border: 1px solid #e2e4e8 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-tactile-light:hover {
+  background: linear-gradient(180deg, #ffffff 0%, #edf0f5 100%) !important;
+  border-color: #d1d5db !important;
+}
+
+.btn-tactile-light:active {
+  background: #edf0f5 !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(0.5px);
+}
+
+/* Primary buttons (Orange) tactile style override */
+.admin-light .bg-\[\#ff6b35\], 
+.admin-light button.bg-\[\#ff6b35\], 
+.admin-light a.bg-\[\#ff6b35\] {
+  background: linear-gradient(180deg, #ff804e 0%, #ff6b35 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #e05420 !important;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.admin-light .bg-\[\#ff6b35\]:hover,
+.admin-light button.bg-\[\#ff6b35\]:hover {
+  background: linear-gradient(180deg, #ff9268 0%, #ff733d 100%) !important;
+}
+
+/* Secondary/white buttons mapping in admin light context */
+.admin-light button.border-gray-200,
+.admin-light button.bg-white,
+.admin-light a.border-gray-200,
+.admin-light a.bg-white {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 100%) !important;
+  color: #374151 !important;
+  border: 1px solid #e2e4e8 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Custom Tree-Branch Line Styles (Light Gray for White Sidebar) */
+.tree-line-branch {
+  position: relative;
+}
+
+.tree-line-branch::before {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background-color: #e5e7eb;
+}
+
+.tree-line-branch-child {
+  position: relative;
+}
+
+.tree-line-branch-child::before {
+  content: '';
+  position: absolute;
+  left: 21px;
+  top: 50%;
+  width: 12px;
+  height: 1.5px;
+  background-color: #e5e7eb;
+}
+
+/* Card & Status overrides for light theme */
+.admin-light .bg-emerald-50, 
+.admin-light .bg-emerald-50\/10 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.15) !important;
+}
+.admin-light .text-emerald-700 {
+  color: #047857 !important;
+}
+
+.admin-light .bg-\[\#fff3ef\] {
+  background-color: rgba(255, 107, 53, 0.06) !important;
+  color: #c2410c !important;
+  border: 1px solid rgba(255, 107, 53, 0.15) !important;
+}
+.admin-light .text-\[\#ff6b35\] {
+  color: #ff6b35 !important;
+}
+
+.admin-light .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+  color: #1d4ed8 !important;
+  border: 1px solid rgba(59, 130, 246, 0.15) !important;
+}
+.admin-light .text-blue-700 {
+  color: #1d4ed8 !important;
+}
+
+.admin-light .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.15) !important;
+}
+.admin-light .text-amber-700 {
+  color: #b45309 !important;
+}
+
+.admin-light .bg-purple-50 {
+  background-color: rgba(139, 92, 246, 0.08) !important;
+  color: #6d28d9 !important;
+  border: 1px solid rgba(139, 92, 246, 0.15) !important;
+}
+.admin-light .text-purple-700 {
+  color: #6d28d9 !important;
+}
+
+.admin-light .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.08) !important;
+  color: #0369a1 !important;
+  border: 1px solid rgba(14, 165, 233, 0.15) !important;
+}
+.admin-light .text-sky-700 {
+  color: #0369a1 !important;
+}
+
+.admin-light .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.08) !important;
+  color: #be123c !important;
+  border: 1px solid rgba(244, 63, 94, 0.15) !important;
+}
+.admin-light .text-rose-700 {
+  color: #be123c !important;
+}
+
+
+

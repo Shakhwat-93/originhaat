@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle, Home, MessageCircle, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 
 interface StoredOrder {
   id: string;
@@ -16,6 +17,7 @@ interface StoredOrder {
 
 export default function OrderSuccessPage() {
   const [order, setOrder] = useState<StoredOrder | null>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState('8801700000000');
 
   useEffect(() => {
     try {
@@ -24,6 +26,18 @@ export default function OrderSuccessPage() {
     } catch {
       // ignore
     }
+
+    const fetchWhatsappNumber = async () => {
+      try {
+        const { data } = await supabase.from('oh_settings').select('whatsapp_number').eq('id', 1).single();
+        if (data?.whatsapp_number) {
+          setWhatsappNumber(data.whatsapp_number);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchWhatsappNumber();
   }, []);
 
   return (
@@ -98,10 +112,10 @@ export default function OrderSuccessPage() {
           <div className="flex flex-col sm:flex-row gap-3">
             {order && (
               <a
-                href={`https://wa.me/8801XXXXXXXXX?text=${encodeURIComponent(order.whatsappMessage)}`}
+                href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(order.whatsappMessage)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1fad54] text-white font-bold py-3.5 rounded-xl transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1fad54] text-white font-bold py-3.5 rounded-xl transition-colors cursor-pointer"
               >
                 <MessageCircle size={18} />
                 WhatsApp-এ কনফার্ম করুন
@@ -109,7 +123,7 @@ export default function OrderSuccessPage() {
             )}
             <Link
               href="/"
-              className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold py-3.5 rounded-xl transition-colors"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold py-3.5 rounded-xl transition-colors cursor-pointer"
             >
               <Home size={18} />
               হোমে ফিরুন
@@ -117,7 +131,7 @@ export default function OrderSuccessPage() {
           </div>
 
           <p className="text-xs text-[#6b7280] mt-4">
-            কোনো সমস্যা? আমাদের কল করুন: <a href="tel:01XXXXXXXXX" className="text-[#ff6b35] font-semibold">01XXXXXXXXX</a>
+            কোনো সমস্যা? আমাদের কল করুন: <a href={`tel:${whatsappNumber}`} className="text-[#ff6b35] font-semibold">{whatsappNumber}</a>
           </p>
         </motion.div>
       </div>

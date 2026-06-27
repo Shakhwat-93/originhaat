@@ -12,7 +12,7 @@ interface Slide {
   alt: string;
 }
 
-const slides: Slide[] = [
+const defaultSlides: Slide[] = [
   {
     image: '/images/banner-1.png',
     link: '#best-sellers',
@@ -30,7 +30,20 @@ const slides: Slide[] = [
   },
 ];
 
-export function HeroSection() {
+interface HeroSectionProps {
+  banners?: {
+    image_url: string;
+    link_url: string;
+    title?: string;
+    subtitle?: string;
+  }[];
+}
+
+export function HeroSection({ banners }: HeroSectionProps) {
+  const slides = banners && banners.length > 0 
+    ? banners.map(b => ({ image: b.image_url, link: b.link_url, alt: b.title || 'Origin Haat Banner' }))
+    : defaultSlides;
+
   const [current, setCurrent] = useState(0);
   const [timeLeft, setTimeLeft] = useState({ h: 5, m: 59, s: 59 });
   const timerRef = useRef<NodeJS.Timeout | null>(null);

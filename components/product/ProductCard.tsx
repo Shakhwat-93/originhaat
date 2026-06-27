@@ -53,7 +53,7 @@ export function ProductCard({ product }: ProductCardProps) {
           </p>
 
           {/* Rating */}
-          {product.reviews.length > 0 && (
+          {product.reviews && product.reviews.length > 0 && (
             <div className="flex items-center gap-1 mb-2">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
@@ -61,7 +61,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     key={i}
                     size={11}
                     className={
-                      i < Math.round(product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length)
+                      i < Math.round(product.reviews!.reduce((s, r) => s + r.rating, 0) / product.reviews!.length)
                         ? 'fill-[#f59e0b] text-[#f59e0b]'
                         : 'text-[#d1d5db]'
                     }

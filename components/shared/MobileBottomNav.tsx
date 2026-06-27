@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Search, User } from 'lucide-react';
+import { Home, Grid, ShoppingBag, Search, ClipboardList } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
@@ -58,10 +58,10 @@ export function MobileBottomNav() {
       active: false,
     },
     {
-      label: 'অ্যাডমিন',
-      icon: <User size={20} />,
-      href: '/admin',
-      active: pathname === '/admin',
+      label: 'অর্ডার ট্র্যাক',
+      icon: <ClipboardList size={20} />,
+      href: '/track-order',
+      active: pathname === '/track-order',
     },
   ];
 

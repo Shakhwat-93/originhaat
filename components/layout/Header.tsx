@@ -7,6 +7,7 @@ import { ShoppingCart, Phone, Menu, X, Search, ChevronDown } from 'lucide-react'
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { categories } from '@/data/products';
+import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
 export function Header() {
@@ -15,6 +16,26 @@ export function Header() {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const getTotalItems = useCartStore((s) => s.getTotalItems);
   const { mobileMenuOpen, setMobileMenuOpen } = useUIStore();
+
+  const [announcementText, setAnnouncementText] = useState('🚚 ৳৯৯৯+ অর্ডারে ফ্রি ডেলিভারি | ঢাকায় ২৪ ঘণ্টা | সারাদেশে ২-৩ দিন');
+  const [announcementActive, setAnnouncementActive] = useState(true);
+  const [phone, setPhone] = useState('01XXXXXXXXX');
+
+  useEffect(() => {
+    const fetchHeaderSettings = async () => {
+      try {
+        const { data } = await supabase.from('oh_settings').select('*').eq('id', 1).single();
+        if (data) {
+          if (data.announcement_text) setAnnouncementText(data.announcement_text);
+          setAnnouncementActive(data.is_announcement_active);
+          if (data.whatsapp_number) setPhone(data.whatsapp_number);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchHeaderSettings();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);
@@ -27,9 +48,11 @@ export function Header() {
   return (
     <>
       {/* Announcement Bar */}
-      <div className="bg-[#ff6b35] text-white text-center text-sm py-2 px-4 font-medium">
-        🚚 ৳৯৯৯+ অর্ডারে ফ্রি ডেলিভারি | ঢাকায় ২৪ ঘণ্টা | সারাদেশে ২-৩ দিন
-      </div>
+      {announcementActive && announcementText && (
+        <div className="bg-[#ff6b35] text-white text-center text-sm py-2 px-4 font-medium">
+          {announcementText}
+        </div>
+      )}
 
       {/* Main Header */}
       <header
@@ -39,7 +62,52 @@ export function Header() {
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-16">
+          {/* Mobile Header Row */}
+          <div className="flex md:hidden items-center justify-between h-16">
+            {/* Left: Mobile Menu Toggle */}
+            <div className="flex items-center justify-start w-12">
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors"
+                aria-label="মেনু"
+              >
+                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
+
+            {/* Middle: Logo (centered) */}
+            <div className="flex-1 flex justify-center">
+              <Link href="/" className="flex items-center justify-center">
+                <Image
+                  src="/logo.png"
+                  alt="Origin Haat Logo"
+                  width={140}
+                  height={40}
+                  className="h-9 w-auto object-contain"
+                  priority
+                />
+              </Link>
+            </div>
+
+            {/* Right: Cart */}
+            <div className="flex items-center justify-end w-12">
+              <Link
+                href="/cart"
+                className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors"
+                aria-label={`কার্ট — ${totalItems} টি পণ্য`}
+              >
+                <ShoppingCart size={20} className="text-[#374151]" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#ff6b35] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
+                    {totalItems > 9 ? '9+' : totalItems}
+                  </span>
+                )}
+              </Link>
+            </div>
+          </div>
+
+          {/* Desktop Header Row */}
+          <div className="hidden md:flex items-center justify-between h-16">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 flex-shrink-0">
               <Image
@@ -53,7 +121,7 @@ export function Header() {
             </Link>
 
             {/* Search Bar — Desktop */}
-            <div className="hidden md:flex flex-1 max-w-xl mx-6">
+            <div className="flex-1 max-w-xl mx-6">
               <div className="relative w-full">
                 <input
                   type="text"
@@ -72,11 +140,11 @@ export function Header() {
             <div className="flex items-center gap-3">
               {/* Phone — Desktop */}
               <a
-                href="tel:01XXXXXXXXX"
+                href={`tel:${phone}`}
                 className="hidden lg:flex items-center gap-2 text-sm text-[#374151] hover:text-[#ff6b35] transition-colors"
               >
                 <Phone size={16} className="text-[#ff6b35]" />
-                <span className="font-medium">01XXXXXXXXX</span>
+                <span className="font-medium">{phone}</span>
               </a>
 
               {/* Cart */}
@@ -92,15 +160,6 @@ export function Header() {
                   </span>
                 )}
               </Link>
-
-              {/* Mobile Menu Toggle */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa]"
-                aria-label="মেনু"
-              >
-                {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
             </div>
           </div>
 
@@ -155,10 +214,10 @@ export function Header() {
               কার্ট
             </Link>
             <Link
-              href="/admin"
-              className="ml-auto text-xs text-[#6b7280] hover:text-[#374151] transition-colors"
+              href="/track-order"
+              className="ml-auto text-xs text-[#6b7280] hover:text-[#ff6b35] transition-colors font-semibold"
             >
-              অ্যাডমিন
+              অর্ডার ট্র্যাক
             </Link>
           </nav>
         </div>
@@ -231,6 +290,13 @@ export function Header() {
                     {totalItems}
                   </span>
                 )}
+              </Link>
+              <Link
+                href="/track-order"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
+              >
+                📦 অর্ডার ট্র্যাক
               </Link>
             </nav>
 
