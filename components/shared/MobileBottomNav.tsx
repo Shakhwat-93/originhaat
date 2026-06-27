@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, ShoppingBag, Search, ClipboardList } from 'lucide-react';
+import { Home, Grid, Store, ShoppingCart, User } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
@@ -12,30 +12,10 @@ export function MobileBottomNav() {
   const totalItems = useCartStore((s) => s.getTotalItems)();
   const setMobileMenuOpen = useUIStore((s) => s.setMobileMenuOpen);
 
-  const handleSearchTap = (e: React.MouseEvent) => {
-    e.preventDefault();
-    // Smooth scroll to top and focus search input
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      const searchInputs = document.querySelectorAll('input[placeholder="পণ্য খুঁজুন..."]');
-      const mobileInput = searchInputs[searchInputs.length - 1] as HTMLInputElement || searchInputs[0] as HTMLInputElement;
-      if (mobileInput) {
-        mobileInput.focus();
-        mobileInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 350);
-  };
-
   const navItems = [
     {
-      label: 'হোম',
-      icon: <Home size={20} />,
-      href: '/',
-      active: pathname === '/',
-    },
-    {
-      label: 'ক্যাটেগরি',
-      icon: <Grid size={20} />,
+      label: 'ক্যাটাগরি',
+      icon: <Grid size={22} />,
       href: '#categories',
       onClick: (e: React.MouseEvent) => {
         e.preventDefault();
@@ -44,42 +24,67 @@ export function MobileBottomNav() {
       active: false,
     },
     {
+      label: 'শপ',
+      icon: <Store size={22} />,
+      href: '/',
+      active: pathname === '/',
+    },
+    {
+      label: 'Home',
+      icon: <Home size={24} className="text-white" />,
+      href: '/',
+      active: false, // Middle button is always styled green
+      isMiddle: true,
+    },
+    {
       label: 'কার্ট',
-      icon: <ShoppingBag size={20} />,
+      icon: <ShoppingCart size={22} />,
       href: '/cart',
       active: pathname === '/cart',
       badge: totalItems,
     },
     {
-      label: 'খুঁজুন',
-      icon: <Search size={20} />,
-      href: '#search',
-      onClick: handleSearchTap,
-      active: false,
-    },
-    {
-      label: 'অর্ডার ট্র্যাক',
-      icon: <ClipboardList size={20} />,
+      label: 'অ্যাকাউন্ট',
+      icon: <User size={22} />,
       href: '/track-order',
       active: pathname === '/track-order',
     },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[#ff6b35] text-white border-t border-[#e55520] py-2 px-2 shadow-[0_-4px_12px_rgba(0,0,0,0.1)] sticky-cta-safe">
-      <div className="flex justify-around items-center max-w-md mx-auto">
+    <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white border-t border-gray-100 py-1.5 px-1 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] sticky-cta-safe">
+      <div className="flex justify-around items-center max-w-md mx-auto relative h-12">
         {navItems.map((item, index) => {
+          if (item.isMiddle) {
+            return (
+              <Link
+                key={index}
+                href={item.href}
+                className="flex flex-col items-center justify-center z-20 relative -top-4"
+              >
+                <div className="w-14 h-14 bg-[#10b981] rounded-full flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(16,185,129,0.3)] hover:bg-[#0e9f6e] transition-all duration-200 active:scale-95">
+                  {item.icon}
+                </div>
+              </Link>
+            );
+          }
+
+          const isActive = item.active;
           const content = (
             <div className="flex flex-col items-center gap-1 cursor-pointer select-none">
               <div className="relative">
-                {item.icon}
+                <div className={cn("transition-colors", isActive ? "text-[#10b981]" : "text-gray-400")}>
+                  {item.icon}
+                </div>
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute -top-1.5 -right-2.5 bg-white text-[#ff6b35] text-[10px] font-extrabold rounded-full w-4.5 h-4.5 flex items-center justify-center border border-[#ff6b35] animate-pulse">
+                  <span className="absolute -top-1.5 -right-2.5 bg-rose-500 text-white text-[9px] font-extrabold rounded-full w-4 h-4 flex items-center justify-center border border-white">
                     {item.badge}
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-semibold tracking-wide">{item.label}</span>
+              <span className={cn("text-[10px] font-semibold transition-colors", isActive ? "text-[#10b981]" : "text-gray-500")}>
+                {item.label}
+              </span>
             </div>
           );
 
@@ -88,10 +93,7 @@ export function MobileBottomNav() {
               <button
                 key={index}
                 onClick={item.onClick}
-                className={cn(
-                  "flex-1 flex justify-center text-white/80 hover:text-white transition-colors py-1",
-                  item.active && "text-white"
-                )}
+                className="flex-1 flex justify-center text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
               >
                 {content}
               </button>
@@ -102,10 +104,7 @@ export function MobileBottomNav() {
             <Link
               key={index}
               href={item.href}
-              className={cn(
-                "flex-1 flex justify-center text-white/80 hover:text-white transition-colors py-1",
-                item.active && "text-white"
-              )}
+              className="flex-1 flex justify-center text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
             >
               {content}
             </Link>
