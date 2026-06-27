@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight } from 'lucide-react';
+import { showConfirmAlert } from '@/lib/alerts';
 
 interface Product {
   id: string;
@@ -88,7 +89,12 @@ export default function AdminProductsPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to completely delete this product?')) return;
+    const result = await showConfirmAlert(
+      'Are you sure?',
+      'You are about to completely delete this product. This action cannot be undone!',
+      'Yes, delete it'
+    );
+    if (!result.isConfirmed) return;
     
     setProducts(prev => prev.filter(p => p.id !== id));
     

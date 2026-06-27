@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2 } from 'lucide-react';
+import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface Settings {
   site_name: string;
@@ -79,10 +80,10 @@ export default function AdminSettingsPage() {
         });
 
       if (error) throw error;
-      setStatus({ type: 'success', message: 'Settings saved successfully!' });
+      showSuccessAlert('Success!', 'Site settings have been saved successfully.');
     } catch (err: any) {
       console.error(err);
-      setStatus({ type: 'error', message: err.message || 'Failed to save settings.' });
+      showErrorAlert('Error!', err.message || 'Failed to save site settings.');
     } finally {
       setSaving(false);
     }

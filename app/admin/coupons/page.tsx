@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Tag, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { showConfirmAlert } from '@/lib/alerts';
 
 interface Coupon {
   id: string;
@@ -59,7 +60,13 @@ export default function CouponsPage() {
   };
 
   const deleteCoupon = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this coupon?')) return;
+    const result = await showConfirmAlert(
+      'Are you sure?',
+      'You are about to delete this coupon. This action cannot be undone!',
+      'Yes, delete it'
+    );
+    if (!result.isConfirmed) return;
+    
     await supabase.from('oh_coupons').delete().eq('id', id);
     setCoupons(prev => prev.filter(c => c.id !== id));
   };

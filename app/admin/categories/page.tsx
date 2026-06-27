@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, RefreshCw, Upload, Save, X, ToggleLeft, ToggleRight } from 'lucide-react';
+import { showConfirmAlert } from '@/lib/alerts';
 
 interface Category {
   id: string;
@@ -161,7 +162,12 @@ export default function AdminCategoriesPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to completely delete this category?')) return;
+    const result = await showConfirmAlert(
+      'Are you sure?',
+      'You are about to completely delete this category. This action cannot be undone!',
+      'Yes, delete it'
+    );
+    if (!result.isConfirmed) return;
 
     setCategories(prev => prev.filter(c => c.id !== id));
 
