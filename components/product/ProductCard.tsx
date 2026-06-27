@@ -127,7 +127,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <button
           onClick={handleOrderNow}
           disabled={product.stock === 0}
-          className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#ff416c] to-[#ff4b2b] hover:from-[#ff4b2b] hover:to-[#ff416c] text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#ff804e] to-[#ff6b35] hover:from-[#ff6b35] hover:to-[#e55520] text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Zap size={14} className="fill-white text-white" />
           <span>এখনি অর্ডার করুন</span>
