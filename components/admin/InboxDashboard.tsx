@@ -155,6 +155,16 @@ export default function InboxDashboard() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
   const selectedChatRef = useRef<Chat | null>(null);
 
+  // Status Counts
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({
+    active: 0,
+    pending: 0,
+    resolved: 0,
+    closed: 0,
+    spam: 0,
+    new: 0,
+  });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Data Loading ──────────────────────────────────────────────────────────
@@ -347,11 +357,30 @@ export default function InboxDashboard() {
   }, [selectedChat]);
 
   // ── Fetch helpers ─────────────────────────────────────────────────────────
+  const fetchStatusCounts = async () => {
+    try {
+      const { data } = await supabase.from('oh_chats').select('status, label');
+      if (data) {
+        const counts = { active: 0, pending: 0, resolved: 0, closed: 0, spam: 0, new: 0 };
+        data.forEach((chat: any) => {
+          if (chat.status in counts) {
+            counts[chat.status as keyof typeof counts]++;
+          }
+          if (chat.label === 'New') {
+            counts.new++;
+          }
+        });
+        setStatusCounts(counts);
+      }
+    } catch (_) {}
+  };
+
   const fetchChats = async () => {
     const { data } = await supabase
       .from('oh_chats').select('*').eq('status', activeTab)
       .order('updated_at', { ascending: false });
     if (data) setChats(data);
+    fetchStatusCounts();
   };
   const fetchAgents = async () => {
     const { data } = await supabase.from('oh_chat_agents').select('*');
@@ -841,14 +870,46 @@ export default function InboxDashboard() {
           {/* LEFT — Conversation List */}
           <div className="w-72 border-r border-gray-200 bg-white flex flex-col shrink-0">
             {/* Status Tabs */}
-            <div className="flex flex-wrap gap-1 px-3 py-2.5 border-b border-gray-100">
-              {(['active','pending','resolved','closed','spam'] as const).map((tab) => (
-                <button key={tab} onClick={() => { setActiveTab(tab); setSelectedChat(null); }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize transition-all cursor-pointer ${
-                    activeTab === tab ? 'bg-[#ff6b35] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
-                  }`}
-                >{tab}</button>
-              ))}
+            <div className="flex flex-wrap gap-1 px-3 py-2.5 border-b border-gray-100 bg-gray-50/50">
+              {([
+                { id: 'active', label: 'Active', count: statusCounts.active, color: 'bg-emerald-500/10 text-emerald-700' },
+                { id: 'pending', label: 'Pending', count: statusCounts.pending, color: 'bg-amber-500/10 text-amber-700' },
+                { id: 'new_label', label: 'New', count: statusCounts.new, color: 'bg-purple-500/10 text-purple-700' },
+                { id: 'resolved', label: 'Solved', count: statusCounts.resolved, color: 'bg-blue-500/10 text-blue-700' },
+                { id: 'closed', label: 'Closed', count: statusCounts.closed, color: 'bg-gray-500/10 text-gray-700' },
+                { id: 'spam', label: 'Spam', count: statusCounts.spam, color: 'bg-red-500/10 text-red-700' },
+              ] as const).map((tab) => {
+                const isActive = activeTab === tab.id || (tab.id === 'new_label' && activeTab as string === 'new');
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      if (tab.id === 'new_label') {
+                        // Switch to active but filter for new label (or we can handle status filter)
+                        // For simplicity, let's treat it as a tab transition or filter trigger
+                        setActiveTab('active');
+                        setSearchQuery('New'); // Set search to 'New' label
+                      } else {
+                        setActiveTab(tab.id as any);
+                        setSearchQuery('');
+                      }
+                      setSelectedChat(null);
+                    }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-extrabold capitalize transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-[#ff6b35] text-white shadow-sm'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                      isActive ? 'bg-white/20 text-white' : tab.color
+                    }`}>
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Search */}
