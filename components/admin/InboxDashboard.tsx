@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
   Search, MessageSquare, Send, User, Phone, Mail, MapPin,
@@ -9,10 +9,22 @@ import {
   ThumbsUp, ThumbsDown, ArrowRightLeft, Lock, FileText,
   Smile, Mic, Paperclip, X, MoreVertical, ClipboardList, Info,
   Settings, Volume2, ShieldAlert, Plus, Download, Filter, MessageCircle,
-  ChevronDown
+  ChevronDown, Bell, BellRing, ExternalLink, UserPlus
 } from 'lucide-react';
 import { formatBDTNumeric } from '@/lib/utils';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '@/lib/alerts';
+
+// ── Notification Toast Types ──────────────────────────────────────────────
+interface ToastNotification {
+  id: string;
+  type: 'new_message' | 'new_chat';
+  title: string;
+  body: string;
+  chatId: string;
+  senderName: string;
+  department?: string;
+  timestamp: Date;
+}
 
 // --- Types ---
 interface Agent {
@@ -138,10 +150,18 @@ export default function InboxDashboard() {
 
   const [slaSecondsLeft, setSlaSecondsLeft] = useState(30);
 
+  // ── Global Notifications State ──────────────────────────────────────────
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
+  const selectedChatRef = useRef<Chat | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Data Loading ──────────────────────────────────────────────────────────
   useEffect(() => { fetchChats(); fetchAgents(); fetchCannedResponses(); }, [activeTab]);
+
+  // Keep ref in sync so global listener can read without stale closure
+  useEffect(() => { selectedChatRef.current = selectedChat; }, [selectedChat]);
 
   useEffect(() => {
     if (selectedChat && selectedChat.status === 'pending') {
@@ -155,23 +175,142 @@ export default function InboxDashboard() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const playChime = () => {
+  // ── Request Browser Notification Permission ───────────────────────────────
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotifPermission(Notification.permission);
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then((perm) => setNotifPermission(perm));
+      }
+    }
+  }, []);
+
+  // ── Premium 3-Note Chime ─────────────────────────────────────────────────
+  const playChime = useCallback((isNewChat = false) => {
     if (!soundEnabled) return;
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.35);
+      // note sequence: D5 → F#5 → A5  (cheerful major arpeggio)
+      const notes = isNewChat
+        ? [523.25, 659.25, 783.99, 1046.5]   // C5→E5→G5→C6 (new chat fanfare)
+        : [587.33, 739.99, 880];              // D5→F#5→A5 (new message chime)
+
+      notes.forEach((freq, i) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.13);
+        gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.13);
+        gain.gain.linearRampToValueAtTime(0.12, ctx.currentTime + i * 0.13 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.13 + 0.28);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.13);
+        osc.stop(ctx.currentTime + i * 0.13 + 0.3);
+      });
     } catch (_) {}
-  };
+  }, [soundEnabled]);
+
+  // ── Show Toast helper ────────────────────────────────────────────────────
+  const pushToast = useCallback((toast: Omit<ToastNotification, 'id' | 'timestamp'>) => {
+    const id = `toast-${Date.now()}`;
+    const notification: ToastNotification = { ...toast, id, timestamp: new Date() };
+    setToasts((prev) => [notification, ...prev].slice(0, 5)); // max 5 stacked
+    // Auto-dismiss after 6 seconds
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
+  }, []);
+
+  // ── Send Browser OS Notification ────────────────────────────────────────
+  const sendBrowserNotification = useCallback((title: string, body: string) => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body,
+          icon: '/favicon.ico',
+          badge: '/favicon.ico',
+          tag: 'origin-haat-chat',
+        });
+      } catch (_) {}
+    }
+  }, []);
+
+  // ── GLOBAL Real-time Listener — all customer messages & new chats ─────────
+  useEffect(() => {
+    // 1. Listen to ALL new customer messages across every chat
+    const msgChannel = supabase
+      .channel('admin-global-messages')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'oh_chat_messages',
+      }, (payload) => {
+        const msg = payload.new as ChatMessage;
+        if (msg.sender_role !== 'customer') return;
+        // Skip if this message belongs to the currently open/selected chat
+        const currentChat = selectedChatRef.current;
+        if (currentChat && currentChat.id === msg.chat_id) return;
+
+        // Play sound
+        playChime(false);
+
+        // Show in-app toast
+        pushToast({
+          type: 'new_message',
+          title: `💬 নতুন বার্তা — ${msg.sender_name || 'Customer'}`,
+          body: msg.body ? msg.body.substring(0, 80) : '📎 Attachment',
+          chatId: msg.chat_id,
+          senderName: msg.sender_name || 'Customer',
+        });
+
+        // Browser OS notification
+        sendBrowserNotification(
+          `💬 ${msg.sender_name || 'Customer'} — Origin Haat`,
+          msg.body ? msg.body.substring(0, 100) : '📎 Attachment sent'
+        );
+
+        // Refresh chat list so unread chats float to top
+        fetchChats();
+      })
+      .subscribe();
+
+    // 2. Listen for brand new chat sessions (customer just joined)
+    const chatChannel = supabase
+      .channel('admin-global-chats')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'oh_chats',
+      }, (payload) => {
+        const newChat = payload.new as Chat;
+
+        // New chat fanfare
+        playChime(true);
+
+        pushToast({
+          type: 'new_chat',
+          title: `🆕 নতুন চ্যাট শুরু — ${newChat.customer_name || 'Anonymous'}`,
+          body: `Department: ${newChat.department} • ${newChat.city || 'Unknown location'}`,
+          chatId: newChat.id,
+          senderName: newChat.customer_name || 'Anonymous',
+          department: newChat.department,
+        });
+
+        sendBrowserNotification(
+          `🆕 নতুন চ্যাট — ${newChat.customer_name || 'Anonymous'}`,
+          `Department: ${newChat.department} — একটি নতুন কাস্টমার চ্যাট শুরু করেছেন।`
+        );
+
+        fetchChats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(msgChannel);
+      supabase.removeChannel(chatChannel);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playChime, pushToast, sendBrowserNotification]);
 
   useEffect(() => {
     if (!selectedChat) return;
@@ -400,7 +539,83 @@ export default function InboxDashboard() {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-68px)] bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden font-sans text-gray-800">
+    <div className="flex flex-col h-[calc(100vh-68px)] bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden font-sans text-gray-800 relative">
+
+      {/* ── TOAST NOTIFICATION OVERLAY ── */}
+      <div className="fixed top-4 right-4 z-[999] flex flex-col gap-2.5 pointer-events-none" style={{ maxWidth: 360 }}>
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className="pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl flex items-start gap-3 p-3.5 animate-in slide-in-from-right-4 fade-in duration-300"
+            style={{ boxShadow: '0 8px 32px rgba(255,107,53,0.12), 0 2px 8px rgba(0,0,0,0.08)' }}
+          >
+            {/* Icon */}
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-white ${
+              toast.type === 'new_chat' ? 'bg-emerald-500' : 'bg-[#ff6b35]'
+            }`}>
+              {toast.type === 'new_chat' ? <UserPlus size={18} /> : <MessageCircle size={18} />}
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <p className="font-extrabold text-gray-900 text-xs leading-snug truncate">{toast.title}</p>
+              <p className="text-gray-500 text-[10px] mt-0.5 leading-relaxed line-clamp-2">{toast.body}</p>
+              {toast.department && (
+                <span className="inline-block mt-1 text-[9px] font-bold bg-orange-50 text-[#ff6b35] border border-orange-200 px-1.5 py-0.5 rounded-md">{toast.department}</span>
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                <button
+                  onClick={() => {
+                    setToasts(prev => prev.filter(t => t.id !== toast.id));
+                    // Switch to the right tab and open that chat
+                    setActiveTab('active');
+                    setShowAnalytics(false);
+                    setShowLiveVisitors(false);
+                    setShowCannedManager(false);
+                    // Find and select chat
+                    supabase.from('oh_chats').select('*').eq('id', toast.chatId).single()
+                      .then(({ data }) => { if (data) setSelectedChat(data as Chat); });
+                  }}
+                  className="text-[10px] font-bold text-[#ff6b35] hover:underline cursor-pointer flex items-center gap-0.5"
+                >
+                  <ExternalLink size={10} /> Open Chat
+                </button>
+                <button
+                  onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                  className="text-[10px] text-gray-400 hover:text-gray-600 cursor-pointer ml-auto"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+
+            {/* Animated Progress Bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-100 rounded-b-2xl overflow-hidden">
+              <div
+                className={`h-full ${toast.type === 'new_chat' ? 'bg-emerald-500' : 'bg-[#ff6b35]'}`}
+                style={{ animation: 'shrink-width 6s linear forwards' }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Browser notification permission nudge */}
+      {notifPermission === 'default' && (
+        <div className="bg-amber-50 border-b border-amber-200 px-5 py-2.5 flex items-center justify-between text-xs shrink-0">
+          <div className="flex items-center gap-2 text-amber-800 font-semibold">
+            <Bell size={13} className="text-amber-600" />
+            ব্রাউজার নোটিফিকেশন চালু করুন — চ্যাট মিস করবেন না।
+          </div>
+          <button
+            onClick={() => Notification.requestPermission().then(p => setNotifPermission(p))}
+            className="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1 rounded-lg cursor-pointer text-[10px] transition-all"
+          >
+            Enable Now
+          </button>
+        </div>
+      )}
+
 
       {/* ── Top Bar ── */}
       <div className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between shrink-0 shadow-sm">
