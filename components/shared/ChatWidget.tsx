@@ -4,14 +4,27 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { 
   MessageCircle, X, Send, Paperclip, Smile, Mic, 
-  ChevronRight, Volume2, Search, Check, CheckCheck, ThumbsUp, ThumbsDown
+  ChevronRight, Volume2, Search, Check, CheckCheck, ThumbsUp, ThumbsDown,
+  ChevronLeft, Bot, MessageSquare, Sparkles
 } from 'lucide-react';
 import { formatBDTNumeric } from '@/lib/utils';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { motion, AnimatePresence } from 'framer-motion';
 
-export function ChatWidget() {
+interface ChatWidgetProps {
+  whatsappNumber: string;
+}
+
+interface BotMessage {
+  id: string;
+  sender: 'user' | 'bot';
+  text: string;
+  timestamp: Date;
+}
+
+export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [onboarded, setOnboarded] = useState(false);
+  const [activeScreen, setActiveScreen] = useState<'menu' | 'live-onboard' | 'live-thread' | 'ai-bot' | 'feedback'>('menu');
   
   // Visitor Info & Settings
   const [visitorId, setVisitorId] = useState('');
@@ -19,8 +32,9 @@ export function ChatWidget() {
   const [phone, setPhone] = useState('');
   const [department, setDepartment] = useState('Support');
   const [lang, setLang] = useState<'bn' | 'en'>('bn');
+  const [facebookUrl, setFacebookUrl] = useState('');
   
-  // Chat Session states
+  // Live Chat Session states
   const [activeChat, setActiveChat] = useState<any>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [messageInput, setMessageInput] = useState('');
@@ -32,16 +46,25 @@ export function ChatWidget() {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   
   // Feedback
-  const [showFeedback, setShowFeedback] = useState(false);
   const [rating, setRating] = useState<number | null>(null);
   const [comment, setComment] = useState('');
 
-  // Typing & seen indicators
-  const [agentTyping, setAgentTyping] = useState(false);
+  // AI Chatbot states (Migrated from WhatsAppButton)
+  const [aiBotMessages, setAiBotMessages] = useState<BotMessage[]>([
+    {
+      id: 'welcome',
+      sender: 'bot',
+      text: 'আসসালামু আলাইকুম! আমি Origin Haat এর এআই অ্যাসিস্ট্যান্ট। আমি আপনাকে কীভাবে সাহায্য করতে পারি? নিচের যেকোনো একটি প্রশ্ন সিলেক্ট করতে পারেন:',
+      timestamp: new Date(),
+    }
+  ]);
+  const [aiInput, setAiInput] = useState('');
+  const [aiTyping, setAiTyping] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const botMessagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 1. Initial Visitor Setup
+  // Fetch social settings and visitor info
   useEffect(() => {
     // Generate or fetch visitor ID from localStorage
     let storedId = localStorage.getItem('oh_visitor_id');
@@ -57,22 +80,30 @@ export function ChatWidget() {
       .then(data => setVisitorMeta(data))
       .catch(err => console.error(err));
 
+    // Fetch facebook url
+    supabase.from('oh_settings').select('facebook_url').eq('id', 1).single()
+      .then(({ data }) => {
+        if (data?.facebook_url) setFacebookUrl(data.facebook_url);
+      });
+
     // Check if previously onboarded
     const savedName = localStorage.getItem('oh_visitor_name');
     const savedPhone = localStorage.getItem('oh_visitor_phone');
     if (savedName && savedPhone) {
       setName(savedName);
       setPhone(savedPhone);
-      setOnboarded(true);
-      
-      // Auto reconnect/load previous chat session if open
       reconnectPreviousChat(storedId);
     }
   }, []);
 
+  // Scroll logic
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (activeScreen === 'live-thread') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    } else if (activeScreen === 'ai-bot') {
+      botMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, aiBotMessages, activeScreen]);
 
   // Subscribe to real-time agent messages
   useEffect(() => {
@@ -139,7 +170,6 @@ export function ChatWidget() {
 
     localStorage.setItem('oh_visitor_name', name);
     localStorage.setItem('oh_visitor_phone', phone);
-    setOnboarded(true);
 
     // Create chat session in database
     const { data: newChat, error } = await supabase
@@ -171,7 +201,6 @@ export function ChatWidget() {
 
     if (newChat) {
       setActiveChat(newChat);
-      // Send greeting system message
       await supabase.from('oh_chat_messages').insert({
         chat_id: newChat.id,
         sender_role: 'system',
@@ -179,6 +208,7 @@ export function ChatWidget() {
         body: `Joined conversation in "${department}" department.`,
       });
       loadMessages(newChat.id);
+      setActiveScreen('live-thread');
     }
   };
 
@@ -190,7 +220,6 @@ export function ChatWidget() {
     const body = messageInput;
     setMessageInput('');
 
-    // Insert user message
     await supabase.from('oh_chat_messages').insert({
       chat_id: activeChat.id,
       sender_role: 'customer',
@@ -198,7 +227,6 @@ export function ChatWidget() {
       body: body,
     });
 
-    // Handle quick chatbot simulations (like Order Tracking)
     if (body.toLowerCase().startsWith('order ') || body.toLowerCase().includes('অর্ডার ট্র্যাকিং')) {
       const match = body.match(/\d+/);
       const orderId = match ? match[0] : '';
@@ -220,7 +248,6 @@ export function ChatWidget() {
       return;
     }
 
-    // Try finding order
     const { data: order } = await supabase
       .from('oh_orders')
       .select('*')
@@ -241,7 +268,7 @@ export function ChatWidget() {
           chat_id: activeChat.id,
           sender_role: 'system',
           sender_name: 'Chatbot',
-          body: `❌ দুঃখিত, অর্ডার আইডি "${orderId}" দিয়ে কোনো অর্ডার পাওয়া যায়নি। দয়া করে আপনার অর্ডার স্লিপটি চেক করে সঠিক আইডি প্রদান করুন।`,
+          body: `❌ দুঃখিত, অর্ডার আইডি "${orderId}" দিয়ে কোনো অর্ডার পাওয়া যায়নি। দয়া করে সঠিক আইডি প্রদান করুন।`,
         });
       }
     }, 1200);
@@ -287,7 +314,7 @@ export function ChatWidget() {
     }
   };
 
-  // Voice recording triggers
+  // Voice recording
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -300,7 +327,6 @@ export function ChatWidget() {
 
       recorder.onstop = async () => {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        // Upload to storage
         const fileName = `${activeChat.id}/voice-${Date.now()}.webm`;
         const { data, error } = await supabase.storage
           .from('oh_chat_attachments')
@@ -351,29 +377,105 @@ export function ChatWidget() {
       .eq('id', activeChat.id);
 
     showSuccessAlert('ধন্যবাদ!', 'আপনার মূল্যবান মতামত সাবমিট করার জন্য ধন্যবাদ।');
-    setShowFeedback(false);
+    setActiveScreen('menu');
     setActiveChat(null);
     setMessages([]);
+    setRating(null);
+    setComment('');
   };
 
+  // --- AI Chatbot Helpers (WhatsAppButton port) ---
+  const handleSendAiMessage = (text: string) => {
+    if (!text.trim()) return;
+
+    const userMsg: BotMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text,
+      timestamp: new Date(),
+    };
+    setAiBotMessages(prev => [...prev, userMsg]);
+    setAiInput('');
+    setAiTyping(true);
+
+    setTimeout(() => {
+      setAiTyping(false);
+      let replyText = '';
+      const cleanText = text.toLowerCase();
+
+      if (cleanText.includes('ডেলিভারি') || cleanText.includes('delivery') || cleanText.includes('সময়') || cleanText.includes('খরচ')) {
+        replyText = 'Origin Haat-এ ডেলিভারি চার্জ ঢাকায় ৬০ টাকা এবং ঢাকার বাইরে ১২০ টাকা। ঢাকায় আমরা ২৪ ঘণ্টার মধ্যে এবং ঢাকার বাইরে ২-৩ দিনের মধ্যে ডেলিভারি সম্পন্ন করে থাকি। এছাড়া ৯৯৯ টাকা বা তার বেশি অর্ডারে ডেলিভারি চার্জ সম্পূর্ণ ফ্রি!';
+      } else if (cleanText.includes('পেমেন্ট') || cleanText.includes('টাকা') || cleanText.includes('payment') || cleanText.includes('বিকাশ')) {
+        replyText = 'আমরা মূলত ক্যাশ অন ডেলিভারি (Cash on Delivery) সুবিধা দিয়ে থাকি। অর্থাৎ প্রোডাক্ট হাতে পেয়ে, দেখে তারপর মূল্য পরিশোধ করবেন। এছাড়া আপনি চাইলে বিকাশ বা রকেটেও পেমেন্ট করতে পারেন।';
+      } else if (cleanText.includes('ট্র্যাক') || cleanText.includes('অবস্থা') || cleanText.includes('track') || cleanText.includes('অর্ডার')) {
+        replyText = 'আপনার অর্ডারের বর্তমান অবস্থা জানতে আমাদের চ্যাট হাবের "লাইভ কাস্টমার চ্যাট" অপশনে গিয়ে সরাসরি সাহায্য চাইতে পারেন অথবা অর্ডার ট্র্যাক মেনুতে অর্ডার নম্বর দিতে পারেন।';
+      } else if (cleanText.includes('যোগাযোগ') || cleanText.includes('ফোন') || cleanText.includes('নাম্বার') || cleanText.includes('কাস্টমার')) {
+        replyText = `আমাদের কাস্টমার রিপ্রেজেন্টেティブের সাথে সরাসরি কথা বলতে চ্যাট হাবের "WhatsApp চ্যাট" বাটনে ক্লিক করুন অথবা সরাসরি লাইভ চ্যাটে নক দিন।`;
+      } else {
+        replyText = 'ধন্যবাদ আপনার মেসেজের জন্য! আমাদের কাস্টমার রিপ্রেজেন্টেティブ খুব শীঘ্রই লাইভ চ্যাটে রেসপন্স করবেন। যেকোনো তথ্যের জন্য সরাসরি হোয়াটসঅ্যাপেও যোগাযোগ করতে পারেন।';
+      }
+
+      const botMsg: BotMessage = {
+        id: `bot-${Date.now()}`,
+        sender: 'bot',
+        text: replyText,
+        timestamp: new Date(),
+      };
+      setAiBotMessages(prev => [...prev, botMsg]);
+    }, 1000);
+  };
+
+  const getMessengerUrl = () => {
+    if (!facebookUrl) return 'https://m.me';
+    try {
+      const url = new URL(facebookUrl);
+      const path = url.pathname.replace(/^\/|\/$/g, '');
+      if (path) return `https://m.me/${path}`;
+    } catch (e) {}
+    return facebookUrl || 'https://m.me';
+  };
+
+  const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('হ্যালো! আমি Origin Haat থেকে কাস্টমার সাপোর্ট চাই।')}`;
+
+  const quickReplies = [
+    { text: '🚚 ডেলিভারি চার্জ ও সময়', value: 'ডেলিভারি চার্জ ও সময় কত?' },
+    { text: '💳 পেমেন্ট পদ্ধতি', value: 'পেমেন্ট কীভাবে করব?' },
+    { text: '📦 অর্ডার ট্র্যাক করার নিয়ম', value: 'অর্ডার কীভাবে ট্র্যাক করব?' },
+    { text: '📞 সাপোর্ট এজেন্টের নাম্বার', value: 'যোগাযোগের মোবাইল নাম্বার কত?' },
+  ];
+
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans text-black">
-      {/* 1. Chat Widget Popup Box */}
+    <div className="fixed bottom-6 right-6 z-50 font-sans text-black flex flex-col items-end">
+      
+      {/* 1. Support Hub Popup Box */}
       {isOpen && (
         <div className="bg-white w-80 md:w-96 h-[500px] rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden mb-4 transition-all duration-300">
           
           {/* Header */}
           <div className="bg-[#ff6b35] text-white p-4 flex items-center justify-between shadow-md shrink-0">
             <div className="flex items-center gap-2">
+              {activeScreen !== 'menu' && (
+                <button 
+                  onClick={() => setActiveScreen('menu')}
+                  className="text-white hover:text-orange-100 mr-1.5"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+              )}
               <div className="w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse" />
               <div>
-                <h4 className="font-bold text-sm">Origin Haat Live Chat</h4>
-                <p className="text-[10px] opacity-90">সহায়তার জন্য আমরা অনলাইনে আছি</p>
+                <h4 className="font-bold text-sm">
+                  {activeScreen === 'menu' && 'Origin Haat Support Hub'}
+                  {activeScreen === 'live-onboard' && 'লাইভ চ্যাট অনবোর্ডিং'}
+                  {activeScreen === 'live-thread' && 'কাস্টমার কেয়ার চ্যাট'}
+                  {activeScreen === 'ai-bot' && 'AI অ্যাসিস্ট্যান্ট বট'}
+                  {activeScreen === 'feedback' && 'ফিডব্যাক ও রেটিং'}
+                </h4>
+                <p className="text-[10px] opacity-90">আমরা সর্বদা সহায়তায় আছি</p>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Language toggle */}
               <button 
                 onClick={() => setLang(l => l === 'bn' ? 'en' : 'bn')}
                 className="bg-black/10 hover:bg-black/20 px-2 py-0.5 rounded text-[10px] font-bold"
@@ -386,10 +488,126 @@ export function ChatWidget() {
             </div>
           </div>
 
-          {/* Body Content */}
+          {/* Screen Routing */}
           <div className="flex-1 overflow-y-auto bg-gray-50 flex flex-col">
-            {!onboarded ? (
-              // Onboarding Form Screen
+            
+            {/* SCREEN 1: SUPPORT MENU */}
+            {activeScreen === 'menu' && (
+              <div className="p-5 flex-1 flex flex-col justify-center space-y-4">
+                <div className="text-center space-y-1.5 mb-2">
+                  <h3 className="font-black text-gray-800 text-base">
+                    {lang === 'bn' ? 'কীভাবে আমরা আপনাকে সাহায্য করতে পারি?' : 'How can we help you today?'}
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    {lang === 'bn' ? 'যেকোনো একটি সাপোর্ট চ্যানেল নির্বাচন করুন' : 'Select a support channel to proceed'}
+                  </p>
+                </div>
+
+                <div className="space-y-2.5">
+                  {/* Option A: Live Chat */}
+                  <button
+                    onClick={() => {
+                      if (activeChat) {
+                        setActiveScreen('live-thread');
+                      } else {
+                        setActiveScreen('live-onboard');
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-4 bg-white hover:bg-orange-50/50 border border-gray-100 hover:border-orange-200 rounded-2xl shadow-xs transition-all active:scale-98 text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 bg-orange-100 text-[#ff6b35] rounded-xl flex items-center justify-center font-bold">
+                        <MessageSquare size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-gray-800">
+                          {lang === 'bn' ? 'লাইভ কাস্টমার সাপোর্ট চ্যাট' : 'Live Agent Support'}
+                        </h4>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {lang === 'bn' ? 'আমাদের এজেন্টের সাথে সরাসরি চ্যাট করুন' : 'Chat directly with our support team'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-[#ff6b35] transition-colors" />
+                  </button>
+
+                  {/* Option B: WhatsApp */}
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-between p-4 bg-white hover:bg-green-50/50 border border-gray-100 hover:border-green-200 rounded-2xl shadow-xs transition-all active:scale-98 text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 bg-green-100 text-[#25D366] rounded-xl flex items-center justify-center font-bold">
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-gray-800">
+                          {lang === 'bn' ? 'হোয়াটসঅ্যাপ চ্যাট সাপোর্ট' : 'WhatsApp Support'}
+                        </h4>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {lang === 'bn' ? 'সরাসরি হোয়াটসঅ্যাপে টেক্সট দিন' : 'Open WhatsApp conversation instantly'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-[#25D366] transition-colors" />
+                  </a>
+
+                  {/* Option C: Messenger */}
+                  <a
+                    href={getMessengerUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-between p-4 bg-white hover:bg-blue-50/50 border border-gray-100 hover:border-blue-200 rounded-2xl shadow-xs transition-all active:scale-98 text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 bg-blue-100 text-[#006AFF] rounded-xl flex items-center justify-center font-bold">
+                        <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+                          <path d="M12 2C6.48 2 2 6.14 2 11.25c0 2.91 1.45 5.51 3.75 7.18.2.14.32.37.32.61l.01 2.2c0 .48.53.79.96.57l2.45-1.28c.2-.1.43-.13.65-.07 1.22.35 2.52.54 3.86.54 5.52 0 10-4.14 10-9.25S17.52 2 12 2zm1.09 11.45l-1.89-2.02-3.69 2.02c-.38.21-.83-.2-.68-.6l2.03-3.69-1.89-2.02c-.28-.3-.07-.79.33-.79l3.69.01 1.89 2.02 3.69-2.02c.38-.21.83.2.68.6l-2.03 3.69 1.89 2.02c.28.3.07.79-.33.79l-3.69-.01z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-gray-800">
+                          {lang === 'bn' ? 'ফেসবুক মেসেঞ্জার চ্যাট' : 'Messenger Chat'}
+                        </h4>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {lang === 'bn' ? 'মেসেঞ্জারে সরাসরি যোগাযোগ করুন' : 'Connect via Facebook Messenger'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-[#006AFF] transition-colors" />
+                  </a>
+
+                  {/* Option D: AI Chatbot */}
+                  <button
+                    onClick={() => setActiveScreen('ai-bot')}
+                    className="w-full flex items-center justify-between p-4 bg-white hover:bg-violet-50/50 border border-gray-100 hover:border-violet-200 rounded-2xl shadow-xs transition-all active:scale-98 text-left cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 bg-violet-100 text-violet-600 rounded-xl flex items-center justify-center font-bold">
+                        <Bot size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-xs text-gray-800 flex items-center gap-1">
+                          {lang === 'bn' ? 'এআই কাস্টমার অ্যাসিস্ট্যান্ট' : 'AI Support Assistant'}
+                          <Sparkles size={11} className="text-amber-500 animate-pulse" />
+                        </h4>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {lang === 'bn' ? '২৪/৭ ইনস্ট্যান্ট অটোমেটেড সাপোর্ট' : 'Automated instant help available 24/7'}
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight size={16} className="text-gray-400 group-hover:text-violet-600 transition-colors" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* SCREEN 2: LIVE CHAT ONBOARDING */}
+            {activeScreen === 'live-onboard' && (
               <form onSubmit={handleOnboard} className="p-6 space-y-4 my-auto">
                 <div className="text-center space-y-1 mb-4">
                   <h3 className="font-bold text-gray-800 text-sm">
@@ -452,8 +670,209 @@ export function ChatWidget() {
                   {lang === 'bn' ? 'চ্যাট শুরু করুন' : 'Start Conversation'}
                 </button>
               </form>
-            ) : showFeedback ? (
-              // End Rating Feedback Screen
+            )}
+
+            {/* SCREEN 3: LIVE CHAT MESSAGING THREAD */}
+            {activeScreen === 'live-thread' && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                  {messages.map((m) => {
+                    const isCustomer = m.sender_role === 'customer';
+                    const isSystem = m.sender_role === 'system';
+
+                    if (isSystem) {
+                      return (
+                        <div key={m.id} className="flex justify-center my-1.5">
+                          <span className="text-[10px] bg-gray-200 text-gray-500 font-semibold px-3 py-0.5 rounded-full text-center whitespace-pre-line leading-relaxed">
+                            {m.body}
+                          </span>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={m.id} className={`flex gap-2 max-w-[80%] ${isCustomer ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
+                        <div className="space-y-0.5">
+                          <div className={`p-3 rounded-2xl text-xs ${
+                            isCustomer 
+                              ? 'bg-[#ff6b35] text-white rounded-tr-none shadow-sm' 
+                              : 'bg-white text-gray-800 border border-gray-200/50 shadow-sm rounded-tl-none'
+                          }`}>
+                            {m.body && <p className="leading-relaxed whitespace-pre-line">{m.body}</p>}
+                            {m.attachments && m.attachments.length > 0 && (
+                              <div className="space-y-1.5 mt-1.5">
+                                {m.attachments.map((file: any, idx: number) => (
+                                  <div key={idx} className="border border-gray-200/10 p-1.5 rounded-xl bg-black/5 flex items-center gap-1.5">
+                                    <Volume2 size={12} />
+                                    <a href={file.url} target="_blank" rel="noreferrer" className="underline truncate max-w-[120px] block">
+                                      {file.name}
+                                    </a>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                {/* Quick replies for chatbot simulations */}
+                {messages.length <= 2 && (
+                  <div className="p-3 bg-white border-t border-gray-100 flex gap-2 overflow-x-auto shrink-0 select-none">
+                    {[
+                      { bn: '🔍 অর্ডার ট্র্যাক করুন', en: '🔍 Track Order' },
+                      { bn: '🚚 Delivery চার্জ কত?', en: '🚚 Delivery Info' },
+                      { bn: '🤝 এজেন্টের সাথে চ্যাট', en: '🤝 Agent Chat' }
+                    ].map((opt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          const val = lang === 'bn' ? opt.bn : opt.en;
+                          setMessageInput(val);
+                        }}
+                        className="px-3 py-1.5 bg-gray-50 border border-gray-100 hover:bg-orange-50 hover:border-orange-200 text-[#ff6b35] text-[10px] font-bold rounded-xl shrink-0 transition-all cursor-pointer"
+                      >
+                        {lang === 'bn' ? opt.bn : opt.en}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Entry form */}
+                <form onSubmit={handleSendMessage} className="border-t border-gray-100 bg-white p-3 flex items-center gap-2 shrink-0">
+                  <label className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer shrink-0">
+                    <Paperclip size={18} />
+                    <input type="file" onChange={handleFileUpload} className="hidden" />
+                  </label>
+
+                  <button
+                    type="button"
+                    onMouseDown={startRecording}
+                    onMouseUp={stopRecording}
+                    onTouchStart={startRecording}
+                    onTouchEnd={stopRecording}
+                    className={`p-2 rounded-lg shrink-0 cursor-pointer transition-all ${
+                      isRecording ? 'bg-red-500 text-white animate-ping' : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <Mic size={18} />
+                  </button>
+
+                  <input
+                    type="text"
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    placeholder={lang === 'bn' ? 'বার্তা লিখুন...' : 'Type a message...'}
+                    className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#ff6b35] text-black bg-white"
+                  />
+
+                  {messages.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveScreen('feedback')}
+                      className="p-2 text-gray-400 hover:text-red-500 shrink-0 cursor-pointer"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+
+                  <button
+                    type="submit"
+                    className="p-2.5 bg-[#ff6b35] hover:bg-[#e55520] text-white rounded-xl shadow-md cursor-pointer transition-all active:scale-95"
+                  >
+                    <Send size={14} />
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* SCREEN 4: AI CHATBOT (WhatsAppButton Port) */}
+            {activeScreen === 'ai-bot' && (
+              <div className="flex-1 flex flex-col overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+                  {aiBotMessages.map((msg) => (
+                    <div 
+                      key={msg.id}
+                      className={`flex items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      {msg.sender === 'bot' && (
+                        <div className="w-6 h-6 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center shrink-0">
+                          <Bot size={13} />
+                        </div>
+                      )}
+                      <div className="max-w-[75%]">
+                        <div className={`p-3 rounded-2xl text-xs leading-relaxed shadow-xs ${
+                          msg.sender === 'user'
+                            ? 'bg-[#ff6b35] text-white rounded-tr-none'
+                            : 'bg-white text-slate-700 border border-slate-100 rounded-bl-none'
+                        }`}>
+                          {msg.text}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {aiTyping && (
+                    <div className="flex items-end gap-2 justify-start">
+                      <div className="w-6 h-6 bg-violet-100 text-violet-600 rounded-full flex items-center justify-center shrink-0 animate-pulse">
+                        <Bot size={13} />
+                      </div>
+                      <div className="p-3 bg-white border border-slate-100 rounded-2xl rounded-bl-none shadow-xs">
+                        <div className="flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
+                          <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                          <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={botMessagesEndRef} />
+                </div>
+
+                {/* Quick replies */}
+                <div className="px-3 py-2 border-t border-slate-100 bg-white flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+                  {quickReplies.map((qr, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSendAiMessage(qr.value)}
+                      className="inline-block border border-slate-200 hover:border-[#ff6b35] hover:text-[#ff6b35] text-slate-600 text-[10px] font-semibold px-2.5 py-1.5 rounded-full transition-colors cursor-pointer bg-slate-50"
+                    >
+                      {qr.text}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Send AI chat form */}
+                <form 
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSendAiMessage(aiInput);
+                  }}
+                  className="p-3 border-t border-slate-100 bg-white flex items-center gap-2 shrink-0"
+                >
+                  <input
+                    type="text"
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    placeholder="প্রশ্নটি এখানে লিখুন..."
+                    className="flex-1 border border-slate-200 rounded-xl px-4 py-2 text-xs focus:border-[#ff6b35] focus:outline-none text-black bg-white"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!aiInput.trim()}
+                    className="w-8 h-8 bg-[#ff6b35] hover:bg-[#e55520] disabled:bg-slate-200 text-white rounded-xl flex items-center justify-center shrink-0 transition-colors shadow-sm cursor-pointer"
+                  >
+                    <Send size={14} />
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* SCREEN 5: FEEDBACK & RATING */}
+            {activeScreen === 'feedback' && (
               <div className="p-6 space-y-4 my-auto text-center">
                 <h3 className="font-bold text-gray-800 text-sm">
                   {lang === 'bn' ? 'আমাদের চ্যাট সাপোর্ট কেমন লেগেছে?' : 'How was your support experience?'}
@@ -493,7 +912,7 @@ export function ChatWidget() {
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setShowFeedback(false)}
+                    onClick={() => setActiveScreen('live-thread')}
                     className="flex-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-600 font-semibold text-xs py-2.5 rounded-xl cursor-pointer"
                   >
                     Cancel
@@ -506,142 +925,44 @@ export function ChatWidget() {
                   </button>
                 </div>
               </div>
-            ) : (
-              // Chat Message Thread Screen
-              <div className="flex-1 flex flex-col overflow-hidden">
-                {/* Messages Thread */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {messages.map((m) => {
-                    const isCustomer = m.sender_role === 'customer';
-                    const isSystem = m.sender_role === 'system';
-
-                    if (isSystem) {
-                      return (
-                        <div key={m.id} className="flex justify-center my-1.5">
-                          <span className="text-[10px] bg-gray-200 text-gray-500 font-semibold px-3 py-0.5 rounded-full text-center whitespace-pre-line leading-relaxed">
-                            {m.body}
-                          </span>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div key={m.id} className={`flex gap-2 max-w-[80%] ${isCustomer ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
-                        {/* Message body */}
-                        <div className="space-y-0.5">
-                          <div className={`p-3 rounded-2xl text-xs ${
-                            isCustomer 
-                              ? 'bg-[#ff6b35] text-white rounded-tr-none shadow-sm' 
-                              : 'bg-white text-gray-800 border border-gray-200/50 shadow-sm rounded-tl-none'
-                          }`}>
-                            {m.body && <p className="leading-relaxed whitespace-pre-line">{m.body}</p>}
-
-                            {/* Render Attachments */}
-                            {m.attachments && m.attachments.length > 0 && (
-                              <div className="space-y-1.5 mt-1.5">
-                                {m.attachments.map((file: any, idx: number) => (
-                                  <div key={idx} className="border border-gray-200/10 p-1.5 rounded-xl bg-black/5 flex items-center gap-1.5">
-                                    <Volume2 size={12} />
-                                    <a href={file.url} target="_blank" rel="noreferrer" className="underline truncate max-w-[120px] block">
-                                      {file.name}
-                                    </a>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Pre-filled Quick Chatbot Suggestions */}
-                {messages.length <= 2 && (
-                  <div className="p-3 bg-white border-t border-gray-100 flex gap-2 overflow-x-auto shrink-0 select-none">
-                    {[
-                      { bn: '🔍 অর্ডার ট্র্যাক করুন', en: '🔍 Track Order' },
-                      { bn: '🚚 ডেলিভারি চার্জ কত?', en: '🚚 Delivery Info' },
-                      { bn: '🤝 সাপোর্ট এজেন্টের সাথে কথা বলুন', en: '🤝 Talk to Agent' }
-                    ].map((opt, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => {
-                          const val = lang === 'bn' ? opt.bn : opt.en;
-                          setMessageInput(val);
-                        }}
-                        className="px-3 py-1.5 bg-gray-50 border border-gray-100 hover:bg-orange-50 hover:border-orange-200 text-[#ff6b35] text-[10px] font-bold rounded-xl shrink-0 transition-all cursor-pointer"
-                      >
-                        {lang === 'bn' ? opt.bn : opt.en}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Chatbox Entry Input Form */}
-                <form onSubmit={handleSendMessage} className="border-t border-gray-100 bg-white p-3.5 flex items-center gap-2 shrink-0">
-                  {/* File attach */}
-                  <label className="p-2 text-gray-400 hover:text-gray-600 cursor-pointer shrink-0">
-                    <Paperclip size={18} />
-                    <input type="file" onChange={handleFileUpload} className="hidden" />
-                  </label>
-
-                  {/* Audio note */}
-                  <button
-                    type="button"
-                    onMouseDown={startRecording}
-                    onMouseUp={stopRecording}
-                    onTouchStart={startRecording}
-                    onTouchEnd={stopRecording}
-                    className={`p-2 rounded-lg shrink-0 cursor-pointer transition-all ${
-                      isRecording ? 'bg-red-500 text-white animate-ping' : 'text-gray-400 hover:text-gray-600'
-                    }`}
-                    title="Hold to record voice note"
-                  >
-                    <Mic size={18} />
-                  </button>
-
-                  <input
-                    type="text"
-                    value={messageInput}
-                    onChange={(e) => setMessageInput(e.target.value)}
-                    placeholder={lang === 'bn' ? 'বার্তা লিখুন...' : 'Type a message...'}
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-[#ff6b35] text-black bg-white"
-                  />
-
-                  {/* Close Session Trigger */}
-                  {messages.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowFeedback(true)}
-                      className="p-2 text-gray-400 hover:text-red-500 shrink-0 cursor-pointer"
-                      title="Close chat"
-                    >
-                      <X size={18} />
-                    </button>
-                  )}
-
-                  <button
-                    type="submit"
-                    className="p-2.5 bg-[#ff6b35] hover:bg-[#e55520] text-white rounded-xl shadow-md cursor-pointer transition-all active:scale-95"
-                  >
-                    <Send size={14} />
-                  </button>
-                </form>
-              </div>
             )}
+
           </div>
         </div>
       )}
 
-      {/* 2. Floating Orange Message Bubble Icon */}
+      {/* 2. Unified orange bubble button with glow ring effect */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-14 h-14 bg-[#ff6b35] hover:bg-[#e55520] text-white rounded-full flex items-center justify-center shadow-lg shadow-[#ff6b35]/30 transition-all hover:scale-105 active:scale-95 cursor-pointer relative"
         aria-label="চ্যাট করুন"
       >
-        {isOpen ? <X size={24} /> : <MessageCircle size={26} />}
+        {!isOpen && (
+          <span className="absolute inset-0 rounded-full bg-[#ff6b35] animate-ping opacity-30 -z-10" />
+        )}
+        <AnimatePresence mode="wait">
+          {isOpen ? (
+            <motion.div
+              key="close"
+              initial={{ rotate: -90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: 90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <X size={24} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="open"
+              initial={{ rotate: 90, opacity: 0 }}
+              animate={{ rotate: 0, opacity: 1 }}
+              exit={{ rotate: -90, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <MessageCircle size={26} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </button>
     </div>
   );
