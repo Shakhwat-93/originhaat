@@ -23,14 +23,20 @@ import {
   Globe,
   User,
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  Search,
+  Bell,
+  Moon,
+  Info,
+  Download,
+  Plus
 } from 'lucide-react';
 
 // ─── Menu Navigation Type Definition ──────────────────────────────────────────
 interface NavItemChild {
   href: string;
   label: string;
-  icon: React.ComponentType<any>;
+  dotColor?: string;
   badgeType?: 'products' | 'orders';
 }
 
@@ -52,12 +58,12 @@ interface NavItemFlat {
 
 type NavItem = NavItemFlat | NavItemGroup;
 
-// ─── Menu Items Configuration ────────────────────────────────────────────────
+// ─── Menu Items Configuration matching screenshot exactly ─────────────────────
 const NAV_ITEMS: NavItem[] = [
   { 
     type: 'flat', 
     href: '/admin/dashboard', 
-    label: 'Dashboard', 
+    label: 'Overview', 
     icon: LayoutDashboard 
   },
   {
@@ -66,26 +72,24 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Catalog',
     icon: Package,
     children: [
-      { href: '/admin/products', label: 'Products List', icon: Package, badgeType: 'products' },
-      { href: '/admin/categories', label: 'Categories', icon: Folder },
-      { href: '/admin/banners', label: 'Banners', icon: ImageIcon },
+      { href: '/admin/products', label: 'Products List', badgeType: 'products' },
+      { href: '/admin/categories', label: 'Categories' },
+      { href: '/admin/banners', label: 'Banners' },
     ]
   },
   {
     type: 'group',
     id: 'sales',
-    label: 'Sales & Orders',
+    label: 'Orders',
     icon: ShoppingCart,
     children: [
-      { href: '/admin/orders', label: 'Orders List', icon: ShoppingCart, badgeType: 'orders' },
-      { href: '/admin/coupons', label: 'Coupons', icon: Tag },
+      { href: '/admin/orders?status=all', label: 'All Orders', dotColor: '#6366f1' },
+      { href: '/admin/orders?status=pending', label: 'Pending Call', dotColor: '#f59e0b' },
+      { href: '/admin/orders?status=final', label: 'Final Call', dotColor: '#ef4444' },
+      { href: '/admin/orders?status=confirmed', label: 'Confirmed', dotColor: '#10b981' },
+      { href: '/admin/orders?status=cancelled', label: 'Cancelled', dotColor: '#f87171' },
+      { href: '/admin/orders?status=fake', label: 'Fake Order', dotColor: '#92400e' },
     ]
-  },
-  { 
-    type: 'flat', 
-    href: '/admin/reviews', 
-    label: 'Reviews', 
-    icon: Star 
   },
   { 
     type: 'flat', 
@@ -95,13 +99,18 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     type: 'flat', 
+    href: '/admin/reviews', 
+    label: 'Reviews', 
+    icon: Star 
+  },
+  { 
+    type: 'flat', 
     href: '/admin/settings', 
     label: 'Settings', 
     icon: Settings 
   },
 ];
 
-// ─── Page Title Translation Map ─────────────────────────────────────────────
 const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard':  'Dashboard',
   '/admin/products':   'Product Management',
@@ -122,32 +131,27 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router   = useRouter();
   
-  // Sidebar open/collapse state
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [showAlert, setShowAlert]     = useState(true);
   
-  // Keep track of expanded submenu groups
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     catalog: true,
     sales: true,
   });
 
-  // Dynamic Badge Counts State
   const [pendingOrders, setPendingOrders] = useState(0);
   const [totalProducts, setTotalProducts] = useState(0);
 
-  // Sync mobile sidebar close on route change
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
 
-  // Load sidebar settings from localStorage
   useEffect(() => {
     const saved = localStorage.getItem('admin_sidebar_collapsed') === 'true';
     setIsCollapsed(saved);
   }, []);
 
-  // Fetch real-time metrics for badges
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -169,21 +173,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     fetchStats();
 
-    // Subscribe to order changes to refresh badges
     const channel = supabase
-      .channel('sidebar-orders-badges')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'oh_orders' },
-        () => {
-          fetchStats();
-        }
-      )
+      .channel('sidebar-orders-badges-new')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'oh_orders' }, () => { fetchStats(); })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const toggleCollapse = () => {
@@ -194,7 +189,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const toggleGroup = (groupId: string) => {
     if (isCollapsed) {
-      // If collapsed, expand the sidebar first to show options clearly
       setIsCollapsed(false);
       localStorage.setItem('admin_sidebar_collapsed', 'false');
       setExpandedGroups(prev => ({ ...prev, [groupId]: true }));
@@ -208,474 +202,290 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     router.push('/admin');
   };
 
-  const pageTitle = PAGE_TITLES[pathname] ?? 'Admin Panel';
+  const pageTitle = PAGE_TITLES[pathname] ?? 'Dashboard';
 
-  // Get active badge render utility
   const renderBadge = (type?: 'products' | 'orders') => {
     if (!type) return null;
-    
     if (type === 'products' && totalProducts > 0) {
       return (
-        <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-[#a7f3d0] text-[#065f46] min-w-5 text-center animate-pulse-badge">
+        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 ml-auto">
           {totalProducts}
         </span>
       );
     }
-    
     if (type === 'orders' && pendingOrders > 0) {
       return (
-        <span className="px-2 py-0.5 text-[11px] font-bold rounded-md bg-[#ffedd5] text-[#9a3412] min-w-5 text-center">
+        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-50 text-amber-600 border border-amber-200 ml-auto">
           {pendingOrders}
         </span>
       );
     }
-
     return null;
   };
 
   return (
-    <div className="admin-light flex h-screen overflow-hidden bg-[#f8f9fa] text-zinc-800 font-sans" style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#f8f9fa', color: '#1f2937' }}>
-
+    <div className="flex h-screen overflow-hidden bg-[#f4f7f6] text-[#111827] font-sans antialiased">
+      
       {/* ── Mobile Sidebar Drawer Backdrop ────────────────────────────── */}
       {sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
           className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden"
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-            zIndex: 40, backdropFilter: 'blur(2px)',
-          }}
         />
       )}
 
-      {/* ── Sidebar Component ─────────────────────────────────────────── */}
+      {/* ── Sidebar Component (Canvas Order Mockup style) ──────────────── */}
       <aside
         style={{
-          width: isCollapsed ? 76 : 265,
+          width: isCollapsed ? 76 : 260,
           background: '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 50,
-          transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'relative',
-          borderRight: '1px solid #e5e7eb',
+          borderRight: '1px solid #e2e8f0',
         }}
-        className={`admin-sidebar ${sidebarOpen ? 'sidebar-mobile-open' : ''}`}
+        className={`shrink-0 h-full ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} fixed md:relative`}
       >
-        {/* Sidebar Collapse Toggle Button (Desktop Only) */}
+        {/* Collapse toggle */}
         <button
           onClick={toggleCollapse}
-          className="hidden md:flex absolute top-6 -right-3.5 w-7 h-7 rounded-full bg-[#ffffff] border border-gray-200 text-gray-500 hover:text-[#ff6b35] items-center justify-center cursor-pointer shadow-sm z-50 transition-all hover:scale-105 active:scale-95"
-          style={{ display: 'flex', alignItems: 'center', justifyItems: 'center' }}
+          className="hidden md:flex absolute top-6 -right-3 w-6 h-6 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-[#ff6b35] items-center justify-center cursor-pointer shadow-sm z-50 transition-all hover:scale-105 active:scale-95"
         >
-          {isCollapsed ? <ChevronRight size={13} /> : <ChevronLeft size={13} />}
+          {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
         </button>
 
-        {/* Brand / Logo Header */}
-        <div style={{
-          padding: isCollapsed ? '20px 12px' : '20px 20px',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: isCollapsed ? 'center' : 'flex-start',
-          gap: 12,
-          transition: 'all 0.3s',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', justifyContent: isCollapsed ? 'center' : 'flex-start' }}>
-            {/* Concentric Squircle Brand Logo (Image 3 Mockup) */}
-            <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shadow-sm shrink-0 select-none">
-              <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
-                <div className="w-1.5 h-1.5 rounded-full bg-white" />
-              </div>
+        {/* Branding header */}
+        <div className="px-5 py-4.5 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Round Squircle Branding Logo */}
+            <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center shrink-0 shadow-sm">
+              <span className="text-white font-extrabold text-base leading-none">O</span>
             </div>
             {!isCollapsed && (
-              <div className="animate-fade-in flex flex-col">
-                <span className="text-[#111827] font-bold text-[15px] tracking-wide leading-tight">Origin Haat</span>
-                <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider mt-0.5">Control Center</span>
+              <div className="flex flex-col">
+                <span className="text-gray-900 font-extrabold text-sm tracking-tight">Origin Haat</span>
+                <span className="text-[10px] text-gray-400 font-semibold tracking-wider">Canvas Console</span>
               </div>
             )}
           </div>
-
           {!isCollapsed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingLeft: 4 }} className="animate-fade-in">
-              <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10b981', display: 'inline-block' }} className="animate-pulse" />
-              <p style={{ color: '#10b981', fontSize: 10, margin: 0, fontWeight: 700 }}>SYSTEM ONLINE</p>
-            </div>
+            <button className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
+              <Moon size={15} />
+            </button>
           )}
         </div>
 
-        {/* Sidebar Scrollable Navigation */}
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '20px 14px' }} className="scrollbar-thin">
-          {!isCollapsed && (
-            <p style={{ color: '#9ca3af', fontSize: 9, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', padding: '0 8px 12px', margin: 0 }}>
-              Menu
-            </p>
-          )}
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {NAV_ITEMS.map((item) => {
-              // ── Flat Menu Item Rendering
-              if (item.type === 'flat') {
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                const IconComponent = item.icon;
-                return (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: isCollapsed ? 'center' : 'flex-start',
-                        gap: isCollapsed ? 0 : 12,
-                        padding: '10px 12px',
-                        borderRadius: 10,
-                        textDecoration: 'none',
-                        background: isActive ? '#fff3ef' : 'transparent',
-                        color: isActive ? '#ff6b35' : '#4b5563',
-                        fontWeight: isActive ? 600 : 500,
-                        fontSize: 13.5,
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                        position: 'relative',
-                      }}
-                      title={isCollapsed ? item.label : undefined}
-                      onMouseEnter={(e) => {
-                        if (!isActive) {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(255, 107, 53, 0.04)';
-                          (e.currentTarget as HTMLElement).style.color = '#ff6b35';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isActive) {
-                          (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          (e.currentTarget as HTMLElement).style.color = '#4b5563';
-                        }
-                      }}
-                    >
-                      <IconComponent size={17} className={isActive ? 'text-[#ff6b35]' : 'text-zinc-500'} />
-                      {!isCollapsed && <span className="animate-fade-in flex-1">{item.label}</span>}
-                      {!isCollapsed && renderBadge(item.badgeType)}
+        {/* Navigation list */}
+        <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin">
+          <div>
+            {!isCollapsed && (
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-3.5 mb-3">
+                MAIN CONSOLE
+              </p>
+            )}
+            <ul className="space-y-1">
+              {NAV_ITEMS.map((item) => {
+                if (item.type === 'flat') {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                  const Icon = item.icon;
+                  return (
+                    <li key={item.href}>
+                      <Link
+                        href={item.href}
+                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
+                          isActive 
+                            ? 'bg-[#ecfdf5] text-[#059669]' 
+                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        {isActive && (
+                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#10b981] rounded-r-lg" />
+                        )}
+                        <Icon size={16} className={isActive ? 'text-[#10b981]' : 'text-gray-400'} />
+                        {!isCollapsed && <span className="flex-1">{item.label}</span>}
+                        {!isCollapsed && renderBadge(item.badgeType)}
+                      </Link>
+                    </li>
+                  );
+                }
 
-                      {/* Orange dot for collapsed menu active status */}
-                      {isActive && isCollapsed && (
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#ff6b35] shadow-[0_0_4px_#ff6b35]" />
+                if (item.type === 'group') {
+                  const isExpanded = expandedGroups[item.id] && !isCollapsed;
+                  const isChildActive = item.children.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
+                  const Icon = item.icon;
+
+                  return (
+                    <li key={item.id} className="space-y-1">
+                      <button
+                        onClick={() => toggleGroup(item.id)}
+                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
+                          isChildActive && !isExpanded
+                            ? 'bg-[#ecfdf5] text-[#059669]' 
+                            : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                      >
+                        {isChildActive && !isExpanded && (
+                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#10b981] rounded-r-lg" />
+                        )}
+                        <Icon size={16} className={isChildActive ? 'text-[#10b981]' : 'text-gray-400'} />
+                        {!isCollapsed && <span className="flex-1 text-left">{item.label}</span>}
+                        {!isCollapsed && (
+                          isExpanded ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />
+                        )}
+                      </button>
+
+                      {isExpanded && (
+                        <div className="pl-3.5 space-y-1 relative before:absolute before:left-5 before:top-0 before:bottom-0 before:w-0.5 before:bg-gray-100/80">
+                          {item.children.map((child) => {
+                            const isSubActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                className={`flex items-center gap-2.5 py-2 pl-6 pr-3.5 rounded-lg text-xs font-bold transition-all ${
+                                  isSubActive 
+                                    ? 'bg-[#ecfdf5] text-[#059669]' 
+                                    : 'text-gray-500 hover:text-gray-900'
+                                }`}
+                              >
+                                {child.dotColor ? (
+                                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: child.dotColor }} />
+                                ) : (
+                                  <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0" />
+                                )}
+                                <span className="flex-1 truncate">{child.label}</span>
+                                {renderBadge(child.badgeType)}
+                              </Link>
+                            );
+                          })}
+                        </div>
                       )}
-                    </Link>
-                  </li>
-                );
-              }
-
-              // ── Group Menu Item (Dropdown / Accordion) Rendering
-              if (item.type === 'group') {
-                const isGroupExpanded = expandedGroups[item.id] && !isCollapsed;
-                const isAnyChildActive = item.children.some(child => pathname === child.href || pathname.startsWith(child.href + '/'));
-                const GroupIcon = item.icon;
-
-                return (
-                  <li key={item.id} className="flex flex-col gap-1">
-                    {/* Parent Menu Row */}
-                    <button
-                      onClick={() => toggleGroup(item.id)}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: isCollapsed ? 'center' : 'flex-start',
-                        gap: isCollapsed ? 0 : 12,
-                        padding: '10px 12px',
-                        borderRadius: 10,
-                        border: 'none',
-                        background: (isAnyChildActive && !isGroupExpanded) ? '#fff3ef' : 'transparent',
-                        color: (isAnyChildActive || isGroupExpanded) ? '#ff6b35' : '#4b5563',
-                        fontWeight: 500,
-                        fontSize: 13.5,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!(isAnyChildActive && !isGroupExpanded)) {
-                          (e.currentTarget as HTMLElement).style.background = 'rgba(255, 107, 53, 0.04)';
-                          (e.currentTarget as HTMLElement).style.color = '#ff6b35';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!(isAnyChildActive && !isGroupExpanded)) {
-                          (e.currentTarget as HTMLElement).style.background = 'transparent';
-                          (e.currentTarget as HTMLElement).style.color = '#4b5563';
-                        }
-                      }}
-                    >
-                      <GroupIcon size={17} className={isAnyChildActive ? 'text-[#ff6b35]' : 'text-zinc-500'} />
-                      {!isCollapsed && <span className="flex-1 text-left">{item.label}</span>}
-                      
-                      {!isCollapsed && (
-                        isGroupExpanded ? <ChevronUp size={14} className="text-zinc-400" /> : <ChevronDown size={14} className="text-zinc-400" />
-                      )}
-
-                      {/* Orange dot for group when collapsed and a child is active */}
-                      {isAnyChildActive && isCollapsed && (
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[#ff6b35] shadow-[0_0_4px_#ff6b35]" />
-                      )}
-                    </button>
-
-                    {/* Nested Submenu Children Container */}
-                    {isGroupExpanded && (
-                      <div className="tree-line-branch flex flex-col pl-4 relative my-0.5 animate-fade-in transition-all">
-                        {item.children.map((child) => {
-                          const isChildActive = pathname === child.href || pathname.startsWith(child.href + '/');
-                          const ChildIcon = child.icon;
-
-                          return (
-                            <Link
-                              key={child.href}
-                              href={child.href}
-                              className="tree-line-branch-child"
-                              style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 10,
-                                padding: '8px 12px 8px 30px',
-                                borderRadius: 8,
-                                fontSize: 13,
-                                textDecoration: 'none',
-                                background: isChildActive ? '#fff3ef' : 'transparent',
-                                color: isChildActive ? '#ff6b35' : '#4b5563',
-                                fontWeight: isChildActive ? 600 : 400,
-                                transition: 'all 0.15s ease',
-                              }}
-                              onMouseEnter={(e) => {
-                                if (!isChildActive) {
-                                  (e.currentTarget as HTMLElement).style.background = 'rgba(255, 107, 53, 0.02)';
-                                  (e.currentTarget as HTMLElement).style.color = '#ff6b35';
-                                }
-                              }}
-                              onMouseLeave={(e) => {
-                                if (!isChildActive) {
-                                  (e.currentTarget as HTMLElement).style.background = 'transparent';
-                                  (e.currentTarget as HTMLElement).style.color = '#4b5563';
-                                }
-                              }}
-                            >
-                              <ChildIcon size={14} className={isChildActive ? 'text-[#ff6b35]' : 'text-zinc-400'} />
-                              <span className="flex-1">{child.label}</span>
-                              {renderBadge(child.badgeType)}
-
-                              {isChildActive && (
-                                <ChevronRight size={12} className="text-zinc-400" />
-                              )}
-                            </Link>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </li>
-                );
-              }
-              return null;
-            })}
-          </ul>
+                    </li>
+                  );
+                }
+                return null;
+              })}
+            </ul>
+          </div>
         </nav>
 
-        {/* Sidebar Footer Account & Actions */}
-        <div style={{
-          padding: '16px 14px',
-          borderTop: '1px solid #e5e7eb',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-        }}>
+        {/* Profile Card Bottom */}
+        <div className="p-4 border-t border-gray-100 space-y-3">
           <button
             onClick={handleLogout}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: isCollapsed ? 'center' : 'flex-start',
-              gap: isCollapsed ? 0 : 12,
-              padding: '10px 12px',
-              borderRadius: 10,
-              background: 'rgba(239,68,68,0.05)',
-              border: 'none',
-              color: '#dc2626',
-              fontSize: 13.5,
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'background 0.2s',
-            }}
-            title={isCollapsed ? 'Logout' : undefined}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.1)'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.05)'; }}
+            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
           >
-            <LogOut size={16} />
-            {!isCollapsed && <span>Logout</span>}
+            <span className="flex items-center gap-2"><LogOut size={14} /> Logout</span>
           </button>
-
-          <div style={{ padding: '0 4px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyItems: isCollapsed ? 'center' : 'flex-start', gap: 10 }}>
-              <div style={{
-                width: 32, height: 32,
-                borderRadius: '50%',
-                background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-                display: 'flex', alignItems: 'center', justifyItems: 'center',
-                fontSize: 13, flexShrink: 0,
-                color: '#4b5563',
-                border: '1px solid #d1d5db'
-              }}>
-                <User size={14} />
-              </div>
-              {!isCollapsed && (
-                <div className="animate-fade-in min-w-0 flex-1">
-                  <p style={{ color: '#1f2937', fontSize: 13, fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Admin</p>
-                  <p style={{ color: '#6b7280', fontSize: 10, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>originhaat.com</p>
-                </div>
-              )}
+          
+          <div className="flex items-center gap-3 px-2">
+            {/* Avatar matching Canvas style */}
+            <div className="w-9 h-9 rounded-full bg-[#ff6b35] flex items-center justify-center shrink-0 text-white font-extrabold text-xs shadow-sm">
+              SH
             </div>
+            {!isCollapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black text-gray-900 truncate">Shakhwat</p>
+                <p className="text-[10px] text-gray-400 font-semibold truncate">Admin</p>
+              </div>
+            )}
           </div>
         </div>
       </aside>
 
-      {/* ── Main Content Area ──────────────────────────────────────────── */}
-      <div className="admin-main flex-1 flex flex-col overflow-hidden" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
+      {/* ── Main Panel View ─────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        
         {/* Top Header */}
-        <header style={{
-          height: 64,
-          background: '#ffffff',
-          borderBottom: '1px solid #e5e7eb',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 24px',
-          gap: 16,
-          flexShrink: 0,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-        }}>
-          {/* Mobile Hamburger toggle button */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="hamburger-btn"
-            style={{
-              display: 'none',
-              width: 36, height: 36,
-              borderRadius: 8,
-              border: '1px solid #e5e7eb',
-              background: '#ffffff',
-              cursor: 'pointer',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-            aria-label="Toggle sidebar"
-          >
-            <Menu size={18} className="text-zinc-600" />
-          </button>
+        <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 shadow-xs">
+          <div className="flex items-center gap-4 flex-1">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="md:hidden p-1.5 rounded-lg border border-gray-200 text-gray-600 cursor-pointer"
+            >
+              <Menu size={16} />
+            </button>
 
-          {/* Page Title & Breadcrumb context */}
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: 15, fontWeight: 750, color: '#111827', margin: 0 }}>
-              {pageTitle}
-            </h1>
-            <p style={{ fontSize: 10.5, color: '#6b7280', margin: 0 }} className="hide-mobile">
-              Origin Haat Management Control Center
-            </p>
+            {/* Search Pill */}
+            <div className="relative w-full max-w-sm hide-mobile">
+              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search everything..." 
+                className="w-full bg-[#f1f5f9] border border-transparent rounded-full pl-9 pr-4 py-1.8 text-xs focus:bg-white focus:border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400 transition-all"
+              />
+            </div>
           </div>
 
-          {/* Right Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            
-            {/* Visit Site Button */}
-            <Link
-              href="/"
+          <div className="flex items-center gap-3">
+            {/* Online users pill */}
+            <div className="flex items-center bg-gray-50 border border-gray-100 rounded-full py-1 px-2.5 text-[10px] font-bold text-gray-500 gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>1 Online</span>
+            </div>
+
+            {/* Notification Bell with 9+ badge */}
+            <button className="relative w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer">
+              <Bell size={15} />
+              <span className="absolute -top-1 -right-1 bg-blue-500 text-white font-extrabold text-[8px] px-1 py-0.2 rounded-full border border-white">
+                9+
+              </span>
+            </button>
+
+            {/* Visit Site */}
+            <Link 
+              href="/" 
               target="_blank"
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '6px 12px',
-                borderRadius: 8,
-                border: '1px solid #e5e7eb',
-                background: '#f9fafb',
-                textDecoration: 'none',
-                fontSize: 12,
-                color: '#4b5563',
-                fontWeight: 600,
-                transition: 'all 0.15s ease',
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#ff6b35';
-                (e.currentTarget as HTMLElement).style.color = '#ff6b35';
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#e5e7eb';
-                (e.currentTarget as HTMLElement).style.color = '#4b5563';
-              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 hover:border-[#ff6b35] rounded-xl text-xs font-bold text-gray-600 hover:text-[#ff6b35] transition-all"
             >
-              <Globe size={13.5} />
+              <Globe size={13} />
               <span className="hide-mobile">Visit Site</span>
             </Link>
-
-            {/* Admin Badge */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 12px',
-              background: '#fff3ef',
-              border: '1px solid #fed7c7',
-              borderRadius: 8,
-            }}>
-              <ShieldCheck size={13.5} className="text-[#ff6b35]" />
-              <span style={{ fontSize: 11.5, fontWeight: 700, color: '#c2410c' }} className="hide-mobile">Super Admin</span>
-            </div>
           </div>
         </header>
 
-        {/* Page Content Scroll container */}
-        <main style={{ flex: 1, overflowY: 'auto', padding: '24px', backgroundColor: '#f8f9fa' }}>
-          {children}
-        </main>
+        {/* Content Box */}
+        <div className="flex-1 overflow-y-auto">
+          {/* New update available banner alert */}
+          {showAlert && (
+            <div className="bg-[#eff6ff] border-b border-[#bfdbfe] px-6 py-2.5 flex items-center justify-between text-xs text-blue-800 font-semibold shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                <span>📥 New update available! <span className="font-extrabold text-blue-900">v2.1.0 (Build 3)</span></span>
+                <button className="bg-blue-500 hover:bg-blue-600 text-white font-black px-2.5 py-1 rounded-lg ml-2 cursor-pointer transition-all">Update Now</button>
+              </div>
+              <button onClick={() => setShowAlert(false)} className="text-blue-400 hover:text-blue-700 cursor-pointer">
+                <X size={14} />
+              </button>
+            </div>
+          )}
+
+          {/* Dynamic Breadcrumbs Sub-header inside main body content */}
+          <div className="px-6 pt-5 pb-3">
+            <div className="text-[10px] font-bold text-gray-400 tracking-wider flex items-center gap-1">
+              <span>Workspace</span>
+              <span>/</span>
+              <span className="text-gray-500 font-black">Task Board</span>
+            </div>
+            <div className="flex items-center justify-between mt-1">
+              <h2 className="text-lg font-black text-gray-900 tracking-tight">{pageTitle}</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-gray-400 font-bold">Last updated Jun 28, 2026</span>
+                <button className="flex items-center gap-1 px-3 py-1.8 bg-black hover:bg-gray-900 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer">
+                  <Plus size={14} />
+                  <span>New Action</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <main className="p-6 pt-2">
+            {children}
+          </main>
+        </div>
       </div>
-
-      {/* ── Responsive Styles ─────────────────────────────────────────── */}
-      <style>{`
-        /* Desktop: sidebar displays block relative */
-        @media (min-width: 768px) {
-          .admin-sidebar {
-            position: relative !important;
-            transform: none !important;
-            flex-shrink: 0;
-          }
-          .hamburger-btn {
-            display: none !important;
-          }
-        }
-
-        /* Mobile: sidebar is overlay drawer */
-        @media (max-width: 767px) {
-          .admin-sidebar {
-            position: fixed !important;
-            top: 0 !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            width: 255px !important;
-            transform: translateX(-100%) !important;
-          }
-          .admin-sidebar.sidebar-mobile-open {
-            transform: translateX(0) !important;
-          }
-          .hamburger-btn {
-            display: flex !important;
-          }
-          .hide-mobile {
-            display: none !important;
-          }
-          main {
-            padding: 16px !important;
-          }
-        }
-
-        .animate-fade-in {
-          animation: fadeIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(2px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 }
