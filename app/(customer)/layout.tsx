@@ -4,6 +4,7 @@ import { RecentOrderPopup } from '@/components/shared/RecentOrderPopup';
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton';
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { FloatingCartWidget } from '@/components/shared/FloatingCartWidget';
+import { ChatWidget } from '@/components/shared/ChatWidget';
 import { getSettings } from '@/lib/db';
 
 export default async function CustomerLayout({
@@ -23,6 +24,7 @@ export default async function CustomerLayout({
       <WhatsAppButton phoneNumber={whatsappNumber} />
       <MobileBottomNav />
       <FloatingCartWidget />
+      <ChatWidget />
     </>
   );
 }

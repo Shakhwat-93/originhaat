@@ -22,7 +22,8 @@ import {
   LogOut,
   Globe,
   User,
-  ShieldCheck
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 
 // ─── Menu Navigation Type Definition ──────────────────────────────────────────
@@ -88,6 +89,12 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     type: 'flat', 
+    href: '/admin/inbox', 
+    label: 'Inbox', 
+    icon: MessageSquare 
+  },
+  { 
+    type: 'flat', 
     href: '/admin/settings', 
     label: 'Settings', 
     icon: Settings 
@@ -104,6 +111,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/reviews':    'Review Management',
   '/admin/coupons':    'Coupon Management',
   '/admin/settings':   'Site Settings',
+  '/admin/inbox':      'Inbox & Live Chat',
 };
 
 interface AdminLayoutProps {
