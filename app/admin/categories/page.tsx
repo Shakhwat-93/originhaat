@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, RefreshCw, Upload, Save, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { cn } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -21,6 +22,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Edit Mode State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,6 +99,7 @@ export default function AdminCategoriesPage() {
     setIcon('');
     setImageUrl('');
     setSortOrder(1);
+    setIsFormOpen(false);
   };
 
   const handleEditClick = (cat: Category) => {
@@ -107,6 +110,7 @@ export default function AdminCategoriesPage() {
     setIcon(cat.icon || '');
     setImageUrl(cat.image_url || '');
     setSortOrder(cat.sort_order);
+    setIsFormOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -205,10 +209,20 @@ export default function AdminCategoriesPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8 text-black">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Category Management</h1>
-        <p className="text-sm text-gray-500 mt-1">Create, edit, and toggle active/inactive status of categories for products cataloging</p>
+    <div className="p-6 max-w-6xl mx-auto space-y-8 text-black relative">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Category Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Create, edit, and toggle active/inactive status of categories for products cataloging</p>
+        </div>
+        <button
+          onClick={() => { resetForm(); setIsFormOpen(true); }}
+          className="md:hidden flex items-center gap-1.5 px-4 py-2.5 bg-black hover:bg-gray-900 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+        >
+          <Plus size={14} />
+          <span>Add Category</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -346,114 +360,138 @@ export default function AdminCategoriesPage() {
           </div>
         </div>
 
-        {/* Add/Edit Form */}
-        <div>
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold text-gray-900 flex items-center gap-2">
-                <Plus size={18} className="text-[#ff6b35]" />
-                {editingId ? 'Edit Category' : 'New Category'}
-              </h2>
-              {editingId && (
-                <button
-                  onClick={resetForm}
-                  className="text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"
-                >
-                  <X size={16} />
-                </button>
-              )}
+        {/* Mobile Backdrop overlay */}
+        {isFormOpen && (
+          <div 
+            onClick={() => setIsFormOpen(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+          />
+        )}
+
+        {/* Add/Edit Form - Responsive Bottom Sheet / Sidebar Sticky */}
+        <div className={cn(
+          "transition-all duration-350 ease-out shrink-0",
+          // Mobile Bottom Sheet Panel
+          "fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[32px] border border-gray-200 p-6 shadow-2xl max-h-[85vh] overflow-y-auto block md:hidden",
+          isFormOpen ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none",
+          // Desktop Sticky Card Layout
+          "md:relative md:translate-y-0 md:opacity-100 md:pointer-events-auto md:rounded-2xl md:z-0 md:max-h-none md:shadow-none md:block md:sticky md:top-6"
+        )}>
+          {/* Mobile dragging indicator pull bar */}
+          <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-4 md:hidden" />
+
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-extrabold text-gray-900 text-sm md:text-base flex items-center gap-2">
+              <Plus size={18} className="text-[#ff6b35] shrink-0" />
+              <span>{editingId ? 'Edit Category' : 'New Category'}</span>
+            </h2>
+            <button
+              onClick={() => { resetForm(); setIsFormOpen(false); }}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 hover:bg-gray-50 rounded-lg cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category Name (Bangla)</label>
+              <input
+                type="text"
+                value={nameBn}
+                onChange={(e) => setNameBn(e.target.value)}
+                placeholder="e.g. Smart Gadgets"
+                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+                required
+              />
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category Name (English)</label>
+              <input
+                type="text"
+                value={nameEn}
+                onChange={handleNameEnChange}
+                placeholder="e.g. Smart Gadgets"
+                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Slug</label>
+              <input
+                type="text"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                placeholder="smart-gadgets"
+                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+                required
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category Name (Bangla)</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Icon (Emoji)</label>
                 <input
                   type="text"
-                  value={nameBn}
-                  onChange={(e) => setNameBn(e.target.value)}
-                  placeholder="e.g. Smart Gadgets"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                  required
+                  value={icon}
+                  onChange={(e) => setIcon(e.target.value)}
+                  placeholder="e.g. ⌚"
+                  className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category Name (English)</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Sort Order</label>
                 <input
-                  type="text"
-                  value={nameEn}
-                  onChange={handleNameEnChange}
-                  placeholder="e.g. Smart Gadgets"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  type="number"
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(Number(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Slug</label>
-                <input
-                  type="text"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  placeholder="smart-gadgets"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Icon (Emoji)</label>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category Image</label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    value={icon}
-                    onChange={(e) => setIcon(e.target.value)}
-                    placeholder="e.g. ⌚"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="Image URL or upload"
+                    className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
                   />
+                  <label className="flex items-center gap-1.5 px-3.5 bg-gray-100 border border-gray-200 hover:bg-gray-200 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer shrink-0 transition-colors">
+                    {uploading ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
+                    <span>{uploading ? '...' : 'Upload'}</span>
+                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                  </label>
                 </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Sort Order</label>
-                  <input
-                    type="number"
-                    value={sortOrder}
-                    onChange={(e) => setSortOrder(Number(e.target.value))}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                    required
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category Image</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Image URL or upload"
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                    />
-                    <label className="flex items-center gap-1.5 px-3.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer shrink-0 transition-colors">
-                      {uploading ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
-                      <span>{uploading ? 'Uploading...' : 'Upload'}</span>
-                      <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading} />
-                    </label>
+                {imageUrl && (
+                  <div className="relative w-full aspect-video bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
+                    <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
                   </div>
-                  {imageUrl && (
-                    <div className="relative w-full aspect-video bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
+            </div>
 
+            {/* Actions: Clear (white pill) & Add (black pill) matching screenshot exactly */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => { resetForm(); setIsFormOpen(false); }}
+                className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 text-gray-700 font-extrabold text-xs rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer text-center"
+              >
+                Clear
+              </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full inline-flex items-center justify-center gap-2 py-3 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold rounded-xl shadow-lg shadow-[#ff6b35]/25 hover:shadow-[#ff6b35]/15 transition-all text-sm cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3.5 bg-[#111827] hover:bg-black text-white font-extrabold text-xs rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50 text-center"
               >
-                {submitting ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-                {editingId ? 'Save Changes' : 'Save Category'}
+                {submitting ? 'Saving...' : (editingId ? 'Save' : 'Add')}
               </button>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>

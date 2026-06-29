@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Image as ImageIcon, Plus, Trash2, RefreshCw, Upload, Save, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Image as ImageIcon, Plus, Trash2, RefreshCw, Upload, Save, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { cn } from '@/lib/utils';
 
 interface Banner {
   id: string;
@@ -18,6 +19,7 @@ interface Banner {
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   
   // Form State
   const [title, setTitle] = useState('');
@@ -172,10 +174,27 @@ export default function AdminBannersPage() {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-8 text-black">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Banner Management</h1>
-        <p className="text-sm text-gray-500 mt-1">Control main hero sliders and promotional banners on the homepage</p>
+    <div className="p-6 max-w-6xl mx-auto space-y-8 text-black relative">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Banner Management</h1>
+          <p className="text-sm text-gray-500 mt-1">Control main hero sliders and promotional banners on the homepage</p>
+        </div>
+        <button
+          onClick={() => {
+            setTitle('');
+            setSubtitle('');
+            setImageUrl('');
+            setLinkUrl('');
+            setSortOrder(1);
+            setIsFormOpen(true);
+          }}
+          className="md:hidden flex items-center gap-1.5 px-4 py-2.5 bg-black hover:bg-gray-900 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer"
+        >
+          <Plus size={14} />
+          <span>Add Banner</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -291,90 +310,131 @@ export default function AdminBannersPage() {
           </div>
         </div>
 
-        {/* Add Banner Form */}
-        <div>
-          <div className="bg-white rounded-2xl border border-gray-200 p-6 sticky top-6">
-            <h2 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Plus size={18} className="text-[#ff6b35]" />
-              Add New Banner
-            </h2>
-            <form onSubmit={handleAddBanner} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Banner Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Special Offer!"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Banner Subtitle</label>
-                <input
-                  type="text"
-                  value={subtitle}
-                  onChange={(e) => setSubtitle(e.target.value)}
-                  placeholder="e.g. 20% discount on today's orders"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Banner Image</label>
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="Image URL or upload"
-                      className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                      required
-                    />
-                    <label className="flex items-center gap-1.5 px-3.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer shrink-0 transition-colors">
-                      {uploading ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
-                      <span>{uploading ? 'Uploading...' : 'Upload'}</span>
-                      <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading} />
-                    </label>
-                  </div>
-                  {imageUrl && (
-                    <div className="relative aspect-[21/9] bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                      <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Link URL (destination on click)</label>
-                <input
-                  type="text"
-                  value={linkUrl}
-                  onChange={(e) => setLinkUrl(e.target.value)}
-                  placeholder="e.g. /#best-sellers"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Sort Order</label>
-                <input
-                  type="number"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-                  required
-                />
-              </div>
+        {/* Mobile Backdrop overlay */}
+        {isFormOpen && (
+          <div 
+            onClick={() => setIsFormOpen(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 md:hidden animate-fade-in"
+          />
+        )}
 
+        {/* Add Banner Form - Responsive Bottom Sheet / Sidebar Sticky */}
+        <div className={cn(
+          "transition-all duration-350 ease-out shrink-0",
+          // Mobile Bottom Sheet Panel
+          "fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-[32px] border border-gray-200 p-6 shadow-2xl max-h-[85vh] overflow-y-auto block md:hidden",
+          isFormOpen ? "translate-y-0 opacity-100" : "translate-y-full opacity-0 pointer-events-none",
+          // Desktop Sticky Card Layout
+          "md:relative md:translate-y-0 md:opacity-100 md:pointer-events-auto md:rounded-2xl md:z-0 md:max-h-none md:shadow-none md:block md:sticky md:top-6"
+        )}>
+          {/* Mobile dragging indicator pull bar */}
+          <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-4 md:hidden" />
+
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-extrabold text-gray-900 text-sm md:text-base flex items-center gap-2">
+              <Plus size={18} className="text-[#ff6b35]" />
+              <span>Add New Banner</span>
+            </h2>
+            <button
+              onClick={() => setIsFormOpen(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 hover:bg-gray-50 rounded-lg cursor-pointer"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          
+          <form onSubmit={handleAddBanner} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Banner Title</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g. Special Offer!"
+                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Banner Subtitle</label>
+              <input
+                type="text"
+                value={subtitle}
+                onChange={(e) => setSubtitle(e.target.value)}
+                placeholder="e.g. 20% discount on today's orders"
+                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Banner Image</label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="Image URL or upload"
+                    className="w-full px-4 py-2.5 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+                    required
+                  />
+                  <label className="flex items-center gap-1.5 px-3.5 bg-gray-100 border border-gray-200 hover:bg-gray-200 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer shrink-0 transition-colors">
+                    {uploading ? <RefreshCw size={14} className="animate-spin" /> : <Upload size={14} />}
+                    <span>{uploading ? '...' : 'Upload'}</span>
+                    <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" disabled={uploading} />
+                  </label>
+                </div>
+                {imageUrl && (
+                  <div className="relative aspect-[21/9] bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
+                    <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Link URL (destination on click)</label>
+              <input
+                type="text"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="e.g. /#best-sellers"
+                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Sort Order</label>
+              <input
+                type="number"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(Number(e.target.value))}
+                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+                required
+              />
+            </div>
+
+            {/* Actions: Clear (white pill) & Add (black pill) matching screenshot exactly */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setTitle('');
+                  setSubtitle('');
+                  setImageUrl('');
+                  setLinkUrl('');
+                  setSortOrder(1);
+                  setIsFormOpen(false);
+                }}
+                className="flex-1 py-3.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 hover:border-gray-300 text-gray-700 font-extrabold text-xs rounded-2xl shadow-xs transition-all active:scale-95 cursor-pointer text-center"
+              >
+                Clear
+              </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full inline-flex items-center justify-center gap-2 py-3 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold rounded-xl shadow-lg shadow-[#ff6b35]/25 hover:shadow-[#ff6b35]/15 transition-all text-sm cursor-pointer disabled:opacity-50"
+                className="flex-1 py-3.5 bg-[#111827] hover:bg-black text-white font-extrabold text-xs rounded-2xl shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50 text-center"
               >
-                {submitting ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
-                Save Banner
+                {submitting ? 'Saving...' : 'Add'}
               </button>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>
