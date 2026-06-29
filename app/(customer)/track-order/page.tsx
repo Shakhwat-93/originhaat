@@ -17,9 +17,11 @@ import {
   Clock, 
   FileText,
   ChevronRight,
-  ArrowLeft
+  ArrowLeft,
+  ThumbsUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { showSuccessAlert } from '@/lib/alerts';
 
 interface OrderItem {
   id: string;
@@ -103,6 +105,7 @@ export default function TrackOrderPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [supportPhone, setSupportPhone] = useState('01700000000');
   const [errorText, setErrorText] = useState('');
+  const [lang, setLang] = useState<'bn' | 'en'>('bn');
 
   // Fetch support contact details
   useEffect(() => {
@@ -342,86 +345,121 @@ export default function TrackOrderPage() {
 
             {/* Stepper (Skip if cancelled) */}
             {selectedOrder.status !== 'cancelled' && (
-              <div className="bg-white border border-[#e5e7eb] rounded-2xl p-6 md:p-8 shadow-sm">
-                <h3 className="text-base font-bold text-slate-800 mb-6">অর্ডার টাইমলাইন (Timeline)</h3>
-                
-                {/* Horizontal Stepper for Desktop, Vertical for Mobile */}
-                <div className="hidden md:flex items-center justify-between relative">
-                  {/* Line backdrop */}
-                  <div className="absolute left-6 right-6 top-[22px] h-1 bg-slate-100 -z-0" />
-                  <div 
-                    className="absolute left-6 top-[22px] h-1 bg-emerald-500 transition-all duration-500 -z-0"
-                    style={{ 
-                      width: `${((getStatusStep(selectedOrder.status) - 1) / 4) * 100}%` 
-                    }}
-                  />
+              <div className="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm max-w-md mx-auto">
+                {/* Header Row */}
+                <div className="flex justify-between items-center pb-6 border-b border-gray-100 mb-6">
+                  <span className="bg-gray-50 border border-gray-150 text-gray-700 font-extrabold text-xs px-3.5 py-1.5 rounded-xl shadow-xs">
+                    Timeline
+                  </span>
+                  
+                  <div className="flex items-center gap-1.5 bg-blue-50 text-blue-600 border border-blue-100 px-3 py-1 rounded-full text-xs font-bold shadow-xs">
+                    <CheckCircle size={13} className="fill-blue-500 text-white" />
+                    <span>
+                      {selectedOrder.status === 'delivered' ? 'Completed' : 'In Progress'}
+                    </span>
+                  </div>
+                </div>
 
-                  {steps.map((s) => {
-                    const currentStep = getStatusStep(selectedOrder.status);
-                    const isCompleted = s.step <= currentStep;
-                    const isActive = s.step === currentStep;
+                {/* Timeline Node List */}
+                <div className="relative pl-10 space-y-7 pb-4">
+                  {/* Dotted Vertical Connector Line */}
+                  <div className="absolute left-[13px] top-3.5 bottom-3.5 w-0.5 border-l-2 border-dashed border-gray-200" />
+                  
+                  {([
+                    {
+                      label: 'Order Confirmed',
+                      labelBn: 'অর্ডার নিশ্চিত করা হয়েছে',
+                      desc: 'Order placed and confirmed',
+                      descBn: 'অর্ডার সফলভাবে নিশ্চিত হয়েছে',
+                      statusMatch: ['confirmed', 'processing', 'shipped', 'delivered'],
+                      icon: <Package size={14} className="text-gray-600" />,
+                      offset: 0,
+                    },
+                    {
+                      label: 'Shipping',
+                      labelBn: 'প্যাকিং ও কুরিয়ার প্রস্তুতি',
+                      desc: 'Order packed and handed to courier',
+                      descBn: 'পণ্য প্রস্তুত ও প্যাকেজিং সম্পন্ন',
+                      statusMatch: ['processing', 'shipped', 'delivered'],
+                      icon: <FileText size={14} className="text-gray-600" />,
+                      offset: 1,
+                    },
+                    {
+                      label: 'Transit',
+                      labelBn: 'কুরিয়ার ট্রানজিট',
+                      desc: 'On the way to your destination',
+                      descBn: 'আপনার গন্তব্যের উদ্দেশ্যে রওনা হয়েছে',
+                      statusMatch: ['shipped', 'delivered'],
+                      icon: <Truck size={14} className="text-gray-600" />,
+                      offset: 2,
+                    },
+                    {
+                      label: 'Sent to Customer',
+                      labelBn: 'ডেলিভারি সম্পন্ন',
+                      desc: 'Parcel successfully delivered',
+                      descBn: 'পার্সেল সফলভাবে বুঝিয়ে দেওয়া হয়েছে',
+                      statusMatch: ['delivered'],
+                      icon: <MapPin size={14} className="text-gray-600" />,
+                      offset: 3,
+                    },
+                  ] as const).map((node, i) => {
+                    const isPassed = (node.statusMatch as readonly string[]).includes(selectedOrder.status);
+                    
+                    // Simple deterministic date generator
+                    const nodeDate = new Date(selectedOrder.created_at);
+                    nodeDate.setDate(nodeDate.getDate() + node.offset);
+                    const formattedNodeDate = nodeDate.toLocaleDateString('en-US', {
+                      day: '2-digit',
+                      month: 'short'
+                    }) + ', ' + nodeDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                     return (
-                      <div key={s.step} className="flex flex-col items-center relative z-10 w-24 text-center">
+                      <div key={i} className="relative flex items-start justify-between gap-4">
+                        {/* Node icon circle */}
                         <div className={cn(
-                          "w-11 h-11 rounded-full flex items-center justify-center transition-all duration-300",
-                          isCompleted ? "bg-emerald-500 text-white shadow-md shadow-emerald-100" : "bg-white text-slate-400 border-2 border-slate-200",
-                          isActive && "ring-4 ring-emerald-100 border-emerald-500"
+                          "absolute -left-[37px] top-0 w-7 h-7 rounded-full flex items-center justify-center border transition-all duration-300 bg-white",
+                          isPassed 
+                            ? "border-gray-300/80 shadow-sm" 
+                            : "border-gray-150 opacity-40"
                         )}>
-                          {s.icon}
+                          {node.icon}
                         </div>
-                        <span className={cn(
-                          "text-xs font-bold mt-2.5 block",
-                          isCompleted ? "text-slate-800" : "text-slate-400"
-                        )}>
-                          {s.label}
-                        </span>
+
+                        {/* Title and details */}
+                        <div className={cn("transition-opacity", !isPassed && "opacity-40")}>
+                          <h4 className="text-xs font-black text-gray-800 tracking-tight leading-tight">
+                            {lang === 'bn' ? node.labelBn : node.label}
+                          </h4>
+                          <p className="text-[10px] text-gray-400 font-semibold mt-0.5 leading-snug">
+                            {lang === 'bn' ? node.descBn : node.desc}
+                          </p>
+                        </div>
+
+                        {/* Timestamp */}
+                        {isPassed && (
+                          <span className="text-[9px] text-gray-400 font-bold shrink-0 pt-0.5">
+                            {formattedNodeDate}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
                 </div>
 
-                {/* Vertical Stepper for Mobile */}
-                <div className="md:hidden space-y-6 relative pl-8">
-                  {/* Vertical bar */}
-                  <div className="absolute left-[17px] top-2 bottom-2 w-1 bg-slate-100" />
-                  <div 
-                    className="absolute left-[17px] top-2 w-1 bg-emerald-500 transition-all duration-500"
-                    style={{ 
-                      height: `${((getStatusStep(selectedOrder.status) - 1) / 4) * 100}%` 
+                {/* Rating button at bottom */}
+                <div className="pt-4 border-t border-gray-100 mt-6 flex justify-center">
+                  <button 
+                    onClick={async () => {
+                      await showSuccessAlert(
+                        lang === 'bn' ? 'ধন্যবাদ!' : 'Thank You!',
+                        lang === 'bn' ? 'আমাদের ডেলিভারি রেট করার জন্য ধন্যবাদ!' : 'Thank you for rating our delivery service!'
+                      );
                     }}
-                  />
-
-                  {steps.map((s) => {
-                    const currentStep = getStatusStep(selectedOrder.status);
-                    const isCompleted = s.step <= currentStep;
-                    const isActive = s.step === currentStep;
-
-                    return (
-                      <div key={s.step} className="flex items-start gap-4 relative">
-                        <div className={cn(
-                          "w-9 h-9 rounded-full flex items-center justify-center shrink-0 z-10",
-                          isCompleted ? "bg-emerald-500 text-white shadow-md shadow-emerald-100" : "bg-white text-slate-400 border-2 border-slate-200",
-                          isActive && "ring-4 ring-emerald-100"
-                        )}>
-                          {s.icon}
-                        </div>
-                        <div className="pt-1">
-                          <h4 className={cn(
-                            "text-sm font-bold",
-                            isCompleted ? "text-slate-800" : "text-slate-400"
-                          )}>
-                            {s.label}
-                          </h4>
-                          {isActive && (
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              এটি আপনার অর্ডারের বর্তমান ধাপ।
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                    className="w-full flex items-center justify-center gap-2 px-5 py-2.8 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-100 hover:border-emerald-200 rounded-2xl text-xs font-extrabold transition-all cursor-pointer shadow-xs active:scale-98"
+                  >
+                    <ThumbsUp size={14} className="text-emerald-600" />
+                    <span>{lang === 'bn' ? 'ডেলিভারি রেট করুন' : 'Rate this delivery'}</span>
+                  </button>
                 </div>
               </div>
             )}
