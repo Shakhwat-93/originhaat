@@ -405,7 +405,7 @@ h1, h2, h3, h4, h5, h6 {
 /* 4. Light Accent Background overlays */
 .bg-\[\#ff6b35\/10\],
 .bg-orange-50,
-.bg-[#fff3ef] {
+.bg-\[\#fff3ef\] {
   background-color: rgba(255, 63, 96, 0.06) !important;
   border-color: rgba(255, 63, 96, 0.15) !important;
 }
