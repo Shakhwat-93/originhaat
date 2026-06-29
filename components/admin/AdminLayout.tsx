@@ -254,7 +254,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           position: 'relative',
           borderRight: '1px solid #e2e8f0',
         }}
-        className={`shrink-0 h-full ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} fixed md:relative`}
+        className={`admin-sidebar shrink-0 h-full ${sidebarOpen ? 'sidebar-mobile-open translate-x-0' : '-translate-x-full md:translate-x-0'} fixed md:relative`}
       >
         {/* Collapse toggle */}
         <button
@@ -494,6 +494,39 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </main>
         </div>
       </div>
+
+      {/* ── Responsive Styles ─────────────────────────────────────────── */}
+      <style>{`
+        /* Desktop: sidebar displays block relative */
+        @media (min-width: 768px) {
+          .admin-sidebar {
+            position: relative !important;
+            transform: none !important;
+            flex-shrink: 0;
+          }
+        }
+
+        /* Mobile: sidebar is overlay drawer */
+        @media (max-width: 767px) {
+          .admin-sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            width: 255px !important;
+            transform: translateX(-100%) !important;
+          }
+          .admin-sidebar.sidebar-mobile-open {
+            transform: translateX(0) !important;
+          }
+          .hide-mobile {
+            display: none !important;
+          }
+          main {
+            padding: 16px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
