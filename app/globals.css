@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ff6b35;
-  --color-primary-dark: #e55520;
-  --color-primary-light: #fff3ef;
-  --color-cta: #ff6b35;
-  --color-cta-dark: #e55520;
-  --color-cta-light: #fff3ef;
-  --color-accent: #f59e0b;
+  --color-primary: #ff3f60;
+  --color-primary-dark: #e53050;
+  --color-primary-light: #fff0f2;
+  --color-cta: #ff3f60;
+  --color-cta-dark: #e53050;
+  --color-cta-light: #fff0f2;
+  --color-accent: #ff783e;
   --color-surface: #ffffff;
   --color-bg: #f8f9fa;
   --color-text-h: #111827;
@@ -368,5 +368,69 @@ h1, h2, h3, h4, h5, h6 {
   color: #be123c !important;
 }
 
+/* ─── Premium Sunset Gradient Overrides (Rose to Orange) ─── */
 
+/* 1. Main Background Gradients */
+.bg-primary,
+.bg-\[\#ff6b35\],
+.bg-orange-500,
+.bg-orange-600 {
+  background: linear-gradient(135deg, #ff3f60 0%, #ff783e 100%) !important;
+}
 
+.hover\:bg-primary-dark:hover,
+.hover\:bg-\[\#e55520\]:hover,
+.hover\:bg-orange-700:hover {
+  background: linear-gradient(135deg, #e53050 0%, #e05e26 100%) !important;
+}
+
+/* 2. Text Gradients & Colors */
+.text-primary,
+.text-\[\#ff6b35\] {
+  color: #ff3f60 !important;
+}
+
+.hover\:text-\[\#ff6b35\]:hover {
+  color: #ff783e !important;
+}
+
+/* 3. Border overrides */
+.border-primary,
+.border-\[\#ff6b35\],
+.focus\:border-\[\#ff6b35\]:focus,
+.focus-within\:border-\[\#ff6b35\]:focus-within {
+  border-color: #ff3f60 !important;
+}
+
+/* 4. Light Accent Background overlays */
+.bg-\[\#ff6b35\/10\],
+.bg-orange-50,
+.bg-[#fff3ef] {
+  background-color: rgba(255, 63, 96, 0.06) !important;
+  border-color: rgba(255, 63, 96, 0.15) !important;
+}
+
+.text-\[\#ff6b35\],
+.text-orange-600 {
+  color: #ff3f60 !important;
+}
+
+/* Fix SVG icons inside text element to prevent gradient clipping */
+svg.text-\[\#ff6b35\],
+svg.text-primary {
+  color: #ff3f60 !important;
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+}
+
+/* Selection / Scrollbar thumb */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ff3f60, #ff783e) !important;
+  border-radius: 3px;
+}
+
+:focus-visible {
+  outline: 2px solid #ff3f60 !important;
+  outline-offset: 2px;
+}
