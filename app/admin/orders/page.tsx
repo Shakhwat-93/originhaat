@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X } from 'lucide-react';
+import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award } from 'lucide-react';
+import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface OrderItem {
   id: string;
@@ -25,6 +26,7 @@ interface Order {
   status: string;
   created_at: string;
   oh_order_items?: OrderItem[];
+  courier_ratio_data?: any;
 }
 
 const statusColors: Record<string, string> = {
@@ -50,10 +52,42 @@ export default function AdminOrdersPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [checkingRatio, setCheckingRatio] = useState(false);
 
   // Search & Filter
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  const handleCheckCourierRatio = async (phone: string, orderId: string) => {
+    setCheckingRatio(true);
+    try {
+      const res = await fetch('/api/courier-check', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ phone, orderId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to fetch courier ratio.');
+      }
+
+      showSuccessAlert('Success!', 'Courier success ratio retrieved and stored permanently.');
+      
+      // Update local state
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, courier_ratio_data: data } : o));
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder(prev => prev ? { ...prev, courier_ratio_data: data } : null);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showErrorAlert('Check Failed', err.message || 'Failed to retrieve courier success ratio.');
+    } finally {
+      setCheckingRatio(false);
+    }
+  };
 
   const fetchOrders = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -467,6 +501,143 @@ export default function AdminOrdersPage() {
                 <div className="col-span-2">
                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Delivery Address</span>
                   <span className="text-sm font-semibold text-gray-900 mt-1 block">{selectedOrder.address}, {selectedOrder.district}</span>
+                </div>
+              </div>
+
+              {/* Courier Check Box */}
+              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-xs">
+                {/* Header title */}
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert size={16} className="text-[#ff6b35]" />
+                    <span className="text-xs font-bold text-gray-800 uppercase tracking-wider">BDCourier Merchant Statistics</span>
+                  </div>
+                  {selectedOrder.courier_ratio_data && (
+                    <span className="text-[10px] font-bold text-gray-400 font-mono">Status: Saved</span>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  {selectedOrder.courier_ratio_data ? (
+                    (() => {
+                      const data = selectedOrder.courier_ratio_data.data;
+                      const reports = selectedOrder.courier_ratio_data.reports || [];
+                      const summary = data?.summary;
+                      
+                      if (!summary) {
+                        return (
+                          <div className="text-xs text-gray-500 py-2 text-center">
+                            Invalid or empty statistics received from API.
+                          </div>
+                        );
+                      }
+
+                      const successRatio = Number(summary.success_ratio || 0);
+                      const isHighRisk = successRatio < 75 || reports.length > 0;
+
+                      return (
+                        <div className="space-y-4">
+                          {/* Alert if customer has fraud reports */}
+                          {reports.length > 0 && (
+                            <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-700 flex items-start gap-2 animate-pulse">
+                              <ShieldAlert size={16} className="shrink-0 text-red-600 mt-0.5" />
+                              <div>
+                                <span className="font-bold">⚠️ Warning!</span> This customer has been reported as fraudulent/returns-prone by other merchants.
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Top Overview Grid */}
+                          <div className="grid grid-cols-4 gap-3 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                            <div className="text-center border-r border-gray-100">
+                              <span className="text-[10px] font-bold text-gray-400 block">Total Parcels</span>
+                              <span className="text-sm font-bold text-gray-900 mt-0.5 block">{summary.total_parcel}</span>
+                            </div>
+                            <div className="text-center border-r border-gray-100">
+                              <span className="text-[10px] font-bold text-gray-400 block">Delivered</span>
+                              <span className="text-sm font-bold text-emerald-600 mt-0.5 block">{summary.success_parcel}</span>
+                            </div>
+                            <div className="text-center border-r border-gray-100">
+                              <span className="text-[10px] font-bold text-gray-400 block">Cancelled</span>
+                              <span className="text-sm font-bold text-rose-500 mt-0.5 block">{summary.cancelled_parcel}</span>
+                            </div>
+                            <div className="text-center">
+                              <span className="text-[10px] font-bold text-gray-400 block">Success Ratio</span>
+                              <span className={`text-sm font-bold mt-0.5 block ${isHighRisk ? 'text-rose-600' : 'text-emerald-600'}`}>
+                                {summary.success_ratio}%
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Courier Breakdown Table */}
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Courier Breakdown</span>
+                            <div className="max-h-36 overflow-y-auto border border-gray-100 rounded-xl divide-y divide-gray-50">
+                              {Object.keys(data).filter(key => key !== 'summary').map(key => {
+                                const courier = data[key];
+                                return (
+                                  <div key={key} className="px-3 py-2 flex items-center justify-between text-xs gap-3">
+                                    <div className="flex items-center gap-2">
+                                      {courier.logo ? (
+                                        <img src={courier.logo} alt={courier.name} className="w-5 h-5 object-contain" />
+                                      ) : (
+                                        <Award size={14} className="text-gray-400" />
+                                      )}
+                                      <span className="font-bold text-gray-700">{courier.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-gray-500 font-mono text-[11px]">
+                                      <span>Parcels: <strong>{courier.total_parcel}</strong></span>
+                                      <span>Ratio: <strong className="text-gray-900">{courier.success_ratio}%</strong></span>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Reports list */}
+                          {reports.length > 0 && (
+                            <div className="space-y-2">
+                              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Detailed Reports</span>
+                              <div className="border border-red-100 rounded-xl divide-y divide-red-50 overflow-hidden">
+                                {reports.map((report: any, idx: number) => (
+                                  <div key={idx} className="p-2.5 bg-red-50/20 text-xs space-y-1">
+                                    <div className="flex items-center justify-between text-[10px] text-gray-400 font-bold">
+                                      <span>Reported via {report.courierName || 'Courier'}</span>
+                                      <span>{report.created_at ? new Date(report.created_at).toLocaleDateString() : ''}</span>
+                                    </div>
+                                    <p className="text-red-700 font-medium">{report.details}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  ) : (
+                    <div className="py-4 text-center space-y-3">
+                      <p className="text-xs text-gray-500">No courier statistics checked yet for this customer phone number.</p>
+                      <button
+                        type="button"
+                        onClick={() => handleCheckCourierRatio(selectedOrder.phone, selectedOrder.id)}
+                        disabled={checkingRatio}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-black hover:bg-gray-900 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                      >
+                        {checkingRatio ? (
+                          <>
+                            <RefreshCw size={14} className="animate-spin" />
+                            <span>Checking BDCourier...</span>
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck size={14} />
+                            <span>Check Courier Ratio Now</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

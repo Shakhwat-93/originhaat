@@ -18,6 +18,7 @@ interface Settings {
   youtube_url: string;
   seo_title: string;
   seo_description: string;
+  bdcourier_api_key: string;
 }
 
 export default function AdminSettingsPage() {
@@ -34,6 +35,7 @@ export default function AdminSettingsPage() {
     youtube_url: '',
     seo_title: '',
     seo_description: '',
+    bdcourier_api_key: '',
   });
 
   const [loading, setLoading] = useState(true);
@@ -245,6 +247,26 @@ export default function AdminSettingsPage() {
               placeholder="e.g. 10% discount on all products today! Limited stock."
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
             />
+          </div>
+        </div>
+
+        {/* BDCourier Settings */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
+            <Save size={18} className="text-[#ff6b35]" />
+            <h2 className="font-bold text-gray-900">BDCourier API Configuration</h2>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">BDCourier API Key</label>
+            <input
+              type="text"
+              name="bdcourier_api_key"
+              value={settings.bdcourier_api_key || ''}
+              onChange={handleChange}
+              placeholder="Bearer API Key from bdcourier.com"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+            />
+            <p className="text-xs text-gray-400 mt-1.5 font-medium">Used for real-time delivery fraud checking and merchant success ratio checking inside the Order Management console.</p>
           </div>
         </div>
 
