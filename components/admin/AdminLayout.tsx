@@ -141,7 +141,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [showAlert, setShowAlert]     = useState(true);
   
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     catalog: true,
@@ -456,19 +455,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Content Box */}
         <div className="flex-1 overflow-y-auto">
-          {/* New update available banner alert */}
-          {showAlert && (
-            <div className="bg-[#eff6ff] border-b border-[#bfdbfe] px-6 py-2.5 flex items-center justify-between text-xs text-blue-800 font-semibold shrink-0">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                <span>📥 New update available! <span className="font-extrabold text-blue-900">v2.1.0 (Build 3)</span></span>
-                <button className="bg-blue-500 hover:bg-blue-600 text-white font-black px-2.5 py-1 rounded-lg ml-2 cursor-pointer transition-all">Update Now</button>
-              </div>
-              <button onClick={() => setShowAlert(false)} className="text-blue-400 hover:text-blue-700 cursor-pointer">
-                <X size={14} />
-              </button>
-            </div>
-          )}
 
           {/* Dynamic Breadcrumbs Sub-header inside main body content */}
           <div className="px-6 pt-5 pb-3">
