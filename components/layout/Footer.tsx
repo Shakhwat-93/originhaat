@@ -79,11 +79,11 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               {[
                 { label: 'অর্ডার ট্র্যাক করুন', href: '/track-order' },
-                { label: 'রিটার্ন পলিসি', href: '/return-policy' },
-                { label: 'শিপিং তথ্য', href: '/shipping' },
-                { label: 'প্রাইভেসি পলিসি', href: '/privacy' },
-                { label: 'ব্যবহারের শর্তাবলী', href: '/terms' },
-                { label: 'FAQ', href: '/faq' },
+                { label: 'রিটার্ন পলিসি', href: '/pages/return-policy' },
+                { label: 'শিপিং তথ্য', href: '/pages/shipping-info' },
+                { label: 'প্রাইভেসি পলিসি', href: '/pages/privacy-policy' },
+                { label: 'ব্যবহারের শর্তাবলী', href: '/pages/terms-conditions' },
+                { label: 'FAQ', href: '/pages/faq' },
               ].map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className="hover:text-[#ff6b35] transition-colors">

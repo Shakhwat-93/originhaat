@@ -29,7 +29,8 @@ import {
   Moon,
   Info,
   Download,
-  Plus
+  Plus,
+  FileText
 } from 'lucide-react';
 
 // ─── Menu Navigation Type Definition ──────────────────────────────────────────
@@ -109,6 +110,12 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Settings', 
     icon: Settings 
   },
+  { 
+    type: 'flat', 
+    href: '/admin/pages', 
+    label: 'Pages', 
+    icon: FileText 
+  },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -121,6 +128,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/coupons':    'Coupon Management',
   '/admin/settings':   'Site Settings',
   '/admin/inbox':      'Inbox & Live Chat',
+  '/admin/pages':      'Dynamic Pages Manager',
 };
 
 interface AdminLayoutProps {
