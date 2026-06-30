@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ShoppingCart, Phone, Menu, X, Search, ChevronDown } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
@@ -11,6 +12,7 @@ import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
 export function Header() {
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -48,6 +50,14 @@ export function Header() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setMobileMenuOpen(false);
+    }
+  };
 
   const totalItems = mounted ? getTotalItems() : 0;
 
@@ -127,20 +137,20 @@ export function Header() {
             </Link>
 
             {/* Search Bar — Desktop */}
-            <div className="flex-1 max-w-xl mx-6">
+            <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xl mx-6">
               <div className="relative w-full">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="পণ্য খুঁজুন..."
-                  className="w-full pl-4 pr-12 py-2.5 border-2 border-[#e5e7eb] rounded-xl text-sm focus:border-[#ff6b35] focus:outline-none transition-colors"
+                  className="w-full pl-4 pr-12 py-2.5 border-2 border-[#e5e7eb] rounded-xl text-sm focus:border-primary focus:outline-none transition-colors text-black bg-white"
                 />
-                <button className="absolute right-0 top-0 h-full px-4 bg-[#ff6b35] rounded-r-xl text-white hover:bg-[#e55520] transition-colors">
+                <button type="submit" className="absolute right-0 top-0 h-full px-4 bg-primary rounded-r-xl text-white hover:bg-primary-dark transition-colors cursor-pointer">
                   <Search size={16} />
                 </button>
               </div>
-            </div>
+            </form>
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
@@ -170,20 +180,20 @@ export function Header() {
           </div>
 
           {/* Mobile Search Bar */}
-          <div className="md:hidden pb-3">
+          <form onSubmit={handleSearchSubmit} className="md:hidden pb-3">
             <div className="relative w-full">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="পণ্য খুঁজুন..."
-                className="w-full pl-4 pr-12 py-2 border-2 border-[#e5e7eb] rounded-xl text-sm focus:border-[#ff6b35] focus:outline-none transition-colors"
+                className="w-full pl-4 pr-12 py-2 border-2 border-[#e5e7eb] rounded-xl text-sm focus:border-primary focus:outline-none transition-colors text-black bg-white"
               />
-              <button className="absolute right-0 top-0 h-full px-4 bg-[#ff6b35] rounded-r-xl text-white hover:bg-[#e55520] transition-colors">
+              <button type="submit" className="absolute right-0 top-0 h-full px-4 bg-primary rounded-r-xl text-white hover:bg-primary-dark transition-colors cursor-pointer">
                 <Search size={16} />
               </button>
             </div>
-          </div>
+          </form>
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 pb-3 text-sm font-medium">
@@ -251,16 +261,20 @@ export function Header() {
             </div>
 
             {/* Mobile Search */}
-            <div className="p-4 border-b border-[#e5e7eb]">
+            <form onSubmit={handleSearchSubmit} className="p-4 border-b border-[#e5e7eb]">
               <div className="relative">
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="পণ্য খুঁজুন..."
-                  className="w-full pl-4 pr-10 py-2.5 border border-[#e5e7eb] rounded-lg text-sm focus:border-[#ff6b35] focus:outline-none"
+                  className="w-full pl-4 pr-10 py-2.5 border border-[#e5e7eb] rounded-lg text-sm focus:border-primary focus:outline-none text-black bg-white"
                 />
-                <Search size={16} className="absolute right-3 top-3 text-[#6b7280]" />
+                <button type="submit" className="absolute right-3 top-3 text-[#6b7280] hover:text-primary cursor-pointer">
+                  <Search size={16} />
+                </button>
               </div>
-            </div>
+            </form>
 
             <nav className="flex-1 overflow-y-auto p-4 space-y-1">
               <Link
