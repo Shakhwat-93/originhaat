@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, Phone, Menu, X, Search, ChevronDown } from 'lucide-react';
+import { ShoppingCart, Phone, Menu, X, Search, ChevronDown, Route } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { categories } from '@/data/products';
@@ -81,7 +81,7 @@ export function Header() {
           {/* Mobile Header Row */}
           <div className="flex md:hidden items-center justify-between h-16">
             {/* Left: Mobile Menu Toggle */}
-            <div className="flex items-center justify-start w-12">
+            <div className="flex items-center justify-start w-24">
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors"
@@ -105,14 +105,22 @@ export function Header() {
               </Link>
             </div>
 
-            {/* Right: Cart */}
-            <div className="flex items-center justify-end w-12">
+            {/* Right: Track Order & Cart */}
+            <div className="flex items-center justify-end gap-2 w-24">
+              <Link
+                href="/track-order"
+                className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
+                title="অর্ডার ট্র্যাক করুন"
+                aria-label="অর্ডার ট্র্যাক করুন"
+              >
+                <Route size={20} />
+              </Link>
               <Link
                 href="/cart"
-                className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors"
+                className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
                 aria-label={`কার্ট — ${totalItems} টি পণ্য`}
               >
-                <ShoppingCart size={20} className="text-[#374151]" />
+                <ShoppingCart size={20} />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#ff6b35] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
                     {totalItems > 9 ? '9+' : totalItems}
@@ -163,13 +171,23 @@ export function Header() {
                 <span className="font-medium">{phone}</span>
               </a>
 
+              {/* Order Track */}
+              <Link
+                href="/track-order"
+                className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
+                title="অর্ডার ট্র্যাক করুন"
+                aria-label="অর্ডার ট্র্যাক করুন"
+              >
+                <Route size={20} />
+              </Link>
+
               {/* Cart */}
               <Link
                 href="/cart"
-                className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors"
+                className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
                 aria-label={`কার্ট — ${totalItems} টি পণ্য`}
               >
-                <ShoppingCart size={20} className="text-[#374151]" />
+                <ShoppingCart size={20} />
                 {totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#ff6b35] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
                     {totalItems > 9 ? '9+' : totalItems}
