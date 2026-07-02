@@ -8,7 +8,7 @@ interface Props {
   params: Promise<{ slug: string }>;
 }
 
-export const revalidate = 0; // force dynamic rendering
+export const revalidate = 30; // cache for 30 seconds (ISR)
 
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;

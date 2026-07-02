@@ -7,7 +7,7 @@ import { WhyChooseUs } from '@/components/sections/WhyChooseUs';
 import { CTABanner } from '@/components/sections/CTABanner';
 import { getBanners, getCategories, getFeaturedProducts, supabaseServer } from '@/lib/db';
 
-export const revalidate = 0; // force dynamic rendering
+export const revalidate = 30; // cache for 30 seconds (ISR)
 
 export default async function HomePage() {
   // Fetch data in parallel
