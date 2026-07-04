@@ -53,6 +53,23 @@ export default function AdminOrdersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [checkingRatio, setCheckingRatio] = useState(false);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+
+  const handleToggleSelectAll = () => {
+    if (selectedOrderIds.length === filteredOrders.length) {
+      setSelectedOrderIds([]);
+    } else {
+      setSelectedOrderIds(filteredOrders.map(o => o.id));
+    }
+  };
+
+  const handleToggleSelect = (orderId: string) => {
+    if (selectedOrderIds.includes(orderId)) {
+      setSelectedOrderIds(prev => prev.filter(id => id !== orderId));
+    } else {
+      setSelectedOrderIds(prev => [...prev, orderId]);
+    }
+  };
 
   // Search & Filter
   const [search, setSearch] = useState('');
@@ -171,64 +188,58 @@ export default function AdminOrdersPage() {
     document.body.removeChild(link);
   };
 
-  const handlePrint = (order: Order) => {
+  const handlePrintOrders = (ordersToPrint: Order[]) => {
+    if (ordersToPrint.length === 0) return;
+    
     const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
+    if (!printWindow) {
+      showErrorAlert('Blocker Active', 'Please allow pop-ups to print invoices.');
+      return;
+    }
 
-    const itemsHtml = order.oh_order_items?.map(item => `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.product_name}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">৳${item.price}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">৳${item.price * item.quantity}</td>
-      </tr>
-    `).join('') || '';
+    const receiptsHtml = ordersToPrint.map((order, index) => {
+      const itemsHtml = order.oh_order_items?.map(item => `
+        <tr class="item-row">
+          <td class="desc">${item.product_name} <br/> <span class="price-detail">${item.quantity} x ৳${item.price}</span></td>
+          <td class="total">৳${item.price * item.quantity}</td>
+        </tr>
+      `).join('') || '';
 
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Invoice #${order.order_number}</title>
-          <style>
-            body { font-family: sans-serif; color: #333; margin: 40px; }
-            .header { display: flex; justify-content: space-between; border-bottom: 2px solid #ff6b35; padding-bottom: 20px; }
-            .logo { font-size: 24px; font-weight: bold; color: #ff6b35; }
-            .details { margin: 30px 0; display: flex; justify-content: space-between; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th { background: #f9f9f9; padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-            .totals { width: 300px; margin-left: auto; margin-top: 30px; }
-            .totals div { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
-            .totals .grand { font-size: 18px; font-weight: bold; border-bottom: 2px solid #333; padding-top: 12px; }
-            .footer { margin-top: 50px; text-align: center; font-size: 12px; color: #888; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div>
-              <div class="logo">Origin Haat</div>
-              <div>Order Invoice</div>
-            </div>
-            <div style="text-align: right;">
-              <div><strong>Invoice No:</strong> #${order.order_number}</div>
-              <div><strong>Date:</strong> ${new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</div>
-            </div>
+      const isLast = index === ordersToPrint.length - 1;
+      const pageBreakClass = isLast ? '' : 'page-break';
+
+      return `
+        <div class="receipt-container ${pageBreakClass}">
+          <div class="store-header">
+            <h1 class="store-name">Origin Haat</h1>
+            <p class="store-subtitle">বাংলাদেশের সেরা অনলাইন শপ</p>
+            <p class="store-info">Hotline: 01700000000 | www.originhaat.com</p>
           </div>
 
-          <div class="details">
-            <div>
-              <strong>Customer Details:</strong><br>
-              ${order.customer_name}<br>
-              Mobile: ${order.phone}<br>
-              Address: ${order.address}, ${order.district}
-            </div>
+          <div class="divider"></div>
+
+          <div class="order-meta">
+            <div><strong>Invoice:</strong> #${order.order_number}</div>
+            <div><strong>Date:</strong> ${new Date(order.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+            <div><strong>Status:</strong> ${order.status.toUpperCase()}</div>
           </div>
 
-          <table>
+          <div class="divider"></div>
+
+          <div class="customer-info">
+            <div class="section-title">Customer Details:</div>
+            <div><strong>Name:</strong> ${order.customer_name}</div>
+            <div><strong>Phone:</strong> ${order.phone}</div>
+            <div><strong>Address:</strong> ${order.address}, ${order.district}</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <table class="items-table">
             <thead>
               <tr>
-                <th>Item</th>
-                <th style="text-align: center;">Quantity</th>
-                <th style="text-align: right;">Price</th>
-                <th style="text-align: right;">Total</th>
+                <th class="desc">Item Details</th>
+                <th class="total">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -236,33 +247,204 @@ export default function AdminOrdersPage() {
             </tbody>
           </table>
 
-          <div class="totals">
-            <div>
-              <span>Delivery Charge:</span>
+          <div class="divider-dashed"></div>
+
+          <div class="totals-section">
+            <div class="total-row">
+              <span>Subtotal</span>
+              <span>৳${order.grand_total - order.delivery_charge + order.discount_amount}</span>
+            </div>
+            <div class="total-row">
+              <span>Delivery Charge</span>
               <span>৳${order.delivery_charge}</span>
             </div>
-            ${order.discount_amount ? `
-              <div>
-                <span>Discount:</span>
+            ${order.discount_amount > 0 ? `
+              <div class="total-row discount">
+                <span>Discount</span>
                 <span>-৳${order.discount_amount}</span>
               </div>
             ` : ''}
-            <div class="grand">
-              <span>Grand Total:</span>
+            <div class="total-row grand">
+              <span>Grand Total</span>
               <span>৳${order.grand_total}</span>
             </div>
           </div>
 
-          <div class="footer">
-            Thank you for shopping with Origin Haat!
+          <div class="divider"></div>
+
+          <div class="receipt-footer">
+            <p class="thanks">Thank you for shopping with us!</p>
+            <p class="delivery-note">Cash on Delivery (COD) order.</p>
+            <div class="barcode">*${order.order_number}*</div>
           </div>
+        </div>
+      `;
+    }).join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Origin Haat POS Invoice</title>
+          <style>
+            @page {
+              size: 80mm auto;
+              margin: 0;
+            }
+            body {
+              font-family: 'Courier New', Courier, monospace;
+              color: #000;
+              margin: 0;
+              padding: 4mm 4mm 10mm 4mm;
+              width: 72mm;
+              background-color: #fff;
+              font-size: 11px;
+              line-height: 1.4;
+            }
+            .receipt-container {
+              width: 100%;
+              box-sizing: border-box;
+            }
+            .page-break {
+              page-break-after: always;
+              break-after: page;
+              margin-bottom: 20px;
+              border-bottom: 2px dashed #000;
+              padding-bottom: 20px;
+            }
+            .store-header {
+              text-align: center;
+              margin-bottom: 4px;
+            }
+            .store-name {
+              font-size: 18px;
+              font-weight: 900;
+              margin: 0 0 2px 0;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            .store-subtitle {
+              font-size: 9px;
+              margin: 0 0 2px 0;
+              font-weight: bold;
+            }
+            .store-info {
+              font-size: 8px;
+              margin: 0;
+            }
+            .divider {
+              border-top: 1px solid #000;
+              margin: 8px 0;
+            }
+            .divider-dashed {
+              border-top: 1px dashed #000;
+              margin: 8px 0;
+            }
+            .order-meta, .customer-info {
+              margin-bottom: 8px;
+              font-size: 10px;
+            }
+            .section-title {
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 10px;
+              margin-bottom: 4px;
+              text-decoration: underline;
+            }
+            .items-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 6px 0;
+            }
+            .items-table th {
+              font-weight: bold;
+              text-transform: uppercase;
+              border-bottom: 1px solid #000;
+              font-size: 9px;
+              padding-bottom: 3px;
+            }
+            .items-table td {
+              padding: 4px 0;
+              vertical-align: top;
+              font-size: 9px;
+            }
+            .price-detail {
+              color: #555;
+              font-size: 8px;
+            }
+            .items-table th.desc, .items-table td.desc {
+              text-align: left;
+              width: 70%;
+            }
+            .items-table th.total, .items-table td.total {
+              text-align: right;
+              width: 30%;
+            }
+            .totals-section {
+              margin-top: 6px;
+            }
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              font-size: 10px;
+              margin: 2px 0;
+            }
+            .total-row.discount {
+              font-style: italic;
+            }
+            .total-row.grand {
+              font-size: 12px;
+              font-weight: bold;
+              border-top: 1.5px solid #000;
+              padding-top: 4px;
+              margin-top: 4px;
+            }
+            .receipt-footer {
+              text-align: center;
+              margin-top: 12px;
+            }
+            .thanks {
+              font-weight: bold;
+              margin: 0 0 2px 0;
+              font-size: 10px;
+            }
+            .delivery-note {
+              font-size: 8px;
+              margin: 0 0 8px 0;
+            }
+            .barcode {
+              font-family: 'Libre Barcode 39', 'Courier New', monospace;
+              font-size: 20px;
+              margin-top: 4px;
+              letter-spacing: 2px;
+            }
+            @media print {
+              body {
+                padding: 0;
+                width: 80mm;
+              }
+              .page-break {
+                border-bottom: none;
+                padding-bottom: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${receiptsHtml}
           <script>
-            window.onload = function() { window.print(); window.close(); }
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
           </script>
         </body>
       </html>
     `);
     printWindow.document.close();
+  };
+
+  const handlePrint = (order: Order) => {
+    handlePrintOrders([order]);
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -332,12 +514,50 @@ export default function AdminOrdersPage() {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedOrderIds.length > 0 && (
+        <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in-up">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="text-[#ff6b35]" size={18} />
+            <span className="text-sm font-semibold text-gray-700">
+              Selected <strong className="text-[#ff6b35]">{selectedOrderIds.length}</strong> orders for actions
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                const ordersToPrint = orders.filter(o => selectedOrderIds.includes(o.id));
+                handlePrintOrders(ordersToPrint);
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#ff6b35] hover:bg-[#e55520] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              <Printer size={14} />
+              <span>Bulk Print (POS Receipt)</span>
+            </button>
+            <button
+              onClick={() => setSelectedOrderIds([])}
+              className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-xl transition-all cursor-pointer"
+            >
+              Cancel Selection
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Orders Table (Desktop) */}
       <div className="hidden md:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-black">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                <th className="px-6 py-4 w-12">
+                  <input
+                    type="checkbox"
+                    checked={filteredOrders.length > 0 && selectedOrderIds.length === filteredOrders.length}
+                    onChange={handleToggleSelectAll}
+                    className="w-4 h-4 rounded border-gray-300 text-[#ff6b35] focus:ring-[#ff6b35] cursor-pointer"
+                  />
+                </th>
                 <th className="px-6 py-4">Order Number</th>
                 <th className="px-6 py-4">Customer</th>
                 <th className="px-6 py-4">Mobile</th>
@@ -351,6 +571,14 @@ export default function AdminOrdersPage() {
             <tbody className="divide-y divide-gray-100">
               {filteredOrders.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
+                  <td className="px-6 py-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedOrderIds.includes(order.id)}
+                      onChange={() => handleToggleSelect(order.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-[#ff6b35] focus:ring-[#ff6b35] cursor-pointer"
+                    />
+                  </td>
                   <td className="px-6 py-4 font-mono font-bold text-[#ff6b35]">#{order.order_number}</td>
                   <td className="px-6 py-4 font-semibold text-gray-900">{order.customer_name}</td>
                   <td className="px-6 py-4 text-gray-600">{order.phone}</td>
@@ -368,15 +596,24 @@ export default function AdminOrdersPage() {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => setSelectedOrder(order)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                        title="View Details"
                       >
-                        <Eye size={15} />
+                        <Eye size={14} />
                         <span>View</span>
+                      </button>
+                      <button
+                        onClick={() => handlePrintOrders([order])}
+                        className="p-1.5 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1"
+                        title="Print POS Receipt"
+                      >
+                        <Printer size={14} />
+                        <span>Print</span>
                       </button>
                       <select
                         value={order.status}
                         onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                        className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#ff6b35] text-black cursor-pointer bg-white"
+                        className="text-xs px-2 py-1 border border-gray-200 rounded-lg focus:outline-none focus:border-[#ff6b35] text-black cursor-pointer bg-white"
                       >
                         {Object.keys(statusLabels).map(key => (
                           <option key={key} value={key}>{statusLabels[key]}</option>
@@ -388,7 +625,7 @@ export default function AdminOrdersPage() {
               ))}
               {filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
                     No orders found.
                   </td>
                 </tr>
@@ -404,7 +641,15 @@ export default function AdminOrdersPage() {
           <div key={order.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <h4 className="font-bold text-gray-900 text-base">{order.customer_name}</h4>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedOrderIds.includes(order.id)}
+                  onChange={() => handleToggleSelect(order.id)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#ff6b35] focus:ring-[#ff6b35] cursor-pointer"
+                />
+                <h4 className="font-bold text-gray-900 text-base">{order.customer_name}</h4>
+              </div>
               <span className="text-xs text-gray-400 font-mono">id: #{order.order_number}</span>
             </div>
 
