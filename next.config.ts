@@ -10,6 +10,21 @@ const nextConfig: NextConfig = {
         hostname: 'images.unsplash.com',
         pathname: '/**',
       },
+      {
+        protocol: 'http',
+        hostname: '**.sslip.io',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.sslip.io',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+        pathname: '/**',
+      },
     ],
   },
 
