@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
-import { ShoppingBag, TrendingUp, Users, DollarSign, ArrowRight, RefreshCw, Calendar, Clock } from 'lucide-react';
+import { ShoppingBag, TrendingUp, DollarSign, ArrowRight, RefreshCw, Calendar, Clock } from 'lucide-react';
 
 interface DbOrder {
   id: string;
@@ -42,71 +41,47 @@ export default function AdminDashboardPage() {
     totalOrders: 0,
     todayOrders: 0,
     totalRevenue: 0,
-    pendingOrders: 0
+    pendingOrders: 0,
   });
 
-  const fetchDashboardData = async (isSilent = false) => {
+  const fetchDashboardData = useCallback(async (isSilent = false) => {
     if (!isSilent) setLoading(true);
     else setRefreshing(true);
 
     try {
-      const { data, error } = await supabase
-        .from('oh_orders')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const res = await fetch('/api/orders', {
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123' },
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error('Failed to fetch orders');
+      const json = await res.json();
+      const data: DbOrder[] = json.orders || [];
 
-      if (data) {
-        setOrders(data);
+      setOrders(data);
 
-        // Calculate stats
-        const totalOrders = data.length;
-        const pendingOrders = data.filter(o => o.status === 'pending').length;
-        
-        // Today's orders
-        const todayStr = new Date().toDateString();
-        const todayOrders = data.filter(o => new Date(o.created_at).toDateString() === todayStr).length;
-
-        // Total revenue (sum of grand_total of all non-cancelled orders)
-        const totalRevenue = data
+      const todayStr = new Date().toDateString();
+      setStats({
+        totalOrders: data.length,
+        pendingOrders: data.filter(o => o.status === 'pending').length,
+        todayOrders: data.filter(o => new Date(o.created_at).toDateString() === todayStr).length,
+        totalRevenue: data
           .filter(o => o.status !== 'cancelled')
-          .reduce((sum, o) => sum + (o.grand_total || 0), 0);
-
-        setStats({
-          totalOrders,
-          todayOrders,
-          totalRevenue,
-          pendingOrders
-        });
-      }
+          .reduce((sum, o) => sum + (o.grand_total || 0), 0),
+      });
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
-
-    // Subscribe to new orders (real-time notification badge or list update)
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'oh_orders' },
-        () => {
-          fetchDashboardData(true);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    // Poll every 30 seconds instead of realtime WebSocket
+    const interval = setInterval(() => fetchDashboardData(true), 30000);
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
 
   if (loading) {
     return (
@@ -136,7 +111,7 @@ export default function AdminDashboardPage() {
           className="inline-flex items-center gap-2 px-4 py-2 border border-gray-200 hover:border-gray-300 bg-white rounded-xl text-sm font-semibold text-gray-700 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
         >
           <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-          {refreshing ? 'Refreshing...' : 'Real-time Refresh'}
+          {refreshing ? 'Refreshing...' : 'Refresh'}
         </button>
       </div>
 
@@ -145,7 +120,7 @@ export default function AdminDashboardPage() {
         {[
           { label: 'Total Revenue', value: `৳${stats.totalRevenue.toLocaleString('en-US')}`, subText: 'Excluding cancelled', icon: <DollarSign size={24} />, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
           { label: 'Total Orders', value: String(stats.totalOrders), subText: 'Cumulative sales count', icon: <ShoppingBag size={24} />, color: 'text-[#ff6b35] bg-[#fff3ef] border-[#fff3ef]' },
-          { label: 'Today\'s Orders', value: String(stats.todayOrders), subText: 'Orders placed today', icon: <Calendar size={24} />, color: 'text-blue-600 bg-blue-50 border-blue-100' },
+          { label: "Today's Orders", value: String(stats.todayOrders), subText: 'Orders placed today', icon: <Calendar size={24} />, color: 'text-blue-600 bg-blue-50 border-blue-100' },
           { label: 'Pending Orders', value: String(stats.pendingOrders), subText: 'Awaiting fulfillment', icon: <Clock size={24} />, color: 'text-amber-600 bg-amber-50 border-amber-100' },
         ].map((card, i) => (
           <div key={i} className="bg-white rounded-2xl border border-gray-200/80 p-6 flex items-start gap-4 transition-all duration-300 hover:shadow-md hover:border-gray-300">
@@ -240,9 +215,7 @@ export default function AdminDashboardPage() {
             </div>
           ))}
           {orders.length === 0 && (
-            <div className="p-6 text-center text-gray-400 text-xs">
-              No orders found yet.
-            </div>
+            <div className="p-6 text-center text-gray-400 text-xs">No orders found yet.</div>
           )}
         </div>
       </div>

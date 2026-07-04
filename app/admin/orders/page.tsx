@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect, useCallback } from 'react';
 import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
@@ -106,60 +105,52 @@ export default function AdminOrdersPage() {
     }
   };
 
-  const fetchOrders = async (silent = false) => {
+  const fetchOrders = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
 
     try {
-      const { data, error } = await supabase
-        .from('oh_orders')
-        .select('*, oh_order_items(*)')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      if (data) setOrders(data);
+      const res = await fetch('/api/orders', {
+        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123' },
+      });
+      if (!res.ok) throw new Error('Failed to fetch orders');
+      const json = await res.json();
+      if (json.orders) setOrders(json.orders);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchOrders();
-
-    // Subscribe to new orders
-    const channel = supabase
-      .channel('realtime-orders-admin')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'oh_orders' },
-        () => {
-          fetchOrders(true);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+    // Poll every 30 seconds — no WebSocket needed
+    const interval = setInterval(() => fetchOrders(true), 30000);
+    return () => clearInterval(interval);
+  }, [fetchOrders]);
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    // Optimistic UI update
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     if (selectedOrder && selectedOrder.id === orderId) {
       setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
     }
 
-    const { error } = await supabase
-      .from('oh_orders')
-      .update({ status: newStatus })
-      .eq('id', orderId);
-
-    if (error) {
-      console.error(error);
-      fetchOrders(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+        },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+      if (!res.ok) throw new Error('Status update failed');
+    } catch (err) {
+      console.error(err);
+      fetchOrders(true); // revert on failure
     }
   };
 
