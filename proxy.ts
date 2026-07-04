@@ -5,12 +5,12 @@ export function proxy(request: NextRequest) {
   const headers = request.headers;
   const proto = headers.get('x-forwarded-proto');
 
-  // Traefik (and most reverse proxies) sets 'x-forwarded-proto' to 'http' or 'https'.
-  // We only redirect if it's explicitly 'http'. This ensures that:
-  // 1. It is fully compatible with reverse proxies.
-  // 2. We avoid redirect loops (since Traefik forwards internally via HTTP but sets this header to 'https').
-  // 3. Local development (where the header is absent) doesn't get redirected to HTTPS.
-  if (proto === 'http') {
+  console.log(`[PROXY DEBUG] URL: ${request.url} | x-forwarded-proto: ${proto}`);
+
+  const isProd = process.env.NODE_ENV === 'production';
+
+  // Only perform HTTPS redirection in production (deployed proxy environment)
+  if (isProd && proto === 'http') {
     const host = headers.get('x-forwarded-host') || headers.get('host');
     if (host) {
       // Reconstruct the HTTPS URL using the forwarded host and path/query.
