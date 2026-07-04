@@ -4,29 +4,44 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const headers = request.headers;
   const proto = headers.get('x-forwarded-proto');
+  const host = headers.get('x-forwarded-host') || headers.get('host') || '';
 
-  console.log(`[PROXY DEBUG] URL: ${request.url} | x-forwarded-proto: ${proto}`);
+  // Check if this is a local development host (localhost, loopback IP, or local network IP)
+  const isLocalHost =
+    host.includes('localhost') ||
+    host.includes('127.0.0.1') ||
+    host.includes('[::1]') ||
+    host.includes('lvh.me') ||
+    host.startsWith('192.168.') ||
+    host.startsWith('10.') ||
+    host.startsWith('172.');
 
-  const isProd = process.env.NODE_ENV === 'production';
+  console.log(`[PROXY DEBUG] Host: ${host} | Local: ${isLocalHost} | Proto: ${proto}`);
 
-  // Only perform HTTPS redirection in production (deployed proxy environment)
-  if (isProd && proto === 'http') {
-    const host = headers.get('x-forwarded-host') || headers.get('host');
-    if (host) {
-      // Reconstruct the HTTPS URL using the forwarded host and path/query.
-      // We do not use request.nextUrl.clone() directly as it might include the internal 
-      // container port (e.g. :3000), which would break public redirects.
-      const httpsUrl = new URL(
-        request.nextUrl.pathname + request.nextUrl.search,
-        `https://${host}`
-      );
-      
-      // Perform a permanent (301) redirect to preserve SEO link equity.
-      return NextResponse.redirect(httpsUrl.toString(), 301);
-    }
+  // Only redirect to HTTPS in production environments and for non-local domains
+  if (!isLocalHost && proto === 'http') {
+    // Reconstruct the HTTPS URL using the forwarded host and path/query.
+    const httpsUrl = new URL(
+      request.nextUrl.pathname + request.nextUrl.search,
+      `https://${host}`
+    );
+    
+    // Perform a permanent (301) redirect to preserve SEO link equity.
+    return NextResponse.redirect(httpsUrl.toString(), 301);
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // Add Strict-Transport-Security (HSTS) only in production and NOT for localhost/local dev
+  const isProd = process.env.NODE_ENV === 'production';
+  if (isProd && !isLocalHost) {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=63072000; includeSubDomains; preload'
+    );
+  }
+
+  return response;
 }
 
 // Config to match all routes except standard static files and metadata
