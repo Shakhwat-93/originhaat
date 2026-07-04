@@ -198,10 +198,18 @@ export default function AdminOrdersPage() {
     }
 
     const receiptsHtml = ordersToPrint.map((order, index) => {
-      const itemsHtml = order.oh_order_items?.map(item => `
+      const grandTotal = Number(order.grand_total || 0);
+      const deliveryCharge = Number(order.delivery_charge || 0);
+      const discountAmount = Number(order.discount_amount || 0);
+      const subtotal = grandTotal - deliveryCharge + discountAmount;
+
+      const itemsHtml = order.oh_order_items?.map((item, idx) => `
         <tr class="item-row">
-          <td class="desc">${item.product_name} <br/> <span class="price-detail">${item.quantity} x ৳${item.price}</span></td>
-          <td class="total">৳${item.price * item.quantity}</td>
+          <td class="text-center">${idx + 1}</td>
+          <td class="desc">${item.product_name}</td>
+          <td class="text-center">${item.quantity}</td>
+          <td class="text-right">৳${item.price}</td>
+          <td class="text-right">৳${item.price * item.quantity}</td>
         </tr>
       `).join('') || '';
 
@@ -209,37 +217,61 @@ export default function AdminOrdersPage() {
       const pageBreakClass = isLast ? '' : 'page-break';
 
       return `
-        <div class="receipt-container ${pageBreakClass}">
-          <div class="store-header">
-            <h1 class="store-name">Origin Haat</h1>
-            <p class="store-subtitle">বাংলাদেশের সেরা অনলাইন শপ</p>
-            <p class="store-info">Hotline: 01700000000 | www.originhaat.com</p>
+        <div class="invoice-container ${pageBreakClass}">
+          <!-- Invoice Header -->
+          <div class="invoice-header">
+            <div class="brand-section">
+              <h1 class="brand-name">Origin Haat</h1>
+              <p class="brand-tagline">বাংলাদেশের সেরা অনলাইন শপ</p>
+              <p class="brand-details">
+                Hotline: 01700000000<br/>
+                Email: support@originhaat.com<br/>
+                Website: www.originhaat.com
+              </p>
+            </div>
+            <div class="invoice-title-section">
+              <h2 class="title-label">INVOICE</h2>
+              <div class="meta-grid">
+                <span class="meta-label">Invoice No:</span>
+                <span class="meta-value font-mono">#${order.order_number}</span>
+                
+                <span class="meta-label">Date:</span>
+                <span class="meta-value">${new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                
+                <span class="meta-label">Status:</span>
+                <span class="meta-value"><span class="badge status-${order.status}">${order.status.toUpperCase()}</span></span>
+              </div>
+            </div>
           </div>
 
           <div class="divider"></div>
 
-          <div class="order-meta">
-            <div><strong>Invoice:</strong> #${order.order_number}</div>
-            <div><strong>Date:</strong> ${new Date(order.created_at).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-            <div><strong>Status:</strong> ${order.status.toUpperCase()}</div>
+          <!-- Billing Info -->
+          <div class="billing-section">
+            <div class="billing-box">
+              <h3 class="section-title">Bill To:</h3>
+              <p class="customer-name">${order.customer_name}</p>
+              <p class="customer-info">
+                <strong>Phone:</strong> ${order.phone}<br/>
+                <strong>Address:</strong> ${order.address}, ${order.district}
+              </p>
+            </div>
+            <div class="billing-box payment-box">
+              <h3 class="section-title">Payment Info:</h3>
+              <p class="payment-method">Cash on Delivery (COD)</p>
+              <p class="payment-note">Please pay the delivery man the exact amount upon receiving your package.</p>
+            </div>
           </div>
 
-          <div class="divider"></div>
-
-          <div class="customer-info">
-            <div class="section-title">Customer Details:</div>
-            <div><strong>Name:</strong> ${order.customer_name}</div>
-            <div><strong>Phone:</strong> ${order.phone}</div>
-            <div><strong>Address:</strong> ${order.address}, ${order.district}</div>
-          </div>
-
-          <div class="divider"></div>
-
-          <table class="items-table">
+          <!-- Items Table -->
+          <table class="invoice-table">
             <thead>
               <tr>
-                <th class="desc">Item Details</th>
-                <th class="total">Total</th>
+                <th style="width: 8%; text-align: center;">SL.</th>
+                <th style="width: 52%; text-align: left;">Product Description</th>
+                <th style="width: 10%; text-align: center;">Qty</th>
+                <th style="width: 15%; text-align: right;">Unit Price</th>
+                <th style="width: 15%; text-align: right;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -247,35 +279,42 @@ export default function AdminOrdersPage() {
             </tbody>
           </table>
 
-          <div class="divider-dashed"></div>
-
-          <div class="totals-section">
-            <div class="total-row">
-              <span>Subtotal</span>
-              <span>৳${order.grand_total - order.delivery_charge + order.discount_amount}</span>
+          <!-- Totals & Notes Section -->
+          <div class="summary-section">
+            <div class="notes-box">
+              <h4 class="notes-title">Terms & Conditions:</h4>
+              <p class="notes-content">
+                1. This is a computer-generated invoice and requires no signature.<br/>
+                2. Check the product in front of the delivery agent.<br/>
+                3. Return policy is valid up to 7 days from the receipt.
+              </p>
             </div>
-            <div class="total-row">
-              <span>Delivery Charge</span>
-              <span>৳${order.delivery_charge}</span>
-            </div>
-            ${order.discount_amount > 0 ? `
-              <div class="total-row discount">
-                <span>Discount</span>
-                <span>-৳${order.discount_amount}</span>
+            <div class="totals-box">
+              <div class="total-row">
+                <span>Subtotal:</span>
+                <span>৳${subtotal}</span>
               </div>
-            ` : ''}
-            <div class="total-row grand">
-              <span>Grand Total</span>
-              <span>৳${order.grand_total}</span>
+              <div class="total-row">
+                <span>Delivery Charge:</span>
+                <span>৳${deliveryCharge}</span>
+              </div>
+              ${discountAmount > 0 ? `
+                <div class="total-row discount">
+                  <span>Discount:</span>
+                  <span>-৳${discountAmount}</span>
+                </div>
+              ` : ''}
+              <div class="total-row grand">
+                <span>Grand Total:</span>
+                <span>৳${grandTotal}</span>
+              </div>
             </div>
           </div>
 
-          <div class="divider"></div>
-
-          <div class="receipt-footer">
-            <p class="thanks">Thank you for shopping with us!</p>
-            <p class="delivery-note">Cash on Delivery (COD) order.</p>
-            <div class="barcode">*${order.order_number}*</div>
+          <!-- Invoice Footer -->
+          <div class="invoice-footer">
+            <p class="thanks-message">Thank you for shopping with Origin Haat!</p>
+            <p class="support-text">For any query, please call 01700000000 or email us at support@originhaat.com</p>
           </div>
         </div>
       `;
@@ -284,147 +323,262 @@ export default function AdminOrdersPage() {
     printWindow.document.write(`
       <html>
         <head>
-          <title>Origin Haat POS Invoice</title>
+          <title>Origin Haat Invoice</title>
           <style>
             @page {
-              size: 80mm auto;
-              margin: 0;
+              size: A4;
+              margin: 15mm;
             }
             body {
-              font-family: 'Courier New', Courier, monospace;
-              color: #000;
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+              color: #333;
               margin: 0;
-              padding: 4mm 4mm 10mm 4mm;
-              width: 72mm;
+              padding: 0;
               background-color: #fff;
-              font-size: 11px;
-              line-height: 1.4;
+              font-size: 13px;
+              line-height: 1.5;
             }
-            .receipt-container {
+            .invoice-container {
               width: 100%;
               box-sizing: border-box;
+              min-height: 260mm;
+              display: flex;
+              flex-direction: column;
             }
             .page-break {
               page-break-after: always;
               break-after: page;
+            }
+            .invoice-header {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
               margin-bottom: 20px;
-              border-bottom: 2px dashed #000;
-              padding-bottom: 20px;
             }
-            .store-header {
-              text-align: center;
-              margin-bottom: 4px;
-            }
-            .store-name {
-              font-size: 18px;
-              font-weight: 900;
-              margin: 0 0 2px 0;
+            .brand-name {
+              font-size: 28px;
+              font-weight: 800;
+              margin: 0 0 4px 0;
+              color: #ff6b35;
               text-transform: uppercase;
               letter-spacing: 0.5px;
             }
-            .store-subtitle {
-              font-size: 9px;
-              margin: 0 0 2px 0;
-              font-weight: bold;
+            .brand-tagline {
+              font-size: 12px;
+              margin: 0 0 10px 0;
+              font-weight: 600;
+              color: #4b5563;
             }
-            .store-info {
-              font-size: 8px;
+            .brand-details {
+              font-size: 11px;
+              color: #6b7280;
               margin: 0;
+              line-height: 1.4;
             }
-            .divider {
-              border-top: 1px solid #000;
-              margin: 8px 0;
+            .invoice-title-section {
+              text-align: right;
             }
-            .divider-dashed {
-              border-top: 1px dashed #000;
-              margin: 8px 0;
+            .title-label {
+              font-size: 32px;
+              font-weight: 900;
+              margin: 0 0 15px 0;
+              color: #111827;
+              letter-spacing: 1px;
             }
-            .order-meta, .customer-info {
-              margin-bottom: 8px;
+            .meta-grid {
+              display: grid;
+              grid-template-columns: auto 120px;
+              gap: 6px 12px;
+              text-align: right;
+              font-size: 12px;
+            }
+            .meta-label {
+              color: #6b7280;
+              font-weight: 600;
+            }
+            .meta-value {
+              color: #111827;
+              font-weight: 700;
+            }
+            .badge {
+              display: inline-block;
+              padding: 2px 8px;
+              border-radius: 6px;
               font-size: 10px;
+              font-weight: 800;
+              text-transform: uppercase;
+            }
+            .status-pending { background-color: #fef3c7; color: #d97706; }
+            .status-confirmed { background-color: #dbeafe; color: #2563eb; }
+            .status-processing { background-color: #f3e8ff; color: #7c3aed; }
+            .status-shipped { background-color: #e0f2fe; color: #0284c7; }
+            .status-delivered { background-color: #d1fae5; color: #059669; }
+            .status-cancelled { background-color: #fee2e2; color: #dc2626; }
+
+            .divider {
+              border-top: 2px solid #ff6b35;
+              margin: 15px 0 25px 0;
+            }
+            
+            .billing-section {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 30px;
+              gap: 40px;
+            }
+            .billing-box {
+              flex: 1;
+              background-color: #f9fafb;
+              border: 1px solid #f3f4f6;
+              border-radius: 12px;
+              padding: 18px;
             }
             .section-title {
-              font-weight: bold;
+              font-size: 12px;
+              font-weight: 700;
               text-transform: uppercase;
-              font-size: 10px;
-              margin-bottom: 4px;
-              text-decoration: underline;
+              color: #9ca3af;
+              margin: 0 0 10px 0;
+              letter-spacing: 0.5px;
             }
-            .items-table {
+            .customer-name {
+              font-size: 16px;
+              font-weight: 700;
+              color: #111827;
+              margin: 0 0 8px 0;
+            }
+            .customer-info {
+              font-size: 12px;
+              color: #4b5563;
+              margin: 0;
+              line-height: 1.5;
+            }
+            .payment-method {
+              font-size: 15px;
+              font-weight: 700;
+              color: #111827;
+              margin: 0 0 8px 0;
+            }
+            .payment-note {
+              font-size: 11px;
+              color: #6b7280;
+              margin: 0;
+            }
+
+            .invoice-table {
               width: 100%;
               border-collapse: collapse;
-              margin: 6px 0;
+              margin-bottom: 30px;
             }
-            .items-table th {
-              font-weight: bold;
+            .invoice-table th {
+              background-color: #111827;
+              color: #fff;
+              font-weight: 700;
               text-transform: uppercase;
-              border-bottom: 1px solid #000;
-              font-size: 9px;
-              padding-bottom: 3px;
+              font-size: 11px;
+              padding: 12px 16px;
+              letter-spacing: 0.5px;
             }
-            .items-table td {
-              padding: 4px 0;
-              vertical-align: top;
-              font-size: 9px;
+            .invoice-table th:first-child {
+              border-top-left-radius: 8px;
+              border-bottom-left-radius: 8px;
             }
-            .price-detail {
-              color: #555;
-              font-size: 8px;
+            .invoice-table th:last-child {
+              border-top-right-radius: 8px;
+              border-bottom-right-radius: 8px;
             }
-            .items-table th.desc, .items-table td.desc {
-              text-align: left;
-              width: 70%;
+            .invoice-table td {
+              padding: 12px 16px;
+              border-bottom: 1px solid #f3f4f6;
+              color: #374151;
             }
-            .items-table th.total, .items-table td.total {
-              text-align: right;
-              width: 30%;
+            .invoice-table .item-row:hover {
+              background-color: #f9fafb;
             }
-            .totals-section {
-              margin-top: 6px;
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            
+            .summary-section {
+              display: flex;
+              justify-content: space-between;
+              margin-top: auto;
+              padding-top: 20px;
+              gap: 40px;
+            }
+            .notes-box {
+              flex: 1.2;
+            }
+            .notes-title {
+              font-size: 12px;
+              font-weight: 700;
+              color: #374151;
+              margin: 0 0 6px 0;
+            }
+            .notes-content {
+              font-size: 11px;
+              color: #6b7280;
+              margin: 0;
+              line-height: 1.6;
+            }
+            .totals-box {
+              flex: 0.8;
+              background-color: #f9fafb;
+              border-radius: 12px;
+              padding: 16px;
+              border: 1px solid #f3f4f6;
             }
             .total-row {
               display: flex;
               justify-content: space-between;
-              font-size: 10px;
-              margin: 2px 0;
+              font-size: 13px;
+              color: #4b5563;
+              padding: 6px 0;
+              border-bottom: 1px solid #f3f4f6;
+            }
+            .total-row:last-child {
+              border-bottom: none;
             }
             .total-row.discount {
-              font-style: italic;
+              color: #059669;
+              font-weight: 600;
             }
             .total-row.grand {
-              font-size: 12px;
-              font-weight: bold;
-              border-top: 1.5px solid #000;
-              padding-top: 4px;
+              font-size: 16px;
+              font-weight: 800;
+              color: #111827;
+              border-top: 1.5px solid #e5e7eb;
+              padding-top: 10px;
               margin-top: 4px;
             }
-            .receipt-footer {
+            
+            .invoice-footer {
               text-align: center;
-              margin-top: 12px;
+              border-top: 1px solid #e5e7eb;
+              padding-top: 20px;
+              margin-top: 40px;
             }
-            .thanks {
-              font-weight: bold;
-              margin: 0 0 2px 0;
-              font-size: 10px;
+            .thanks-message {
+              font-size: 14px;
+              font-weight: 700;
+              color: #ff6b35;
+              margin: 0 0 4px 0;
             }
-            .delivery-note {
-              font-size: 8px;
-              margin: 0 0 8px 0;
-            }
-            .barcode {
-              font-family: 'Libre Barcode 39', 'Courier New', monospace;
-              font-size: 20px;
-              margin-top: 4px;
-              letter-spacing: 2px;
+            .support-text {
+              font-size: 11px;
+              color: #9ca3af;
+              margin: 0;
             }
             @media print {
               body {
-                padding: 0;
-                width: 80mm;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
               }
-              .page-break {
-                border-bottom: none;
-                padding-bottom: 0;
+              .invoice-container {
+                min-height: auto;
+              }
+              .invoice-table th {
+                background-color: #111827 !important;
+                color: #fff !important;
               }
             }
           </style>
