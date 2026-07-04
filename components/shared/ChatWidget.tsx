@@ -68,6 +68,7 @@ function BubbleDots() {
 
 export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
   const [isOpen, setIsOpen]         = useState(false);
+  const [showSpeedDial, setShowSpeedDial] = useState(false);
   const [activeScreen, setActiveScreen] = useState<'welcome' | 'menu' | 'live-onboard' | 'live-thread' | 'ai-bot' | 'end-session' | 'feedback-done'>('welcome');
 
   // Visitor
@@ -782,24 +783,116 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
         </div>
       )}
 
+      <style>{`
+        @keyframes fadeInUpDial {
+          from {
+            opacity: 0;
+            transform: translateY(16px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        .animate-speed-dial {
+          animation: fadeInUpDial 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
+
+      {/* ── SPEED DIAL MENU ── */}
+      {!isOpen && showSpeedDial && (
+        <div className="flex flex-col items-end gap-3 mb-3 animate-speed-dial">
+          {/* Hotline Call */}
+          <div className="flex items-center group cursor-pointer transition-all duration-200 hover:translate-x-[-4px]">
+            <span className="bg-white text-[#374151] text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100 mr-2 select-none pointer-events-none whitespace-nowrap">
+              {lang === 'bn' ? 'হটলাইন কল' : 'Hotline Call'}
+            </span>
+            <a
+              href={`tel:${whatsappNumber}`}
+              className="w-12 h-12 rounded-full bg-[#007aff] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              title="Call Hotline"
+            >
+              <Phone size={20} className="drop-shadow" />
+            </a>
+          </div>
+
+          {/* Facebook Messenger */}
+          <div className="flex items-center group cursor-pointer transition-all duration-200 hover:translate-x-[-4px]">
+            <span className="bg-white text-[#374151] text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100 mr-2 select-none pointer-events-none whitespace-nowrap">
+              {lang === 'bn' ? 'মেসেঞ্জার' : 'Messenger'}
+            </span>
+            <a
+              href={facebookUrl ? facebookUrl.replace('facebook.com', 'm.me') : 'https://m.me/originhaat'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#00c6ff] to-[#0072ff] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              title="Chat on Messenger"
+            >
+              <svg className="w-5.5 h-5.5 fill-white drop-shadow" viewBox="0 0 24 24">
+                <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.913 1.448 5.493 3.722 7.189.195.145.308.38.293.624l-.161 2.584c-.015.263.242.463.488.368l2.915-1.13c.18-.07.382-.057.553.033A12.723 12.723 0 0012 20.485c5.523 0 10-4.145 10-9.242C22 6.145 17.523 2 12 2zm1.03 12.307l-2.455-2.617-4.793 2.617 5.27-5.59 2.454 2.617 4.794-2.617-5.27 5.59z" />
+              </svg>
+            </a>
+          </div>
+
+          {/* WhatsApp Support */}
+          <div className="flex items-center group cursor-pointer transition-all duration-200 hover:translate-x-[-4px]">
+            <span className="bg-white text-[#374151] text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100 mr-2 select-none pointer-events-none whitespace-nowrap">
+              {lang === 'bn' ? 'হোয়াটসঅ্যাপ' : 'WhatsApp'}
+            </span>
+            <a
+              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।')}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-12 h-12 rounded-full bg-[#25d366] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              title="Chat on WhatsApp"
+            >
+              <svg className="w-5.5 h-5.5 fill-white drop-shadow" viewBox="0 0 24 24">
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.963C16.788 3.98 14.316 2.956 12 2.955 6.562 2.955 2.14 7.324 2.138 12.755c-.001 1.64.435 3.242 1.262 4.674L2.3 21.047l3.816-1.001zM17.848 14.61c-.32-.16-1.89-.93-2.185-1.04-.294-.11-.51-.16-.723.16-.214.32-.83 1.04-1.016 1.25-.187.21-.374.24-.694.08-.32-.16-1.353-.5-2.578-1.593-.952-.85-1.595-1.9-1.782-2.22-.187-.32-.02-.493.14-.653.144-.144.32-.373.48-.56.16-.188.213-.32.32-.533.107-.213.053-.4-.027-.56-.08-.16-.723-1.74-.99-2.388-.26-.628-.528-.544-.723-.554-.187-.01-.4-.01-.613-.01-.213 0-.56.08-.853.4-.293.32-1.12 1.1-1.12 2.678 0 1.578 1.147 3.1 1.307 3.32.16.22 2.257 3.447 5.467 4.837.763.33 1.357.527 1.82.674.767.244 1.467.21 2.02.127.618-.093 1.89-.773 2.157-1.48.267-.707.267-1.313.187-1.439-.08-.126-.293-.207-.613-.367z" />
+              </svg>
+            </a>
+          </div>
+
+          {/* Live Chat */}
+          <div className="flex items-center group cursor-pointer transition-all duration-200 hover:translate-x-[-4px]">
+            <span className="bg-white text-[#374151] text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100 mr-2 select-none pointer-events-none whitespace-nowrap">
+              {lang === 'bn' ? 'লাইভ চ্যাট' : 'Live Chat'}
+            </span>
+            <button
+              onClick={() => { setIsOpen(true); setShowSpeedDial(false); }}
+              className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ff6b35] to-[#ff8c5a] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+              title="Start Live Chat"
+            >
+              <MessageSquare size={20} className="drop-shadow" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── FLOATING BUTTON ── */}
       <button
-        onClick={() => { setIsOpen(!isOpen); setUnreadCount(0); }}
+        onClick={() => {
+          if (isOpen) {
+            setIsOpen(false);
+          } else {
+            setShowSpeedDial(!showSpeedDial);
+          }
+          setUnreadCount(0);
+        }}
         aria-label="Chat Support"
         className="relative w-14 h-14 rounded-full text-white flex items-center justify-center shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
         style={{ background: 'linear-gradient(135deg, #ff6b35, #ff8c5a)' }}
       >
         {/* Pulse ring */}
-        {!isOpen && <span className="absolute inset-0 rounded-full bg-[#ff6b35] animate-ping opacity-25" />}
+        {!isOpen && !showSpeedDial && <span className="absolute inset-0 rounded-full bg-[#ff6b35] animate-ping opacity-25" />}
 
         {/* Unread badge */}
-        {!isOpen && unreadCount > 0 && (
+        {!isOpen && !showSpeedDial && unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow">
             {unreadCount}
           </span>
         )}
 
-        {isOpen ? <X size={22} className="drop-shadow" /> : <MessageCircle size={24} className="drop-shadow" />}
+        {isOpen || showSpeedDial ? <X size={22} className="drop-shadow" /> : <MessageCircle size={24} className="drop-shadow" />}
       </button>
     </div>
   );
