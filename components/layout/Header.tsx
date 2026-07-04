@@ -287,12 +287,7 @@ export function Header() {
             <Link href="/cart" className="text-[#374151] hover:text-[#ff6b35] transition-colors">
               কার্ট
             </Link>
-            <Link
-              href="/track-order"
-              className="ml-auto text-xs text-[#6b7280] hover:text-[#ff6b35] transition-colors font-semibold"
-            >
-              অর্ডার ট্র্যাক
-            </Link>
+
           </nav>
         </div>
       </header>
