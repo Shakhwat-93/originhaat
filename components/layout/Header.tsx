@@ -109,7 +109,7 @@ export function Header() {
             <div className="flex items-center justify-end gap-2 w-28">
               <Link
                 href="/track-order"
-                className="flex flex-col items-center justify-center w-[54px] h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
+                className="flex flex-col items-center justify-center w-[58px] h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
                 title="অর্ডার ট্র্যাক করুন"
                 aria-label="অর্ডার ট্র্যাক করুন"
               >
@@ -131,7 +131,7 @@ export function Header() {
                   <circle cx="11.5" cy="18.5" r="1.5" />
                   <circle cx="18.5" cy="18.5" r="1.5" />
                 </svg>
-                <span className="text-[8px] font-bold mt-0.5 leading-none uppercase tracking-wide">
+                <span className="text-[8px] font-bold mt-0.5 leading-none uppercase tracking-wide whitespace-nowrap">
                   Order Track
                 </span>
               </Link>
@@ -216,7 +216,7 @@ export function Header() {
                   <circle cx="11.5" cy="18.5" r="1.5" />
                   <circle cx="18.5" cy="18.5" r="1.5" />
                 </svg>
-                <span className="text-[8px] font-bold mt-0.5 leading-none uppercase tracking-wide">
+                <span className="text-[8px] font-bold mt-0.5 leading-none uppercase tracking-wide whitespace-nowrap">
                   Order Track
                 </span>
               </Link>
