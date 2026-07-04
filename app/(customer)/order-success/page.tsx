@@ -29,9 +29,12 @@ export default function OrderSuccessPage() {
 
     const fetchWhatsappNumber = async () => {
       try {
-        const { data } = await supabase.from('oh_settings').select('whatsapp_number').eq('id', 1).single();
-        if (data?.whatsapp_number) {
-          setWhatsappNumber(data.whatsapp_number);
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.whatsapp_number) {
+            setWhatsappNumber(data.whatsapp_number);
+          }
         }
       } catch (err) {
         console.error(err);

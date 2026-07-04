@@ -124,8 +124,14 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
     setVisitorId(storedId);
 
     fetch('/api/ip-info').then(r => r.json()).then(d => setVisitorMeta(d)).catch(() => {});
-    supabase.from('oh_settings').select('facebook_url').eq('id', 1).single()
-      .then(({ data }) => { if (data?.facebook_url) setFacebookUrl(data.facebook_url); });
+    fetch('/api/settings')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
+        if (data?.facebook_url) setFacebookUrl(data.facebook_url);
+      })
+      .catch(() => {
+        setFacebookUrl('https://facebook.com/originhaat');
+      });
 
     const savedName  = localStorage.getItem('oh_visitor_name');
     const savedPhone = localStorage.getItem('oh_visitor_phone');

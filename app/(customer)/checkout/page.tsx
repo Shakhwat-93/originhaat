@@ -56,14 +56,17 @@ export default function CheckoutPage() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const { data } = await supabase.from('oh_settings').select('*').eq('id', 1).single();
-        if (data) {
-          setSettings({
-            delivery_charge_inside: data.delivery_charge_inside ?? 60,
-            delivery_charge_outside: data.delivery_charge_outside ?? 120,
-            free_delivery_min_order: data.free_delivery_min_order ?? 999,
-            whatsapp_number: data.whatsapp_number || '8801700000000',
-          });
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            setSettings({
+              delivery_charge_inside: data.delivery_charge_inside ?? 60,
+              delivery_charge_outside: data.delivery_charge_outside ?? 120,
+              free_delivery_min_order: data.free_delivery_min_order ?? 999,
+              whatsapp_number: data.whatsapp_number || '8801700000000',
+            });
+          }
         }
       } catch (err) {
         console.error(err);

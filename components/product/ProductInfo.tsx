@@ -28,9 +28,13 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
   // Fetch Hotline / WhatsApp number dynamically on mount
   useEffect(() => {
-    supabase.from('oh_settings').select('whatsapp_number').eq('id', 1).single()
-      .then(({ data }) => {
+    fetch('/api/settings')
+      .then(r => r.ok ? r.json() : Promise.reject())
+      .then(data => {
         if (data?.whatsapp_number) setPhone(data.whatsapp_number);
+      })
+      .catch(() => {
+        setPhone('8801700000000');
       });
   }, []);
 

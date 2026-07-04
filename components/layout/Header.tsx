@@ -32,11 +32,14 @@ export function Header() {
   useEffect(() => {
     const fetchHeaderSettings = async () => {
       try {
-        const { data } = await supabase.from('oh_settings').select('*').eq('id', 1).single();
-        if (data) {
-          if (data.announcement_text) setAnnouncementText(data.announcement_text);
-          setAnnouncementActive(data.is_announcement_active);
-          if (data.whatsapp_number) setPhone(data.whatsapp_number);
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            if (data.announcement_text) setAnnouncementText(data.announcement_text);
+            setAnnouncementActive(data.is_announcement_active);
+            if (data.whatsapp_number) setPhone(data.whatsapp_number);
+          }
         }
       } catch (err) {
         console.error(err);
