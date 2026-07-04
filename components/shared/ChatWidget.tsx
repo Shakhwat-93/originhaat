@@ -301,7 +301,7 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
     (activeScreen === 'live-thread' && !!activeChat);
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end select-none" style={{ fontFamily: "'Inter', 'Noto Sans Bengali', sans-serif" }}>
+    <div className="fixed bottom-20 md:bottom-5 right-5 z-50 flex flex-col items-end select-none" style={{ fontFamily: "'Inter', 'Noto Sans Bengali', sans-serif" }}>
 
       {/* ── CHAT POPUP CARD ── */}
       {isOpen && (
