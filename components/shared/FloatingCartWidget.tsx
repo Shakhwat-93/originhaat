@@ -2,20 +2,31 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ShoppingCart } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { formatBDTNumeric } from '@/lib/utils';
 
 export function FloatingCartWidget() {
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const totalItems = useCartStore((s) => s.getTotalItems)();
-  const totalPrice = useCartStore((s) => s.getTotalPrice)();
+  // Subscribe directly to items array to trigger instant re-renders upon state changes
+  const items = useCartStore((s) => s.items);
 
   if (!mounted) return null;
+
+  // Hide the floating cart widget on the Cart and Checkout pages to prevent layout clutter
+  const isHiddenPage = pathname === '/cart' || pathname === '/checkout';
+  if (isHiddenPage) return null;
+
+  // Calculate totals from the subscribed items state
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
 
   return (
     <Link
