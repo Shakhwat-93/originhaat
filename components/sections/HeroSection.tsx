@@ -104,68 +104,68 @@ export function HeroSection({ banners }: HeroSectionProps) {
   const pad = (n: number) => String(n).padStart(2, '0');
 
   return (
-    <section className="relative bg-[#f8f9fa] overflow-hidden">
-      {/* Main Slider */}
-      <div 
-        className="relative w-full aspect-[16/9] md:aspect-[21/9] bg-[#111111] overflow-hidden group"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {slides.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-              index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
-            }`}
-          >
-            <Link href={slide.link} className="block w-full h-full relative">
-              <Image
-                src={slide.image}
-                alt={slide.alt}
-                fill
-                priority={index === 0}
-                sizes="100vw"
-                className="object-cover object-center w-full h-full"
-              />
-            </Link>
-          </div>
-        ))}
-
-        {/* Navigation Arrows */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-white transition-colors opacity-0 group-hover:opacity-100"
-          aria-label="Previous Slide"
+    <section className="bg-[#fafaf9]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+        {/* Main Slider */}
+        <div 
+          className="relative w-full aspect-[16/9] md:aspect-[21/9] bg-[#111111] rounded-2xl md:rounded-[24px] border border-gray-200 shadow-md overflow-hidden group"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         >
-          <ChevronLeft size={24} />
-        </button>
-        <button
-          onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-white transition-colors opacity-0 group-hover:opacity-100"
-          aria-label="Next Slide"
-        >
-          <ChevronRight size={24} />
-        </button>
-
-        {/* Dot Indicators */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
-          {slides.map((_, index) => (
-            <button
+          {slides.map((slide, index) => (
+            <div
               key={index}
-              onClick={() => setCurrent(index)}
-              className={`w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full transition-all duration-300 ${
-                index === current 
-                  ? 'bg-[#ff6b35] scale-125' 
-                  : 'bg-white/50 hover:bg-white'
+              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+                index === current ? 'opacity-100 z-10' : 'opacity-0 z-0'
               }`}
-              aria-label={`Go to slide ${index + 1}`}
-            />
+            >
+              <Link href={slide.link} className="block w-full h-full relative">
+                <Image
+                  src={slide.image}
+                  alt={slide.alt}
+                  fill
+                  priority={index === 0}
+                  sizes="(max-width: 1280px) 100vw, 1200px"
+                  className="object-cover object-center w-full h-full"
+                />
+              </Link>
+            </div>
           ))}
+
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-white transition-colors opacity-0 group-hover:opacity-100"
+            aria-label="Previous Slide"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-8 h-8 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-black/30 hover:bg-black/50 text-white transition-colors opacity-0 group-hover:opacity-100"
+            aria-label="Next Slide"
+          >
+            <ChevronRight size={24} />
+          </button>
+
+          {/* Dot Indicators */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrent(index)}
+                className={`w-2.5 h-2.5 md:w-3.5 md:h-3.5 rounded-full transition-all duration-300 ${
+                  index === current 
+                    ? 'bg-[#ff6b35] scale-125' 
+                    : 'bg-white/50 hover:bg-white'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
-
-
     </section>
   );
 }
