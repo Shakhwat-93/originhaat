@@ -419,7 +419,7 @@ export default function InboxDashboard() {
   const fetchCRMProfile = async (chat: Chat) => {
     if (chat.customer_phone) {
       const { data: orders } = await supabase
-        .from('oh_orders').select('*').eq('customer_phone', chat.customer_phone)
+        .from('oh_orders').select('*').eq('phone', chat.customer_phone)
         .order('created_at', { ascending: false });
       if (orders && orders.length > 0) {
         const spent = orders.reduce((s, o) => s + (o.total_price || 0), 0);
