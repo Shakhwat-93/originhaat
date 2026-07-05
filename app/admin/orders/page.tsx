@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award } from 'lucide-react';
+import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface OrderItem {
@@ -26,6 +26,10 @@ interface Order {
   created_at: string;
   oh_order_items?: OrderItem[];
   courier_ratio_data?: any;
+  pathao_consignment_id?: string | null;
+  pathao_order_status?: string | null;
+  pathao_delivery_fee?: number | null;
+  pathao_sent_at?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -53,6 +57,7 @@ export default function AdminOrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [checkingRatio, setCheckingRatio] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [sendingToPathao, setSendingToPathao] = useState(false);
 
   const handleToggleSelectAll = () => {
     if (selectedOrderIds.length === filteredOrders.length) {
@@ -102,6 +107,49 @@ export default function AdminOrdersPage() {
       showErrorAlert('Check Failed', err.message || 'Failed to retrieve courier success ratio.');
     } finally {
       setCheckingRatio(false);
+    }
+  };
+
+  const handleSendToPathao = async (orderIdOrIds: string | string[]) => {
+    setSendingToPathao(true);
+    const ids = Array.isArray(orderIdOrIds) ? orderIdOrIds : [orderIdOrIds];
+    try {
+      const res = await fetch('/api/pathao/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send to Pathao');
+
+      // Update local state with returned consignment data
+      if (data.results) {
+        setOrders(prev => prev.map(o => {
+          const result = data.results.find((r: any) => r.orderId === o.id);
+          if (result?.success) {
+            return { ...o, pathao_consignment_id: result.consignment_id, pathao_sent_at: new Date().toISOString() };
+          }
+          return o;
+        }));
+        // Update selected order if open
+        if (selectedOrder) {
+          const result = data.results.find((r: any) => r.orderId === selectedOrder.id);
+          if (result?.success) {
+            setSelectedOrder(prev => prev ? { ...prev, pathao_consignment_id: result.consignment_id, pathao_sent_at: new Date().toISOString() } : null);
+          }
+        }
+      }
+
+      if (data.success) {
+        showSuccessAlert('Sent to Pathao! 🚚', data.message || 'Order(s) successfully created on Pathao.');
+      } else {
+        showErrorAlert('Partial Success', data.message);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showErrorAlert('Pathao Error', err.message || 'Failed to send order to Pathao.');
+    } finally {
+      setSendingToPathao(false);
     }
   };
 
@@ -680,6 +728,24 @@ export default function AdminOrdersPage() {
               <span>Bulk Print (POS Receipt)</span>
             </button>
             <button
+              onClick={() => {
+                const unsentIds = selectedOrderIds.filter(id => {
+                  const o = orders.find(or => or.id === id);
+                  return o && !o.pathao_consignment_id;
+                });
+                if (unsentIds.length === 0) {
+                  showErrorAlert('All Sent', 'All selected orders are already sent to Pathao.');
+                  return;
+                }
+                handleSendToPathao(unsentIds);
+              }}
+              disabled={sendingToPathao}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              {sendingToPathao ? <RefreshCw size={14} className="animate-spin" /> : <Truck size={14} />}
+              <span>Send to Pathao</span>
+            </button>
+            <button
               onClick={() => setSelectedOrderIds([])}
               className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-xl transition-all cursor-pointer"
             >
@@ -1062,6 +1128,68 @@ export default function AdminOrdersPage() {
                 <div className="flex justify-between font-bold text-gray-900 text-sm border-t border-gray-100 pt-2.5">
                   <span>Grand Total</span>
                   <span>৳{selectedOrder.grand_total}</span>
+                </div>
+              </div>
+
+              {/* Pathao Courier Section */}
+              <div className="bg-indigo-50/60 rounded-xl border border-indigo-100 overflow-hidden">
+                <div className="px-4 py-3 border-b border-indigo-100 flex items-center justify-between bg-indigo-50">
+                  <div className="flex items-center gap-2">
+                    <Truck size={16} className="text-indigo-600" />
+                    <span className="text-xs font-bold text-indigo-800 uppercase tracking-wider">Pathao Courier</span>
+                  </div>
+                  {selectedOrder.pathao_consignment_id && (
+                    <span className="text-[10px] font-bold text-indigo-400 font-mono">
+                      ID: {selectedOrder.pathao_consignment_id}
+                    </span>
+                  )}
+                </div>
+                <div className="p-4">
+                  {selectedOrder.pathao_consignment_id ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-700">
+                        <CheckCircle2 size={16} className="text-emerald-500" />
+                        <span className="text-xs font-bold">Order sent to Pathao successfully</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 bg-white rounded-xl p-3 border border-indigo-100">
+                        <div className="text-center">
+                          <span className="text-[10px] font-bold text-gray-400 block">Consignment ID</span>
+                          <span className="text-xs font-mono font-bold text-indigo-700 mt-0.5 block">{selectedOrder.pathao_consignment_id}</span>
+                        </div>
+                        <div className="text-center border-x border-indigo-50">
+                          <span className="text-[10px] font-bold text-gray-400 block">Status</span>
+                          <span className="text-xs font-semibold text-gray-800 mt-0.5 block">{selectedOrder.pathao_order_status || 'Pending'}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-[10px] font-bold text-gray-400 block">Delivery Fee</span>
+                          <span className="text-xs font-bold text-gray-800 mt-0.5 block">
+                            {selectedOrder.pathao_delivery_fee ? `৳${selectedOrder.pathao_delivery_fee}` : '—'}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedOrder.pathao_sent_at && (
+                        <p className="text-[10px] text-gray-400 font-medium">
+                          Sent: {new Date(selectedOrder.pathao_sent_at).toLocaleString('en-US')}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-xs text-gray-500">This order has not been sent to Pathao yet.</p>
+                      <button
+                        type="button"
+                        onClick={() => handleSendToPathao(selectedOrder.id)}
+                        disabled={sendingToPathao}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 shrink-0"
+                      >
+                        {sendingToPathao ? (
+                          <><RefreshCw size={14} className="animate-spin" /><span>Sending...</span></>
+                        ) : (
+                          <><Truck size={14} /><span>Send to Pathao</span></>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
