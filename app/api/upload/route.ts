@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { promises as fs } from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -14,6 +15,17 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 });
 
+// ── Convert any image to WebP ─────────────────────────────────────────────
+async function convertToWebP(buffer: Buffer, originalType: string): Promise<Uint8Array> {
+  // Skip SVG & GIF (no meaningful WebP conversion)
+  if (originalType === 'image/svg+xml' || originalType === 'image/gif') {
+    return buffer;
+  }
+  return sharp(buffer)
+    .webp({ quality: 82, effort: 4 }) // quality 82 = great visual / small size balance
+    .toBuffer();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -25,10 +37,29 @@ export async function POST(request: NextRequest) {
     }
 
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const originalBuffer = Buffer.from(bytes);
 
-    // Sanitize filename
-    const filename = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    // ── WebP Conversion ────────────────────────────────────────────────────
+    const isImage = file.type.startsWith('image/');
+    const shouldConvert = isImage && file.type !== 'image/svg+xml' && file.type !== 'image/gif';
+
+    let uploadBuffer: Buffer | Uint8Array = originalBuffer;
+    let uploadContentType = file.type;
+    let uploadExtension = path.extname(file.name) || '';
+
+    if (shouldConvert) {
+      uploadBuffer = await convertToWebP(originalBuffer, file.type);
+      uploadContentType = 'image/webp';
+      uploadExtension = '.webp';
+    }
+
+    // Sanitize filename and force .webp extension
+    const baseName = file.name
+      .replace(/\.[^/.]+$/, '')          // remove original extension
+      .replace(/[^a-zA-Z0-9-]/g, '_')   // sanitize special chars
+      .substring(0, 60);                 // max 60 chars
+
+    const filename = `${Date.now()}-${baseName}${uploadExtension}`;
 
     try {
       // 1. Ensure bucket exists in Supabase Storage
@@ -42,11 +73,11 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // 2. Upload file to Supabase
+      // 2. Upload converted file to Supabase
       const { error } = await supabaseAdmin.storage
         .from(bucket)
-        .upload(filename, buffer, {
-          contentType: file.type,
+        .upload(filename, uploadBuffer, {
+          contentType: uploadContentType,
           upsert: true,
         });
 
@@ -57,20 +88,34 @@ export async function POST(request: NextRequest) {
         .from(bucket)
         .getPublicUrl(filename);
 
-      return NextResponse.json({ url: publicUrl });
+      return NextResponse.json({
+        url: publicUrl,
+        converted: shouldConvert,
+        originalSize: originalBuffer.byteLength,
+        convertedSize: uploadBuffer.byteLength,
+        savings: shouldConvert
+          ? `${Math.round((1 - uploadBuffer.byteLength / originalBuffer.byteLength) * 100)}%`
+          : '0%',
+      });
     } catch (storageError) {
       console.warn('Supabase storage failed, falling back to local storage:', storageError);
 
       // FALLBACK: Local storage in public/uploads
       const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      
-      // Ensure folder exists
       await fs.mkdir(uploadDir, { recursive: true });
-      
-      const filePath = path.join(uploadDir, filename);
-      await fs.writeFile(filePath, buffer);
 
-      return NextResponse.json({ url: `/uploads/${filename}` });
+      const filePath = path.join(uploadDir, filename);
+      await fs.writeFile(filePath, uploadBuffer);
+
+      return NextResponse.json({
+        url: `/uploads/${filename}`,
+        converted: shouldConvert,
+        originalSize: originalBuffer.byteLength,
+        convertedSize: uploadBuffer.byteLength,
+        savings: shouldConvert
+          ? `${Math.round((1 - uploadBuffer.byteLength / originalBuffer.byteLength) * 100)}%`
+          : '0%',
+      });
     }
   } catch (error: any) {
     console.error('Upload API Error:', error);
