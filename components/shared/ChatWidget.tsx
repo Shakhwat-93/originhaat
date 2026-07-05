@@ -110,6 +110,8 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
 
   // Unread badge
   const [unreadCount, setUnreadCount] = useState(0);
+  const lastMessageIdsRef = useRef<Set<string>>(new Set());
+  const isOpenRef = useRef(false);
 
   const messagesEndRef    = useRef<HTMLDivElement>(null);
   const botMessagesEndRef = useRef<HTMLDivElement>(null);
@@ -144,6 +146,9 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { botMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [aiBotMessages]);
 
+  // Keep isOpenRef in sync so loadMessages can check without stale closure
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
+
 
 
   // Fallback Polling (in case WebSockets fail or are blocked by proxy constraints)
@@ -163,7 +168,19 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
 
   const loadMessages = async (chatId: string) => {
     const { data } = await supabase.from('oh_chat_messages').select('*').eq('chat_id', chatId).order('created_at', { ascending: true });
-    if (data) setMessages(data);
+    if (data) {
+      // Detect new agent/system messages and badge the floating button
+      data.forEach(msg => {
+        if (!lastMessageIdsRef.current.has(msg.id)) {
+          lastMessageIdsRef.current.add(msg.id);
+          // Only bump unread if widget is closed and message is from agent/system
+          if (!isOpenRef.current && (msg.sender_role === 'agent' || msg.sender_role === 'system')) {
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      });
+      setMessages(data);
+    }
   };
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -878,18 +895,22 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
             setShowSpeedDial(!showSpeedDial);
           }
           setUnreadCount(0);
+          lastMessageIdsRef.current = new Set(
+            messages.map((m: any) => m.id)
+          );
         }}
         aria-label="Chat Support"
         className="relative w-14 h-14 rounded-full text-white flex items-center justify-center shadow-xl transition-all hover:scale-105 active:scale-95 cursor-pointer"
         style={{ background: 'linear-gradient(135deg, #ff6b35, #ff8c5a)' }}
       >
         {/* Pulse ring */}
-        {!isOpen && !showSpeedDial && <span className="absolute inset-0 rounded-full bg-[#ff6b35] animate-ping opacity-25" />}
+        {/* Pulse ring — only when no unread messages */}
+        {!isOpen && !showSpeedDial && unreadCount === 0 && <span className="absolute inset-0 rounded-full bg-[#ff6b35] animate-ping opacity-25" />}
 
-        {/* Unread badge */}
+        {/* Unread badge — bounces to attract attention */}
         {!isOpen && !showSpeedDial && unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-white shadow">
-            {unreadCount}
+          <span className="absolute -top-2 -right-2 min-w-[22px] h-[22px] px-1 bg-red-500 text-white text-[11px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-lg animate-bounce">
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
 
