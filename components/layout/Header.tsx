@@ -264,7 +264,7 @@ export function Header() {
             </div>
 
             {/* Right: Cart */}
-            <div className="flex items-center justify-end">
+            <div className="flex items-center justify-end w-28">
               <Link
                 href="/cart"
                 className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
