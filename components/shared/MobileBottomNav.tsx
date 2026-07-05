@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Grid, Store, ShoppingCart, User } from 'lucide-react';
+import { Home, Grid, Store, ShoppingCart, Truck } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
@@ -34,8 +34,8 @@ export function MobileBottomNav() {
     {
       label: 'শপ',
       icon: <Store size={22} />,
-      href: '/',
-      active: pathname === '/',
+      href: '/shop',
+      active: pathname === '/shop',
     },
     {
       label: 'Home',
@@ -52,8 +52,8 @@ export function MobileBottomNav() {
       badge: totalItems,
     },
     {
-      label: 'অ্যাকাউন্ট',
-      icon: <User size={22} />,
+      label: 'অর্ডার ট্র্যাক',
+      icon: <Truck size={22} />,
       href: '/track-order',
       active: pathname === '/track-order',
     },

@@ -313,11 +313,7 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
       {/* ── CHAT POPUP CARD ── */}
       {isOpen && (
         <div
-          className="mb-3 bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden"
-          style={{
-            width: 'min(360px, calc(100vw - 24px))',
-            height: 'min(580px, calc(100dvh - 100px))',
-          }}
+          className="mb-3 bg-white rounded-3xl shadow-2xl border border-gray-100 flex flex-col overflow-hidden w-[340px] md:w-[360px] max-w-[calc(100vw-24px)] h-[460px] md:h-[580px] max-h-[calc(100dvh-160px)] md:max-h-[calc(100dvh-100px)]"
         >
 
           {/* ── HEADER ── */}
@@ -478,39 +474,39 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
             {activeScreen === 'live-onboard' && (
               <div className="flex-1 overflow-y-auto flex flex-col">
                 {/* Illustration top */}
-                <div className="flex flex-col items-center pt-6 pb-4 px-5 bg-[#fff7f4]">
-                  <RobotAvatar size={72} />
-                  <h3 className="font-extrabold text-gray-900 text-sm mt-3 text-center">
+                <div className="flex flex-col items-center pt-3 pb-2.5 px-4 bg-[#fff7f4]">
+                  <RobotAvatar size={54} />
+                  <h3 className="font-extrabold text-gray-900 text-xs mt-1.5 text-center">
                     {lang === 'bn' ? 'চ্যাট শুরু করতে তথ্য দিন' : 'Tell us a bit about you'}
                   </h3>
-                  <p className="text-[11px] text-gray-400 text-center mt-1">
+                  <p className="text-[10px] text-gray-400 text-center mt-0.5">
                     {lang === 'bn' ? 'নিচের ফর্মটি পূরণ করুন' : 'Fill the form to continue'}
                   </p>
                 </div>
 
-                <form onSubmit={handleOnboard} className="p-5 space-y-3.5 flex-1">
+                <form onSubmit={handleOnboard} className="p-3.5 space-y-2 flex-1">
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider block mb-0.5">
                       {lang === 'bn' ? 'আপনার নাম *' : 'Your Name *'}
                     </label>
                     <input type="text" required value={name} onChange={e => setName(e.target.value)}
                       placeholder={lang === 'bn' ? 'নাম লিখুন' : 'Enter your name'}
-                      className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff6b35] text-gray-800 bg-white" />
+                      className="w-full border border-gray-200 rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#ff6b35] text-gray-800 bg-white" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider block mb-0.5">
                       {lang === 'bn' ? 'মোবাইল নাম্বার *' : 'Mobile Number *'}
                     </label>
                     <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)}
                       placeholder="01XXXXXXXXX"
-                      className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff6b35] text-gray-800 bg-white" />
+                      className="w-full border border-gray-200 rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#ff6b35] text-gray-800 bg-white" />
                   </div>
                   <div>
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                    <label className="text-[9px] font-bold text-gray-500 uppercase tracking-wider block mb-0.5">
                       {lang === 'bn' ? 'ডিপার্টমেন্ট' : 'Department'}
                     </label>
                     <select value={department} onChange={e => setDepartment(e.target.value)}
-                      className="w-full border border-gray-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-[#ff6b35] text-gray-800 bg-white cursor-pointer">
+                      className="w-full border border-gray-200 rounded-2xl px-3.5 py-2 text-xs focus:outline-none focus:border-[#ff6b35] text-gray-800 bg-white cursor-pointer">
                       <option value="Sales">Sales Support (বিক্রয়)</option>
                       <option value="Support">General Support (সাধারণ)</option>
                       <option value="Payment">Payment / Delivery</option>
@@ -519,7 +515,7 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
                     </select>
                   </div>
                   <button type="submit"
-                    className="w-full py-3.5 rounded-2xl text-white font-extrabold text-sm shadow-md transition-all active:scale-95 cursor-pointer mt-2"
+                    className="w-full py-2.5 rounded-2xl text-white font-extrabold text-xs shadow-md transition-all active:scale-95 cursor-pointer mt-1"
                     style={{ background: 'linear-gradient(135deg, #ff6b35, #ff8c5a)' }}>
                     {lang === 'bn' ? '💬 চ্যাট শুরু করুন' : '💬 Start Chat'}
                   </button>
@@ -864,7 +860,11 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
               {lang === 'bn' ? 'লাইভ চ্যাট' : 'Live Chat'}
             </span>
             <button
-              onClick={() => { setIsOpen(true); setShowSpeedDial(false); }}
+              onClick={() => {
+                setIsOpen(true);
+                setShowSpeedDial(false);
+                setActiveScreen(activeChat ? 'live-thread' : 'live-onboard');
+              }}
               className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ff6b35] to-[#ff8c5a] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
               title="Start Live Chat"
             >

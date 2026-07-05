@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ShoppingCart, Phone, Menu, X, Search, ChevronDown, Route } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
@@ -13,11 +13,159 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const router = useRouter();
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryOpen, setCategoryOpen] = useState(false);
   const getTotalItems = useCartStore((s) => s.getTotalItems);
   const { mobileMenuOpen, setMobileMenuOpen } = useUIStore();
+
+  // Real-time search states
+  const [allProducts, setAllProducts] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [focusedInput, setFocusedInput] = useState<'desktop' | 'mobile' | 'mobile-menu' | null>(null);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [productsLoaded, setProductsLoaded] = useState(false);
+
+  const loadSearchProducts = async () => {
+    if (productsLoaded || loadingProducts) return;
+    setLoadingProducts(true);
+    try {
+      const { data, error } = await supabase
+        .from('oh_products')
+        .select('*')
+        .eq('is_active', true);
+      
+      if (!error && data) {
+        setAllProducts(data);
+        setProductsLoaded(true);
+      } else {
+        const { products: fallback } = await import('@/data/products');
+        setAllProducts(fallback);
+        setProductsLoaded(true);
+      }
+    } catch (err) {
+      console.error('Error loading search pool:', err);
+      try {
+        const { products: fallback } = await import('@/data/products');
+        setAllProducts(fallback);
+        setProductsLoaded(true);
+      } catch (e) {}
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => {
+      setFocusedInput(null);
+    }, 200);
+  };
+
+  // Debounced URL updates when on /search page
+  useEffect(() => {
+    if (pathname !== '/search') return;
+    const delayDebounce = setTimeout(() => {
+      if (searchQuery.trim()) {
+        router.replace(`/search?q=${encodeURIComponent(searchQuery.trim())}`, { scroll: false });
+      } else {
+        router.replace('/search', { scroll: false });
+      }
+    }, 300);
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, pathname]);
+
+  // Real-time local search matcher (multi-word & substring)
+  useEffect(() => {
+    if (!searchQuery.trim() || !productsLoaded) {
+      setSearchResults([]);
+      return;
+    }
+    const terms = searchQuery.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    const matches = allProducts.filter((p) => {
+      const nameBn = p.name_bn?.toLowerCase() || '';
+      const nameEn = p.name_en?.toLowerCase() || '';
+      const desc = p.description_bn?.toLowerCase() || '';
+      const shortDesc = p.short_description_bn?.toLowerCase() || '';
+      const tags = Array.isArray(p.tags) ? p.tags.join(' ').toLowerCase() : '';
+      const benefits = Array.isArray(p.benefits) ? p.benefits.join(' ').toLowerCase() : '';
+      
+      return terms.every(term =>
+        nameBn.includes(term) ||
+        nameEn.includes(term) ||
+        desc.includes(term) ||
+        shortDesc.includes(term) ||
+        tags.includes(term) ||
+        benefits.includes(term)
+      );
+    });
+    setSearchResults(matches);
+  }, [searchQuery, allProducts, productsLoaded]);
+
+  const renderSearchDropdown = (type: 'desktop' | 'mobile' | 'mobile-menu') => {
+    if (focusedInput !== type || !searchQuery.trim()) return null;
+    
+    return (
+      <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden text-black animate-fade-in-up">
+        {loadingProducts ? (
+          <div className="p-4 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
+            <span className="w-4 h-4 border-2 border-[#ff6b35] border-t-transparent rounded-full animate-spin" />
+            <span>পণ্য লোড হচ্ছে...</span>
+          </div>
+        ) : searchResults.length > 0 ? (
+          <div className="py-2 text-left">
+            <div className="max-h-72 overflow-y-auto">
+              {searchResults.slice(0, 5).map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/product/${p.slug}`}
+                  onClick={() => {
+                    setFocusedInput(null);
+                    setSearchQuery('');
+                  }}
+                  className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f9fa] transition-colors border-b border-gray-50 last:border-0"
+                >
+                  <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-gray-100">
+                    <img
+                      src={p.images?.[0] || 'https://placeholder.co/100'}
+                      alt={p.name_bn}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h5 className="font-bold text-xs text-gray-800 truncate">{p.name_bn}</h5>
+                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">{p.short_description_bn || p.name_en}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span className="text-xs font-black text-[#ff6b35]">৳{p.price}</span>
+                    {p.original_price && p.original_price > p.price && (
+                      <span className="text-[10px] text-gray-400 line-through block mt-0.5">৳{p.original_price}</span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+            {searchResults.length > 5 && (
+              <Link
+                href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
+                onClick={() => {
+                  setFocusedInput(null);
+                  setMobileMenuOpen(false);
+                }}
+                className="block text-center py-2.5 bg-[#faf9f8] hover:bg-[#f3f0ec] text-[11px] font-extrabold text-[#ff6b35] transition-colors border-t border-gray-100"
+              >
+                সব ফলাফল দেখুন ({searchResults.length} টি)
+              </Link>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 text-center text-xs text-gray-400">
+            কোনো পণ্য পাওয়া যায়নি
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const [mounted, setMounted] = useState(false);
 
@@ -169,10 +317,11 @@ export function Header() {
 
             {/* Search Bar — Desktop */}
             <form onSubmit={handleSearchSubmit} className="flex-1 max-w-xl mx-6">
-              <div className="relative w-full">
+              <div className="relative w-full" onBlur={handleBlur}>
                 <input
                   type="text"
                   value={searchQuery}
+                  onFocus={() => { setFocusedInput('desktop'); loadSearchProducts(); }}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="পণ্য খুঁজুন..."
                   className="w-full pl-4 pr-12 py-2.5 border-2 border-[#e5e7eb] rounded-xl text-sm focus:border-primary focus:outline-none transition-colors text-black bg-white"
@@ -180,6 +329,7 @@ export function Header() {
                 <button type="submit" className="absolute right-0 top-0 h-full px-4 bg-primary rounded-r-xl text-white hover:bg-primary-dark transition-colors cursor-pointer">
                   <Search size={16} />
                 </button>
+                {renderSearchDropdown('desktop')}
               </div>
             </form>
 
@@ -242,10 +392,11 @@ export function Header() {
 
           {/* Mobile Search Bar */}
           <form onSubmit={handleSearchSubmit} className="md:hidden pb-3">
-            <div className="relative w-full">
+            <div className="relative w-full" onBlur={handleBlur}>
               <input
                 type="text"
                 value={searchQuery}
+                onFocus={() => { setFocusedInput('mobile'); loadSearchProducts(); }}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="পণ্য খুঁজুন..."
                 className="w-full pl-4 pr-12 py-2 border-2 border-[#e5e7eb] rounded-xl text-sm focus:border-primary focus:outline-none transition-colors text-black bg-white"
@@ -253,6 +404,7 @@ export function Header() {
               <button type="submit" className="absolute right-0 top-0 h-full px-4 bg-primary rounded-r-xl text-white hover:bg-primary-dark transition-colors cursor-pointer">
                 <Search size={16} />
               </button>
+              {renderSearchDropdown('mobile')}
             </div>
           </form>
 
@@ -260,6 +412,9 @@ export function Header() {
           <nav className="hidden md:flex items-center gap-6 pb-3 text-sm font-medium">
             <Link href="/" className="text-[#374151] hover:text-[#ff6b35] transition-colors">
               হোম
+            </Link>
+            <Link href="/shop" className="text-[#374151] hover:text-[#ff6b35] transition-colors">
+              শপ
             </Link>
 
             {/* Categories Dropdown */}
@@ -318,10 +473,11 @@ export function Header() {
 
             {/* Mobile Search */}
             <form onSubmit={handleSearchSubmit} className="p-4 border-b border-[#e5e7eb]">
-              <div className="relative">
+              <div className="relative" onBlur={handleBlur}>
                 <input
                   type="text"
                   value={searchQuery}
+                  onFocus={() => { setFocusedInput('mobile-menu'); loadSearchProducts(); }}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="পণ্য খুঁজুন..."
                   className="w-full pl-4 pr-10 py-2.5 border border-[#e5e7eb] rounded-lg text-sm focus:border-primary focus:outline-none text-black bg-white"
@@ -329,6 +485,7 @@ export function Header() {
                 <button type="submit" className="absolute right-3 top-3 text-[#6b7280] hover:text-primary cursor-pointer">
                   <Search size={16} />
                 </button>
+                {renderSearchDropdown('mobile-menu')}
               </div>
             </form>
 
@@ -339,6 +496,13 @@ export function Header() {
                 className="flex items-center px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
               >
                 🏠 হোম
+              </Link>
+              <Link
+                href="/shop"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
+              >
+                🛍️ শপ
               </Link>
               <div className="py-2 px-3 text-xs text-[#6b7280] font-semibold uppercase tracking-wider">
                 ক্যাটেগরি
