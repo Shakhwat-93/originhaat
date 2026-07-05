@@ -1,9 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-
-import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
-import { FloatingCartWidget } from '@/components/shared/FloatingCartWidget';
-import { ChatWidget } from '@/components/shared/ChatWidget';
+import { ClientWidgets } from '@/components/shared/ClientWidgets';
 import { getSettings } from '@/lib/db';
 
 export default async function CustomerLayout({
@@ -20,9 +17,8 @@ export default async function CustomerLayout({
       <main className="min-h-screen bg-slate-50/50">{children}</main>
       <Footer />
 
-      <MobileBottomNav />
-      <FloatingCartWidget />
-      <ChatWidget whatsappNumber={whatsappNumber} />
+      <ClientWidgets whatsappNumber={whatsappNumber} />
     </>
   );
 }
+

@@ -14,17 +14,17 @@ interface Slide {
 
 const defaultSlides: Slide[] = [
   {
-    image: '/images/banner-1.png',
+    image: '/images/banner-1.webp',
     link: '#best-sellers',
     alt: 'Origin Haat Electronics Accessories Banner 1',
   },
   {
-    image: '/images/banner-2.png',
+    image: '/images/banner-2.webp',
     link: '/product/smart-watch-ultra',
     alt: 'Origin Haat Electronics Accessories Banner 2',
   },
   {
-    image: '/images/banner-3.png',
+    image: '/images/banner-3.webp',
     link: '/product/wireless-earbuds-pro',
     alt: 'Origin Haat Electronics Accessories Banner 3',
   },

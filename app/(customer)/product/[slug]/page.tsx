@@ -1,12 +1,20 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { getProductBySlug, getProductSlugs, supabaseServer } from '@/lib/db';
 import { ProductGallery } from '@/components/product/ProductGallery';
 import { ProductInfo } from '@/components/product/ProductInfo';
 import { ProductReviews } from '@/components/product/ProductReviews';
-import { ProductFAQ } from '@/components/product/ProductFAQ';
-import { StickyProductCTA } from '@/components/product/StickyProductCTA';
 import { ProductCard } from '@/components/product/ProductCard';
+
+const ProductFAQ = dynamic(
+  () => import('@/components/product/ProductFAQ').then((mod) => mod.ProductFAQ)
+);
+
+const StickyProductCTA = dynamic(
+  () => import('@/components/product/StickyProductCTA').then((mod) => mod.StickyProductCTA)
+);
+
 
 interface Props {
   params: Promise<{ slug: string }>;
