@@ -165,37 +165,7 @@ export function HeroSection({ banners }: HeroSectionProps) {
         </div>
       </div>
 
-      {/* Conversion / Urgency Bar (Flash Deal Ticker) */}
-      <div className="bg-[#111111] border-b border-[#e5e7eb] text-white py-3 px-4 shadow-sm">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-sm md:text-base">
-          {/* Order count */}
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 bg-red-500 rounded-full animate-ping" />
-            <span className="font-semibold text-white/90">
-              রিয়েলটাইম <span className="text-[#ff6b35]">৩০০+</span> মানুষ কেনাকাটা করছেন
-            </span>
-          </div>
 
-          {/* Flash sale text / banner */}
-          <div className="flex items-center gap-2 bg-[#ff6b35]/20 border border-[#ff6b35]/30 px-3 py-1 rounded-full text-sm">
-            <Zap size={14} className="text-[#ff6b35] fill-[#ff6b35]" />
-            <span className="text-white font-medium">হট ডিল অফার শেষ হতে বাকি:</span>
-            <span className="text-[#ff6b35] font-bold font-mono tracking-wider">
-              {pad(timeLeft.h)}:{pad(timeLeft.m)}:{pad(timeLeft.s)}
-            </span>
-          </div>
-
-          {/* Support Info */}
-          <div className="hidden lg:flex items-center gap-4 text-white/80 text-sm">
-            <div className="flex items-center gap-1">
-              <ShieldCheck size={16} className="text-[#ff6b35]" />
-              <span>১০০% অরিজিনাল গ্যাজেট</span>
-            </div>
-            <span>|</span>
-            <span>ক্যাশ অন ডেলিভারি</span>
-          </div>
-        </div>
-      </div>
     </section>
   );
 }
