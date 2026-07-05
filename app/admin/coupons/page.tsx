@@ -214,7 +214,7 @@ export default function CouponsPage() {
       ) : (
         <div className="space-y-4">
           {/* Desktop Table View */}
-          <div className="hidden md:block bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="hidden md:block bg-white rounded-2xl border border-gray-100 overflow-hidden overflow-x-auto scrollbar-thin">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>

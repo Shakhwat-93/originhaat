@@ -231,7 +231,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f4f7f6] text-[#111827] font-sans antialiased">
+    <div className="admin-light flex h-screen overflow-hidden bg-[#f4f7f6] text-[#111827] font-sans antialiased">
       
       {/* ── Mobile Sidebar Drawer Backdrop ────────────────────────────── */}
       {sidebarOpen && (
@@ -303,14 +303,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         href={item.href}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
                           isActive 
-                            ? 'bg-[#ecfdf5] text-[#059669]' 
+                            ? 'bg-[#fff3ef] text-[#ff6b35]' 
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
                         {isActive && (
-                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#10b981] rounded-r-lg" />
+                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg" />
                         )}
-                        <Icon size={16} className={isActive ? 'text-[#10b981]' : 'text-gray-400'} />
+                        <Icon size={16} className={isActive ? 'text-[#ff6b35]' : 'text-gray-400'} />
                         {!isCollapsed && <span className="flex-1">{item.label}</span>}
                         {!isCollapsed && renderBadge(item.badgeType)}
                       </Link>
@@ -329,14 +329,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         onClick={() => toggleGroup(item.id)}
                         className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
                           isChildActive && !isExpanded
-                            ? 'bg-[#ecfdf5] text-[#059669]' 
+                            ? 'bg-[#fff3ef] text-[#ff6b35]' 
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
                         {isChildActive && !isExpanded && (
-                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#10b981] rounded-r-lg" />
+                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg" />
                         )}
-                        <Icon size={16} className={isChildActive ? 'text-[#10b981]' : 'text-gray-400'} />
+                        <Icon size={16} className={isChildActive ? 'text-[#ff6b35]' : 'text-gray-400'} />
                         {!isCollapsed && <span className="flex-1 text-left">{item.label}</span>}
                         {!isCollapsed && (
                           isExpanded ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />
@@ -353,7 +353,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                 href={child.href}
                                 className={`flex items-center gap-2.5 py-2 pl-6 pr-3.5 rounded-lg text-xs font-bold transition-all ${
                                   isSubActive 
-                                    ? 'bg-[#ecfdf5] text-[#059669]' 
+                                    ? 'bg-[#fff3ef] text-[#ff6b35]' 
                                     : 'text-gray-500 hover:text-gray-900'
                                 }`}
                               >
@@ -463,11 +463,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <span>/</span>
               <span className="text-gray-500 font-black">Task Board</span>
             </div>
-            <div className="flex items-center justify-between mt-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1">
               <h2 className="text-lg font-black text-gray-900 tracking-tight">{pageTitle}</h2>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="text-[10px] text-gray-400 font-bold">Last updated Jun 28, 2026</span>
-                <button className="flex items-center gap-1 px-3 py-1.8 bg-black hover:bg-gray-900 text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer">
+                <button className="flex items-center gap-1 px-3 py-1.8 bg-[#ff6b35] hover:bg-[#e55520] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer">
                   <Plus size={14} />
                   <span>New Action</span>
                 </button>

@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Revenue', value: `৳${stats.totalRevenue.toLocaleString('en-US')}`, subText: 'Excluding cancelled', icon: <DollarSign size={24} />, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+          { label: 'Total Revenue', value: `৳${stats.totalRevenue.toLocaleString('en-US')}`, subText: 'Excluding cancelled', icon: <DollarSign size={24} />, color: 'text-[#ff6b35] bg-[#fff3ef] border-[#ff6b35]/20' },
           { label: 'Total Orders', value: String(stats.totalOrders), subText: 'Cumulative sales count', icon: <ShoppingBag size={24} />, color: 'text-[#ff6b35] bg-[#fff3ef] border-[#fff3ef]' },
           { label: "Today's Orders", value: String(stats.todayOrders), subText: 'Orders placed today', icon: <Calendar size={24} />, color: 'text-blue-600 bg-blue-50 border-blue-100' },
           { label: 'Pending Orders', value: String(stats.pendingOrders), subText: 'Awaiting fulfillment', icon: <Clock size={24} />, color: 'text-amber-600 bg-amber-50 border-amber-100' },
