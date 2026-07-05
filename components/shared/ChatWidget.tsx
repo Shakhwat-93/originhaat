@@ -144,21 +144,7 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
   useEffect(() => { botMessagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [aiBotMessages]);
 
-  // Real-time subscription
-  useEffect(() => {
-    if (!activeChat) return;
-    const ch = supabase.channel(`cw-${activeChat.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'oh_chat_messages', filter: `chat_id=eq.${activeChat.id}` },
-        (payload) => {
-          const m = payload.new as any;
-          setMessages(prev => prev.some(x => x.id === m.id) ? prev : [...prev, m]);
-          if (m.sender_role === 'agent' && !isOpen) setUnreadCount(n => n + 1);
-        })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'oh_chat_messages', filter: `chat_id=eq.${activeChat.id}` },
-        (payload) => { const u = payload.new as any; setMessages(prev => prev.map(m => m.id === u.id ? u : m)); })
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [activeChat, isOpen]);
+
 
   // Fallback Polling (in case WebSockets fail or are blocked by proxy constraints)
   useEffect(() => {

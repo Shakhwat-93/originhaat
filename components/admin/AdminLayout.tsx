@@ -180,12 +180,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     fetchStats();
 
-    const channel = supabase
-      .channel('sidebar-orders-badges-new')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'oh_orders' }, () => { fetchStats(); })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const interval = setInterval(fetchStats, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const toggleCollapse = () => {

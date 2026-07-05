@@ -154,6 +154,9 @@ export default function InboxDashboard() {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
   const selectedChatRef = useRef<Chat | null>(null);
+  const processedChatsRef = useRef<Set<string>>(new Set());
+  const processedMessagesRef = useRef<Set<string>>(new Set());
+  const isFirstLoadRef = useRef(true);
 
   // Status Counts
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({
@@ -245,79 +248,68 @@ export default function InboxDashboard() {
     }
   }, []);
 
-  // ── GLOBAL Real-time Listener — all customer messages & new chats ─────────
+  // Poll for new global customer messages every 5 seconds (silently replaces WS listener)
   useEffect(() => {
-    // 1. Listen to ALL new customer messages across every chat
-    const msgChannel = supabase
-      .channel('admin-global-messages')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'oh_chat_messages',
-      }, (payload) => {
-        const msg = payload.new as ChatMessage;
-        if (msg.sender_role !== 'customer') return;
-        // Skip if this message belongs to the currently open/selected chat
-        const currentChat = selectedChatRef.current;
-        if (currentChat && currentChat.id === msg.chat_id) return;
+    let active = true;
+    const checkNewMessages = async () => {
+      try {
+        const { data: msgs } = await supabase
+          .from('oh_chat_messages')
+          .select('*')
+          .eq('sender_role', 'customer')
+          .order('created_at', { ascending: false })
+          .limit(20);
 
-        // Play sound
-        playChime(false);
+        if (!active || !msgs) return;
 
-        // Show in-app toast
-        pushToast({
-          type: 'new_message',
-          title: `💬 নতুন বার্তা — ${msg.sender_name || 'Customer'}`,
-          body: msg.body ? msg.body.substring(0, 80) : '📎 Attachment',
-          chatId: msg.chat_id,
-          senderName: msg.sender_name || 'Customer',
+        if (isFirstLoadRef.current) {
+          msgs.forEach(m => processedMessagesRef.current.add(m.id));
+          return;
+        }
+
+        let hasNew = false;
+        msgs.forEach(msg => {
+          if (!processedMessagesRef.current.has(msg.id)) {
+            processedMessagesRef.current.add(msg.id);
+
+            // Skip if this message belongs to the currently open/selected chat
+            const currentChat = selectedChatRef.current;
+            if (currentChat && currentChat.id === msg.chat_id) return;
+
+            hasNew = true;
+            // Show in-app toast
+            pushToast({
+              type: 'new_message',
+              title: `💬 নতুন বার্তা — ${msg.sender_name || 'Customer'}`,
+              body: msg.body ? msg.body.substring(0, 80) : '📎 Attachment',
+              chatId: msg.chat_id,
+              senderName: msg.sender_name || 'Customer',
+            });
+
+            // Browser OS notification
+            sendBrowserNotification(
+              `💬 ${msg.sender_name || 'Customer'} — Origin Haat`,
+              msg.body ? msg.body.substring(0, 100) : '📎 Attachment sent'
+            );
+          }
         });
 
-        // Browser OS notification
-        sendBrowserNotification(
-          `💬 ${msg.sender_name || 'Customer'} — Origin Haat`,
-          msg.body ? msg.body.substring(0, 100) : '📎 Attachment sent'
-        );
+        if (hasNew) {
+          playChime(false);
+          fetchChats();
+        }
+      } catch (err) {
+        console.error('Error polling new messages:', err);
+      }
+    };
 
-        // Refresh chat list so unread chats float to top
-        fetchChats();
-      })
-      .subscribe();
+    // Initial check
+    checkNewMessages();
 
-    // 2. Listen for brand new chat sessions (customer just joined)
-    const chatChannel = supabase
-      .channel('admin-global-chats')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'oh_chats',
-      }, (payload) => {
-        const newChat = payload.new as Chat;
-
-        // New chat fanfare
-        playChime(true);
-
-        pushToast({
-          type: 'new_chat',
-          title: `🆕 নতুন চ্যাট শুরু — ${newChat.customer_name || 'Anonymous'}`,
-          body: `Department: ${newChat.department} • ${newChat.city || 'Unknown location'}`,
-          chatId: newChat.id,
-          senderName: newChat.customer_name || 'Anonymous',
-          department: newChat.department,
-        });
-
-        sendBrowserNotification(
-          `🆕 নতুন চ্যাট — ${newChat.customer_name || 'Anonymous'}`,
-          `Department: ${newChat.department} — একটি নতুন কাস্টমার চ্যাট শুরু করেছেন।`
-        );
-
-        fetchChats();
-      })
-      .subscribe();
-
+    const interval = setInterval(checkNewMessages, 5000);
     return () => {
-      supabase.removeChannel(msgChannel);
-      supabase.removeChannel(chatChannel);
+      active = false;
+      clearInterval(interval);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playChime, pushToast, sendBrowserNotification]);
@@ -337,32 +329,6 @@ export default function InboxDashboard() {
     fetchInternalNotes(selectedChat.id);
     fetchCRMProfile(selectedChat);
     setSlaSecondsLeft(30);
-
-    const channel = supabase
-      .channel(`chat-${selectedChat.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public',
-        table: 'oh_chat_messages', filter: `chat_id=eq.${selectedChat.id}`
-      }, (payload) => {
-        const m = payload.new as ChatMessage;
-        setMessages((prev) => {
-          if (prev.some((x) => x.id === m.id)) return prev;
-          if (m.sender_role === 'customer') playChime();
-          return [...prev, m];
-        });
-        if (m.sender_role === 'customer')
-          supabase.from('oh_chat_messages').update({ is_seen: true }).eq('id', m.id).then(() => {});
-      })
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public',
-        table: 'oh_chat_messages', filter: `chat_id=eq.${selectedChat.id}`
-      }, (payload) => {
-        const u = payload.new as ChatMessage;
-        setMessages((prev) => prev.map((m) => (m.id === u.id ? u : m)));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, [selectedChat]);
 
   // Fallback Polling for active chat messages (updates every 3s)
@@ -398,7 +364,35 @@ export default function InboxDashboard() {
     const { data } = await supabase
       .from('oh_chats').select('*').eq('status', activeTab)
       .order('updated_at', { ascending: false });
-    if (data) setChats(data);
+    
+    if (data) {
+      if (isFirstLoadRef.current) {
+        data.forEach(c => processedChatsRef.current.add(c.id));
+      } else {
+        data.forEach(newChat => {
+          if (!processedChatsRef.current.has(newChat.id)) {
+            processedChatsRef.current.add(newChat.id);
+            // Play sound
+            playChime(true);
+            // In-app toast
+            pushToast({
+              type: 'new_chat',
+              title: `🆕 নতুন চ্যাট শুরু — ${newChat.customer_name || 'Anonymous'}`,
+              body: `Department: ${newChat.department} • ${newChat.city || 'Unknown location'}`,
+              chatId: newChat.id,
+              senderName: newChat.customer_name || 'Anonymous',
+              department: newChat.department,
+            });
+            // OS notification
+            sendBrowserNotification(
+              `🆕 নতুন চ্যাট — ${newChat.customer_name || 'Anonymous'}`,
+              `Department: ${newChat.department} — একটি নতুন কাস্টমার চ্যাট শুরু করেছেন।`
+            );
+          }
+        });
+      }
+      setChats(data);
+    }
     fetchStatusCounts();
   };
   const fetchAgents = async () => {
