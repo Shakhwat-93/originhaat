@@ -27,20 +27,19 @@ export function FloatingCartWidget() {
   // Calculate totals from the subscribed items state
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
-
   return (
     <Link
       href="/cart"
-      className="fixed right-0 top-[40%] -translate-y-1/2 z-40 bg-[#ff6b35] hover:bg-[#e55520] text-white flex flex-col items-center justify-center p-3 rounded-l-2xl shadow-[0_4px_20px_rgba(255,107,53,0.3)] border-l border-y border-[#e55520]/80 transition-all duration-300 select-none group active:scale-95"
+      className="fixed right-0 top-[65%] -translate-y-1/2 z-40 bg-[#ff6b35] hover:bg-[#e55520] text-white flex flex-col items-center justify-center p-2 rounded-l-xl shadow-[0_4px_16px_rgba(255,107,53,0.3)] border-l border-y border-[#e55520]/80 transition-all duration-300 select-none group active:scale-95"
     >
-      <div className="flex flex-col items-center gap-1.5 text-center">
+      <div className="flex flex-col items-center gap-1 text-center">
         {/* Shopping bag Icon */}
-        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
-          <ShoppingCart size={18} className="text-white" />
+        <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+          <ShoppingCart size={15} className="text-white" />
         </div>
         
         {/* Item count */}
-        <span className="text-[11px] font-bold tracking-tight leading-none uppercase">
+        <span className="text-[9px] font-bold tracking-tight leading-none uppercase">
           {totalItems} Items
         </span>
         
@@ -48,7 +47,7 @@ export function FloatingCartWidget() {
         <div className="w-full h-px bg-white/30 my-0.5" />
         
         {/* BDT Total */}
-        <span className="text-xs font-black tracking-wide bg-white text-[#ff6b35] px-1.5 py-0.5 rounded-md shadow-sm">
+        <span className="text-[10px] font-black tracking-wide bg-white text-[#ff6b35] px-1.5 py-0.5 rounded-md shadow-sm">
           {formatBDTNumeric(totalPrice)}
         </span>
       </div>
