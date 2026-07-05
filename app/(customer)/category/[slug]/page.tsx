@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { supabaseServer } from '@/lib/db';
 import { ProductCard } from '@/components/product/ProductCard';
 import { ArrowLeft, Grid } from 'lucide-react';
@@ -9,6 +10,44 @@ interface Props {
 }
 
 export const revalidate = 30; // cache for 30 seconds (ISR)
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { data: category } = await supabaseServer
+    .from('oh_categories')
+    .select('name_bn, name_en, description')
+    .eq('slug', slug)
+    .single();
+
+  if (!category) return { title: 'ক্যাটাগরি পাওয়া যায়নি', robots: { index: false, follow: false } };
+
+  const title = `${category.name_bn} — সেরা পণ্য | Origin Haat`;
+  const description =
+    category.description ||
+    `${category.name_bn} ক্যাটাগরিতে সেরা মানের পণ্য কিনুন Origin Haat-এ। ক্যাশ অন ডেলিভারি ও দ্রুত শিপিং সুবিধা পান বাংলাদেশে।`;
+
+  return {
+    title,
+    description,
+    keywords: `${category.name_bn}, ${category.name_en || ''}, বাংলাদেশ, অনলাইন কেনাকাটা, origin haat`,
+    alternates: { canonical: `https://originhaat.com/category/${slug}` },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1 },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `https://originhaat.com/category/${slug}`,
+      siteName: 'Origin Haat',
+      locale: 'bn_BD',
+      type: 'website',
+      images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: category.name_bn }],
+    },
+    twitter: { card: 'summary_large_image', title, description, images: ['/og-image.jpg'] },
+  };
+}
 
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;

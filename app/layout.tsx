@@ -14,39 +14,135 @@ const hindSiliguri = Hind_Siliguri({
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings();
 
+  const siteName = settings?.site_name || 'Origin Haat';
+  const title = settings?.seo_title || 'Origin Haat — বাংলাদেশের সেরা অনলাইন শপিং';
+  const description =
+    settings?.seo_description ||
+    'Origin Haat-এ কিনুন সেরা মানের পণ্য — স্কিনকেয়ার, ইলেকট্রনিক্স, লাইফস্টাইল। ক্যাশ অন ডেলিভারি উপলব্ধ। ঢাকায় ২৪ ঘণ্টায় ডেলিভারি। বাংলাদেশের যেকোনো জায়গায় শিপিং।';
+  const keywords =
+    'অনলাইন শপিং বাংলাদেশ, origin haat, online shopping bangladesh, ক্যাশ অন ডেলিভারি, originhaat.com, সেরা অনলাইন শপ, skincare bangladesh, electronics bangladesh, home decor bangladesh, lifestyle products, বেস্ট অনলাইন শপিং সাইট';
+
   return {
-    title: settings?.seo_title || 'Origin Haat — বাংলাদেশের সেরা অনলাইন শপ',
-    description: settings?.seo_description || 'Origin Haat-এ কিনুন সেরা পণ্য। ক্যাশ অন ডেলিভারি, ঢাকায় ২৪ ঘণ্টায় ডেলিভারি।',
-    keywords: 'online shopping bangladesh, অনলাইন শপিং, ক্যাশ অন ডেলিভারি, বাংলাদেশ, skincare, electronics, home',
-    authors: [{ name: settings?.site_name || 'Origin Haat' }],
+    title: {
+      default: title,
+      template: `%s — ${siteName}`,
+    },
+    description,
+    keywords,
+    authors: [{ name: siteName, url: 'https://originhaat.com' }],
+    creator: siteName,
+    publisher: siteName,
     metadataBase: new URL('https://originhaat.com'),
+    alternates: {
+      canonical: 'https://originhaat.com',
+    },
+    robots: {
+      index: true,
+      follow: true,
+      nocache: false,
+      googleBot: {
+        index: true,
+        follow: true,
+        noimageindex: false,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
     openGraph: {
       type: 'website',
       locale: 'bn_BD',
       url: 'https://originhaat.com',
-      siteName: settings?.site_name || 'Origin Haat',
-      title: settings?.seo_title || 'Origin Haat — বাংলাদেশের সেরা অনলাইন শপ',
-      description: settings?.seo_description || 'সেরা দামে সেরা পণ্য। ক্যাশ অন ডেলিভারি উপলব্ধ।',
+      siteName,
+      title,
+      description,
       images: [
         {
           url: '/og-image.jpg',
           width: 1200,
           height: 630,
-          alt: settings?.site_name || 'Origin Haat',
+          alt: siteName,
+          type: 'image/jpeg',
         },
       ],
     },
+    twitter: {
+      card: 'summary_large_image',
+      site: '@originhaat',
+      creator: '@originhaat',
+      title,
+      description,
+      images: ['/og-image.jpg'],
+    },
+    category: 'shopping',
+    classification: 'E-commerce',
   };
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const settings = await getSettings();
+  const siteName = settings?.site_name || 'Origin Haat';
+  const description =
+    settings?.seo_description ||
+    'Origin Haat-এ কিনুন সেরা মানের পণ্য। ক্যাশ অন ডেলিভারি উপলব্ধ।';
+
+  const websiteJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: siteName,
+    url: 'https://originhaat.com',
+    description,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: 'https://originhaat.com/shop?q={search_term_string}',
+      },
+      'query-input': 'required name=search_term_string',
+    },
+    inLanguage: 'bn-BD',
+  };
+
+  const organizationJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: siteName,
+    url: 'https://originhaat.com',
+    logo: {
+      '@type': 'ImageObject',
+      url: 'https://originhaat.com/images/logo.png',
+    },
+    sameAs: [
+      settings?.facebook_url || 'https://www.facebook.com/originhaat',
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer service',
+      availableLanguage: ['Bengali', 'English'],
+      areaServed: 'BD',
+    },
+    address: {
+      '@type': 'PostalAddress',
+      addressCountry: 'BD',
+    },
+  };
+
   return (
     <html lang="bn" className={hindSiliguri.variable}>
       <body className={`${hindSiliguri.className} antialiased bg-surface`}>
+        {/* JSON-LD Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
         {children}
         <ToastNotification />
       </body>
