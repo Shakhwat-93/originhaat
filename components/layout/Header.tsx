@@ -263,36 +263,8 @@ export function Header() {
               </Link>
             </div>
 
-            {/* Right: Track Order & Cart */}
-            <div className="flex items-center justify-end gap-2 w-28">
-              <Link
-                href="/track-order"
-                className="flex flex-col items-center justify-center w-[58px] h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
-                title="অর্ডার ট্র্যাক করুন"
-                aria-label="অর্ডার ট্র্যাক করুন"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-[18px] h-[18px]"
-                >
-                  <path d="M2 9h4" />
-                  <path d="M1 13h4" />
-                  <path d="M2 17h4" />
-                  <path d="M9 6h7a1 1 0 0 1 1 1v9H8V7a1 1 0 0 1 1-1z" />
-                  <path d="M17 10h3l2 2.5V16h-5" />
-                  <circle cx="11.5" cy="18.5" r="1.5" />
-                  <circle cx="18.5" cy="18.5" r="1.5" />
-                </svg>
-                <span className="text-[8px] font-bold mt-0.5 leading-none uppercase tracking-wide whitespace-nowrap">
-                  Order Track
-                </span>
-              </Link>
+            {/* Right: Cart */}
+            <div className="flex items-center justify-end">
               <Link
                 href="/cart"
                 className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
@@ -350,36 +322,6 @@ export function Header() {
                 <Phone size={16} className="text-[#ff6b35]" />
                 <span className="font-medium">{phone}</span>
               </a>
-
-              {/* Order Track */}
-              <Link
-                href="/track-order"
-                className="flex flex-col items-center justify-center w-[58px] h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
-                title="অর্ডার ট্র্যাক করুন"
-                aria-label="অর্ডার ট্র্যাক করুন"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="w-[18px] h-[18px]"
-                >
-                  <path d="M2 9h4" />
-                  <path d="M1 13h4" />
-                  <path d="M2 17h4" />
-                  <path d="M9 6h7a1 1 0 0 1 1 1v9H8V7a1 1 0 0 1 1-1z" />
-                  <path d="M17 10h3l2 2.5V16h-5" />
-                  <circle cx="11.5" cy="18.5" r="1.5" />
-                  <circle cx="18.5" cy="18.5" r="1.5" />
-                </svg>
-                <span className="text-[8px] font-bold mt-0.5 leading-none uppercase tracking-wide whitespace-nowrap">
-                  Order Track
-                </span>
-              </Link>
 
               {/* Cart */}
               <Link
