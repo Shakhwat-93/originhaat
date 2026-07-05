@@ -1,6 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+
+// Server-side backend calls use plain HTTP to avoid SSL/TLS handshake failures in Node.js.
+const supabaseUrl = rawUrl.startsWith('https://')
+  ? rawUrl.replace('https://', 'http://')
+  : rawUrl;
+
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 
 // Create a server-side client
