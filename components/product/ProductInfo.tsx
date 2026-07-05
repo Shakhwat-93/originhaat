@@ -84,9 +84,9 @@ export function ProductInfo({ product }: ProductInfoProps) {
             Stock out
           </span>
         )}
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#fffbeb] text-[#b45309] border border-[#fef3c7]">
-          <span>🥬</span>
-          Fresh & handpicked
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#eff6ff] text-[#1e40af] border border-[#dbeafe]">
+          <span>🛡️</span>
+          100% Original
         </span>
       </div>
 

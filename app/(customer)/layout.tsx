@@ -1,6 +1,6 @@
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { RecentOrderPopup } from '@/components/shared/RecentOrderPopup';
+
 import { MobileBottomNav } from '@/components/shared/MobileBottomNav';
 import { FloatingCartWidget } from '@/components/shared/FloatingCartWidget';
 import { ChatWidget } from '@/components/shared/ChatWidget';
@@ -19,7 +19,7 @@ export default async function CustomerLayout({
       <Header />
       <main className="min-h-screen bg-slate-50/50">{children}</main>
       <Footer />
-      <RecentOrderPopup />
+
       <MobileBottomNav />
       <FloatingCartWidget />
       <ChatWidget whatsappNumber={whatsappNumber} />
