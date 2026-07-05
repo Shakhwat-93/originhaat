@@ -46,7 +46,7 @@ async function handleProxy(request: NextRequest, pathParams: string[]) {
       resHeaders.set(key, value);
     });
 
-    const resData = await res.arrayBuffer();
+    const resData = res.status === 204 ? null : await res.arrayBuffer();
     return new NextResponse(resData, {
       status: res.status,
       statusText: res.statusText,
