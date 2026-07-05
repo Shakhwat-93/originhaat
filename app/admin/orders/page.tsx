@@ -644,7 +644,7 @@ export default function AdminOrdersPage() {
         </div>
         
         {/* Status filter */}
-        <div className="relative w-full md:w-64 flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-xl shrink-0">
+        <div className="relative w-full md:w-64 flex items-center gap-2 bg-gray-50 px-3.5 py-2.5 border border-gray-200 rounded-xl shrink-0">
           <Filter size={15} className="text-gray-400" />
           <select
             value={statusFilter}
@@ -785,17 +785,17 @@ export default function AdminOrdersPage() {
         {filteredOrders.map((order) => (
           <div key={order.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
             {/* Header */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <input
                   type="checkbox"
                   checked={selectedOrderIds.includes(order.id)}
                   onChange={() => handleToggleSelect(order.id)}
-                  className="w-4 h-4 rounded border-gray-300 text-[#ff6b35] focus:ring-[#ff6b35] cursor-pointer"
+                  className="w-4 h-4 rounded border-gray-300 text-[#ff6b35] focus:ring-[#ff6b35] cursor-pointer shrink-0"
                 />
-                <h4 className="font-bold text-gray-900 text-base">{order.customer_name}</h4>
+                <h4 className="font-bold text-gray-900 text-sm sm:text-base truncate">{order.customer_name}</h4>
               </div>
-              <span className="text-xs text-gray-400 font-mono">id: #{order.order_number}</span>
+              <span className="text-xs text-gray-400 font-mono shrink-0">#{order.order_number}</span>
             </div>
 
             {/* 2-Column Grid */}
@@ -876,7 +876,7 @@ export default function AdminOrdersPage() {
             <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
               
               {/* Customer Info Box */}
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 grid grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Customer Name</span>
                   <span className="text-sm font-semibold text-gray-900 mt-1 block">{selectedOrder.customer_name}</span>
@@ -888,7 +888,7 @@ export default function AdminOrdersPage() {
                     {selectedOrder.phone}
                   </span>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block">Delivery Address</span>
                   <span className="text-sm font-semibold text-gray-900 mt-1 block">{selectedOrder.address}, {selectedOrder.district}</span>
                 </div>
@@ -938,20 +938,20 @@ export default function AdminOrdersPage() {
                           )}
 
                           {/* Top Overview Grid */}
-                          <div className="grid grid-cols-4 gap-3 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
-                            <div className="text-center border-r border-gray-100">
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-gray-50/50 p-3 rounded-xl border border-gray-100">
+                            <div className="text-center border-b sm:border-b-0 border-r border-gray-100 pb-2 sm:pb-0">
                               <span className="text-[10px] font-bold text-gray-400 block">Total Parcels</span>
                               <span className="text-sm font-bold text-gray-900 mt-0.5 block">{summary.total_parcel}</span>
                             </div>
-                            <div className="text-center border-r border-gray-100">
+                            <div className="text-center border-b sm:border-b-0 sm:border-r border-gray-100 pb-2 sm:pb-0">
                               <span className="text-[10px] font-bold text-gray-400 block">Delivered</span>
                               <span className="text-sm font-bold text-emerald-600 mt-0.5 block">{summary.success_parcel}</span>
                             </div>
-                            <div className="text-center border-r border-gray-100">
+                            <div className="text-center border-r border-gray-100 pt-2 sm:pt-0">
                               <span className="text-[10px] font-bold text-gray-400 block">Cancelled</span>
                               <span className="text-sm font-bold text-rose-500 mt-0.5 block">{summary.cancelled_parcel}</span>
                             </div>
-                            <div className="text-center">
+                            <div className="text-center pt-2 sm:pt-0">
                               <span className="text-[10px] font-bold text-gray-400 block">Success Ratio</span>
                               <span className={`text-sm font-bold mt-0.5 block ${isHighRisk ? 'text-rose-600' : 'text-emerald-600'}`}>
                                 {summary.success_ratio}%

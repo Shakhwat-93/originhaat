@@ -176,7 +176,7 @@ export default function AdminProductsPage() {
         </div>
         
         {/* Category filter */}
-        <div className="relative w-full md:w-64 flex items-center gap-2 bg-gray-50 px-3 py-1.5 border border-gray-200 rounded-xl shrink-0">
+        <div className="relative w-full md:w-64 flex items-center gap-2 bg-gray-50 px-3.5 py-2.5 border border-gray-200 rounded-xl shrink-0">
           <Filter size={15} className="text-gray-400" />
           <select
             value={categoryFilter}

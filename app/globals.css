@@ -434,3 +434,118 @@ svg.text-primary {
   outline: 2px solid #ff3f60 !important;
   outline-offset: 2px;
 }
+
+/* ─── 💻 Elite Admin Panel Styling & Responsive Overrides ─────────────────── */
+
+/* 1. Global Typography Scale for Admin Panel */
+.admin-light, .admin-sidebar, .admin-light main {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.admin-light h1 {
+  font-size: 22px !important;
+  letter-spacing: -0.02em !important;
+}
+
+.admin-light h2 {
+  font-size: 16px !important;
+  letter-spacing: -0.01em !important;
+}
+
+.admin-light h3 {
+  font-size: 14px !important;
+}
+
+.admin-light label {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #6b7280 !important;
+}
+
+.admin-light input,
+.admin-light select,
+.admin-light textarea {
+  font-size: 12px !important;
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.admin-light input:focus,
+.admin-light select:focus,
+.admin-light textarea:focus {
+  border-color: #ff3f60 !important;
+  box-shadow: 0 0 0 2px rgba(255, 63, 96, 0.1) !important;
+}
+
+/* 2. Global Table & Column Optimizations */
+.admin-light table {
+  border-collapse: collapse !important;
+  width: 100% !important;
+  font-size: 12px !important;
+}
+
+.admin-light table th {
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: #6b7280 !important;
+  background-color: #f8fafc !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.admin-light table td {
+  padding: 12px 14px !important;
+  vertical-align: middle !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+.admin-light table tr:hover td {
+  background-color: #fafbfc !important;
+}
+
+/* Prevent table column squeezing on small screen sizes */
+.admin-light .overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+/* 3. Mobile Card & List View Overrides (Tablet & Mobile Widths) */
+@media (max-width: 767px) {
+  .admin-light main {
+    padding: 16px 12px !important;
+  }
+  
+  /* Make mobile cards look premium */
+  .admin-light .md\:hidden.space-y-4 > div {
+    border-radius: 16px !important;
+    border: 1px solid #f1f5f9 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02) !important;
+    padding: 16px !important;
+    background-color: #ffffff !important;
+  }
+  
+  .admin-light .grid-cols-2 {
+    gap: 8px 12px !important;
+  }
+
+  /* Form spacing inside bottom sheets or pages */
+  .admin-light form {
+    gap: 16px !important;
+  }
+}
+
+/* 4. Support Console Scrollbar and Horizontal Scrolling for Buttons */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+

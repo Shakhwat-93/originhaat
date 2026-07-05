@@ -9,7 +9,7 @@ import {
   ThumbsUp, ThumbsDown, ArrowRightLeft, Lock, FileText,
   Smile, Mic, Paperclip, X, MoreVertical, ClipboardList, Info,
   Settings, Volume2, ShieldAlert, Plus, Download, Filter, MessageCircle,
-  ChevronDown, Bell, BellRing, ExternalLink, UserPlus
+  ChevronDown, Bell, BellRing, ExternalLink, UserPlus, ArrowLeft
 } from 'lucide-react';
 import { formatBDTNumeric } from '@/lib/utils';
 import { showSuccessAlert, showErrorAlert, showConfirmAlert } from '@/lib/alerts';
@@ -116,6 +116,7 @@ export default function InboxDashboard() {
   const [showAnalytics, setShowAnalytics]   = useState(false);
   const [showLiveVisitors, setShowLiveVisitors] = useState(false);
   const [showCannedManager, setShowCannedManager] = useState(false);
+  const [activeMobileView, setActiveMobileView] = useState<'list' | 'chat' | 'crm'>('list');
 
   const [chats, setChats]           = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
@@ -616,7 +617,7 @@ export default function InboxDashboard() {
                     setShowCannedManager(false);
                     // Find and select chat
                     supabase.from('oh_chats').select('*').eq('id', toast.chatId).single()
-                      .then(({ data }) => { if (data) setSelectedChat(data as Chat); });
+                      .then(({ data }) => { if (data) { setSelectedChat(data as Chat); setActiveMobileView('chat'); } });
                   }}
                   className="text-[10px] font-bold text-[#ff6b35] hover:underline cursor-pointer flex items-center gap-0.5"
                 >
@@ -660,7 +661,7 @@ export default function InboxDashboard() {
 
 
       {/* ── Top Bar ── */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3.5 flex items-center justify-between shrink-0 shadow-sm">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <div>
@@ -672,12 +673,12 @@ export default function InboxDashboard() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full sm:w-auto max-w-full">
           {/* Sound */}
           <button
             onClick={() => setSoundEnabled(!soundEnabled)}
             title={soundEnabled ? 'Mute Alerts' : 'Unmute Alerts'}
-            className={`p-2 rounded-xl border text-sm transition-all cursor-pointer ${
+            className={`p-2 rounded-xl border text-sm transition-all cursor-pointer shrink-0 ${
               soundEnabled ? 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100' : 'bg-red-50 border-red-200 text-red-500'
             }`}
           >
@@ -687,31 +688,31 @@ export default function InboxDashboard() {
           {/* Canned Replies */}
           <button
             onClick={() => { setShowCannedManager(!showCannedManager); setShowAnalytics(false); setShowLiveVisitors(false); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 ${
               showCannedManager ? 'bg-[#ff6b35] text-white border-[#ff6b35] shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            <Settings size={13} /> Canned Replies
+            <Settings size={13} /> <span className="whitespace-nowrap">Canned Replies</span>
           </button>
 
           {/* Analytics */}
           <button
             onClick={() => { setShowAnalytics(!showAnalytics); setShowLiveVisitors(false); setShowCannedManager(false); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 ${
               showAnalytics ? 'bg-[#ff6b35] text-white border-[#ff6b35] shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            <BarChart2 size={13} /> Analytics Charts
+            <BarChart2 size={13} /> <span className="whitespace-nowrap">Analytics</span>
           </button>
 
           {/* Live Traffic */}
           <button
             onClick={() => { setShowLiveVisitors(!showLiveVisitors); setShowAnalytics(false); setShowCannedManager(false); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer shrink-0 ${
               showLiveVisitors ? 'bg-[#ff6b35] text-white border-[#ff6b35] shadow-sm' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
-            <Globe size={13} /> Live Visitors
+            <Globe size={13} /> <span className="whitespace-nowrap">Live Traffic</span>
             <span className="bg-[#ff6b35]/10 text-[#ff6b35] border border-[#ff6b35]/20 px-1.5 py-0.5 text-[9px] rounded-full font-black">18</span>
           </button>
         </div>
@@ -881,7 +882,7 @@ export default function InboxDashboard() {
         <div className="flex-1 flex overflow-hidden">
 
           {/* LEFT — Conversation List */}
-          <div className="w-72 border-r border-gray-200 bg-white flex flex-col shrink-0">
+          <div className={`w-full md:w-72 border-r border-gray-200 bg-white flex flex-col shrink-0 ${activeMobileView === 'list' ? 'flex' : 'hidden md:flex'}`}>
             {/* Status Tabs */}
             <div className="flex flex-wrap gap-1 px-3 py-2.5 border-b border-gray-100 bg-gray-50/50">
               {([
@@ -907,6 +908,7 @@ export default function InboxDashboard() {
                         setSearchQuery('');
                       }
                       setSelectedChat(null);
+                      setActiveMobileView('list');
                     }}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-extrabold capitalize transition-all cursor-pointer ${
                       isActive
@@ -939,7 +941,7 @@ export default function InboxDashboard() {
               {filteredChats.map((c) => {
                 const isSelected = selectedChat?.id === c.id;
                 return (
-                  <div key={c.id} onClick={() => setSelectedChat(c)}
+                  <div key={c.id} onClick={() => { setSelectedChat(c); setActiveMobileView('chat'); }}
                     className={`p-3.5 flex flex-col gap-1.5 cursor-pointer transition-all select-none border-l-2 ${
                       isSelected ? 'bg-orange-50/60 border-[#ff6b35]' : 'hover:bg-gray-50 border-transparent'
                     }`}
@@ -968,20 +970,30 @@ export default function InboxDashboard() {
           </div>
 
           {/* MIDDLE — Chat Thread */}
-          <div className="flex-1 flex flex-col bg-gray-50 overflow-hidden relative">
+          <div className={`flex-1 flex flex-col bg-gray-50 overflow-hidden relative ${activeMobileView === 'chat' ? 'flex' : 'hidden md:flex'}`}>
             {selectedChat ? (
               <>
                 {/* Chat Header */}
                 <div className="border-b border-gray-200 px-5 py-3.5 flex items-center justify-between bg-white shrink-0 shadow-sm">
-                  <div>
-                    <h3 className="font-black text-gray-900 text-sm">{selectedChat.customer_name || 'Visitor'}</h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${STATUS_BADGE[selectedChat.status]}`}>
-                        {selectedChat.status.toUpperCase()}
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        Agent: <span className="font-bold text-gray-700">{selectedChat.agent_id ? 'Admin' : 'Unassigned'}</span>
-                      </span>
+                  <div className="flex items-center min-w-0">
+                    {/* Responsive Back Button */}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedChat(null); setActiveMobileView('list'); }}
+                      className="md:hidden p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 mr-2 shrink-0 border border-gray-200"
+                    >
+                      <ArrowLeft size={15} />
+                    </button>
+                    <div className="min-w-0">
+                      <h3 className="font-black text-gray-900 text-sm truncate">{selectedChat.customer_name || 'Visitor'}</h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${STATUS_BADGE[selectedChat.status]}`}>
+                          {selectedChat.status.toUpperCase()}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          Agent: <span className="font-bold text-gray-700">{selectedChat.agent_id ? 'Admin' : 'Unassigned'}</span>
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -996,16 +1008,26 @@ export default function InboxDashboard() {
                       </div>
                     )}
                     <button onClick={handleConvertToTicket}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl cursor-pointer transition-all">
+                      className="hidden sm:flex items-center gap-1 px-3 py-1.5 bg-gray-50 border border-gray-200 hover:bg-gray-100 text-gray-700 font-bold text-xs rounded-xl cursor-pointer transition-all">
                       <FileText size={12} /> Ticket
                     </button>
                     <button onClick={() => handleUpdateStatus(selectedChat.id, 'resolved')}
                       className="flex items-center gap-1 px-3 py-1.5 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-xl cursor-pointer transition-all">
-                      <Check size={12} /> Resolve
+                      <Check size={12} /> <span className="hidden sm:inline">Resolve</span>
                     </button>
                     <button onClick={() => handleUpdateStatus(selectedChat.id, 'spam')}
                       className="flex items-center gap-1 px-3 py-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl cursor-pointer transition-all">
-                      <X size={12} /> Spam
+                      <X size={12} /> <span className="hidden sm:inline">Spam</span>
+                    </button>
+
+                    {/* Responsive Info Button */}
+                    <button
+                      type="button"
+                      onClick={() => setActiveMobileView(activeMobileView === 'crm' ? 'chat' : 'crm')}
+                      className="lg:hidden p-1.5 hover:bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-pointer shrink-0"
+                      title="Toggle Customer Info"
+                    >
+                      <Info size={15} />
                     </button>
                   </div>
                 </div>
@@ -1173,11 +1195,26 @@ export default function InboxDashboard() {
 
           {/* RIGHT — CRM Profile */}
           {selectedChat && (
-            <div className="w-72 border-l border-gray-200 bg-white overflow-y-auto p-4 space-y-5 shrink-0">
+            <div className={`w-full lg:w-72 border-l border-gray-200 bg-white overflow-y-auto p-4 space-y-5 shrink-0 ${
+              activeMobileView === 'crm' 
+                ? 'flex absolute inset-0 z-30' 
+                : 'hidden lg:flex'
+            }`}>
 
               {/* Labels */}
               <div>
-                <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2">Conversation Label</div>
+                <div className="flex justify-between items-center mb-2">
+                  <div className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Conversation Label</div>
+                  {activeMobileView === 'crm' && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveMobileView('chat')}
+                      className="lg:hidden p-1 hover:bg-gray-50 rounded-lg text-gray-400 shrink-0"
+                    >
+                      <X size={15} />
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {(['VIP','Wholesale','Urgent','Refund','Courier','Fake','New'] as const).map((l) => (
                     <button key={l} onClick={() => handleUpdateLabel(l)}

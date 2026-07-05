@@ -208,9 +208,9 @@ export default function AdminReviewsPage() {
           return (
             <div key={review.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
               {/* Header */}
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold text-gray-900 text-sm truncate max-w-[70%]">{review.customer_name}</h4>
-                <span className="text-xs text-gray-400 font-mono">{review.location}</span>
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="font-bold text-gray-900 text-sm truncate max-w-[65%]">{review.customer_name}</h4>
+                <span className="text-xs text-gray-400 font-medium shrink-0">📍 {review.location}</span>
               </div>
 
               {/* 2-Column Grid */}
