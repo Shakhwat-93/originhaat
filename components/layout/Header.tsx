@@ -62,6 +62,13 @@ export function Header() {
     }, 200);
   };
 
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // Debounced URL updates when on /search page
   useEffect(() => {
     if (pathname !== '/search') return;
@@ -244,7 +251,7 @@ export function Header() {
 
             {/* Middle: Logo (centered) */}
             <div className="flex-1 flex justify-center">
-              <Link href="/" className="flex items-center justify-center">
+              <Link href="/" onClick={handleHomeClick} className="flex items-center justify-center">
                 <Image
                   src="/logo.png"
                   alt="Origin Haat Logo"
@@ -304,7 +311,7 @@ export function Header() {
           {/* Desktop Header Row */}
           <div className="hidden md:flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+            <Link href="/" onClick={handleHomeClick} className="flex items-center gap-2 flex-shrink-0">
               <Image
                 src="/logo.png"
                 alt="Origin Haat Logo"
@@ -410,7 +417,7 @@ export function Header() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 pb-3 text-sm font-medium">
-            <Link href="/" className="text-[#374151] hover:text-[#ff6b35] transition-colors">
+            <Link href="/" onClick={handleHomeClick} className="text-[#374151] hover:text-[#ff6b35] transition-colors">
               হোম
             </Link>
             <Link href="/shop" className="text-[#374151] hover:text-[#ff6b35] transition-colors">
@@ -459,13 +466,15 @@ export function Header() {
           />
           <div className="absolute top-0 left-0 w-72 h-full bg-white shadow-2xl flex flex-col animate-slide-in-left">
             <div className="flex items-center justify-between p-4 border-b border-[#e5e7eb]">
-              <Image
-                src="/logo.png"
-                alt="Origin Haat Logo"
-                width={120}
-                height={35}
-                className="h-8 w-auto object-contain"
-              />
+              <Link href="/" onClick={(e) => { setMobileMenuOpen(false); handleHomeClick(e); }}>
+                <Image
+                  src="/logo.png"
+                  alt="Origin Haat Logo"
+                  width={120}
+                  height={35}
+                  className="h-8 w-auto object-contain"
+                />
+              </Link>
               <button onClick={() => setMobileMenuOpen(false)}>
                 <X size={20} />
               </button>
@@ -492,7 +501,10 @@ export function Header() {
             <nav className="flex-1 overflow-y-auto p-4 space-y-1">
               <Link
                 href="/"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={(e) => {
+                  setMobileMenuOpen(false);
+                  handleHomeClick(e);
+                }}
                 className="flex items-center px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
               >
                 🏠 হোম

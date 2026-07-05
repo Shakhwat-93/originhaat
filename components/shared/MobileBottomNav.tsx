@@ -20,6 +20,13 @@ export function MobileBottomNav() {
 
   const totalItems = mounted ? getTotalItems() : 0;
 
+  const handleHomeClick = (e: React.MouseEvent) => {
+    if (pathname === '/') {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const navItems = [
     {
       label: 'ক্যাটাগরি',
@@ -68,6 +75,7 @@ export function MobileBottomNav() {
               <Link
                 key={index}
                 href={item.href}
+                onClick={handleHomeClick}
                 className="flex flex-col items-center justify-center z-20 relative -top-4"
               >
                 <div className="w-14 h-14 bg-[#ff6b35] rounded-full flex items-center justify-center border-4 border-white shadow-[0_4px_10px_rgba(255,107,53,0.3)] hover:bg-[#e55520] transition-all duration-200 active:scale-95">
