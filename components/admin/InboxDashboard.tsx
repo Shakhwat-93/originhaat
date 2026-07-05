@@ -322,6 +322,15 @@ export default function InboxDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playChime, pushToast, sendBrowserNotification]);
 
+  // Fallback Polling for Chat sessions list (updates every 5s)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchChats();
+      fetchStatusCounts();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     if (!selectedChat) return;
     fetchMessages(selectedChat.id);
@@ -354,6 +363,16 @@ export default function InboxDashboard() {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  }, [selectedChat]);
+
+  // Fallback Polling for active chat messages (updates every 3s)
+  useEffect(() => {
+    if (!selectedChat) return;
+    const interval = setInterval(() => {
+      fetchMessages(selectedChat.id);
+      fetchInternalNotes(selectedChat.id);
+    }, 3000);
+    return () => clearInterval(interval);
   }, [selectedChat]);
 
   // ── Fetch helpers ─────────────────────────────────────────────────────────

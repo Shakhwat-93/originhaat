@@ -11,6 +11,31 @@ const supabaseUrl = isServer
 
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Dummy WebSocket implementation to prevent connection attempts and console errors in the browser.
+class DummyWebSocket {
+  binaryType = 'blob';
+  bufferedAmount = 0;
+  extensions = '';
+  protocol = '';
+  readyState = 3; // CLOSED
+  url = '';
+  onclose = null;
+  onerror = null;
+  onmessage = null;
+  onopen = null;
+
+  constructor() {}
+  close() {}
+  send() {}
+  addEventListener() {}
+  removeEventListener() {}
+  dispatchEvent() { return false; }
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  realtime: {
+    WebSocket: isServer ? undefined : (DummyWebSocket as any),
+  } as any
+});
 
 

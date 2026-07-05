@@ -160,6 +160,15 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
     return () => { supabase.removeChannel(ch); };
   }, [activeChat, isOpen]);
 
+  // Fallback Polling (in case WebSockets fail or are blocked by proxy constraints)
+  useEffect(() => {
+    if (!activeChat) return;
+    const interval = setInterval(() => {
+      loadMessages(activeChat.id);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [activeChat]);
+
   const reconnectPreviousChat = async (vId: string) => {
     const { data } = await supabase.from('oh_chats').select('*').eq('visitor_id', vId)
       .in('status', ['active', 'pending']).order('created_at', { ascending: false }).limit(1);
