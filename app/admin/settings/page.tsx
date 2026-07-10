@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles } from 'lucide-react';
-import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 import type { ChangeEvent } from 'react';
 
 interface Settings {
@@ -107,8 +107,7 @@ export default function AdminSettingsPage() {
   const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
 
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [savingSection, setSavingSection] = useState<string | null>(null);
 
   const handleTestSteadfastConnection = async () => {
     setTestingSteadfastConnection(true);
@@ -166,35 +165,22 @@ export default function AdminSettingsPage() {
     fetchSettings();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const confirmResult = await showConfirmAlert(
-      'Are you sure?',
-      'Do you want to save these changes to site settings?',
-      'Yes, save'
-    );
-    if (!confirmResult.isConfirmed) return;
-
-    setSaving(true);
-    setStatus(null);
-
+  // Save only specific fields for a given section
+  const handleSaveSection = async (sectionId: string, fields: (keyof Settings)[]) => {
+    setSavingSection(sectionId);
     try {
+      const payload: Partial<Settings> = { updated_at: new Date().toISOString() } as any;
+      fields.forEach(f => { (payload as any)[f] = (settings as any)[f]; });
       const { error } = await supabase
         .from('oh_settings')
-        .upsert({
-          id: 1,
-          ...settings,
-          updated_at: new Date().toISOString(),
-        });
-
+        .update(payload)
+        .eq('id', 1);
       if (error) throw error;
-      showSuccessAlert('Success!', 'Site settings have been saved successfully.');
+      showSuccessAlert('Saved!', 'Settings updated successfully.');
     } catch (err: any) {
-      console.error(err);
-      showErrorAlert('Error!', err.message || 'Failed to save site settings.');
+      showErrorAlert('Error!', err.message || 'Failed to save settings.');
     } finally {
-      setSaving(false);
+      setSavingSection(null);
     }
   };
 
@@ -286,6 +272,19 @@ export default function AdminSettingsPage() {
     );
   }
 
+  // Reusable save button rendered inside each card header
+  const SectionSaveBtn = ({ id, fields }: { id: string; fields: (keyof Settings)[] }) => (
+    <button
+      type="button"
+      onClick={() => handleSaveSection(id, fields)}
+      disabled={savingSection === id}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#ff6b35] hover:bg-[#e55520] disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-all cursor-pointer shrink-0"
+    >
+      {savingSection === id ? <RefreshCw size={12} className="animate-spin" /> : <Save size={12} />}
+      Save
+    </button>
+  );
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8 text-black">
       <div>
@@ -293,21 +292,15 @@ export default function AdminSettingsPage() {
         <p className="text-sm text-gray-500 mt-1">Control dynamic configurations for the entire website from here</p>
       </div>
 
-      {status && (
-        <div className={`p-4 rounded-xl border flex items-center gap-3 ${
-          status.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-100' : 'bg-red-50 text-red-800 border-red-100'
-        }`}>
-          {status.type === 'success' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
-          <span className="text-sm font-semibold">{status.message}</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="space-y-6">
         {/* General Info */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
-            <Globe size={18} className="text-[#ff6b35]" />
-            <h2 className="font-bold text-gray-900">General Info & Branding</h2>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Globe size={18} className="text-[#ff6b35]" />
+              <h2 className="font-bold text-gray-900">General Info & Branding</h2>
+            </div>
+            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number']} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -343,9 +336,12 @@ export default function AdminSettingsPage() {
 
         {/* Delivery Config */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
-            <Truck size={18} className="text-[#ff6b35]" />
-            <h2 className="font-bold text-gray-900">Delivery & Shipping Charge Settings</h2>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Truck size={18} className="text-[#ff6b35]" />
+              <h2 className="font-bold text-gray-900">Delivery & Shipping Charge Settings</h2>
+            </div>
+            <SectionSaveBtn id="delivery" fields={['delivery_charge_inside', 'delivery_charge_outside', 'free_delivery_min_order']} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -391,6 +387,8 @@ export default function AdminSettingsPage() {
               <span className="w-2.5 h-2.5 rounded-full bg-[#ff6b35] animate-pulse" />
               <h2 className="font-bold text-gray-900">Announcement Bar</h2>
             </div>
+            <div className="flex items-center gap-2">
+              <SectionSaveBtn id="announcement" fields={['is_announcement_active', 'announcement_text']} />
             <button
               type="button"
               onClick={() => handleToggle('is_announcement_active')}
@@ -404,6 +402,7 @@ export default function AdminSettingsPage() {
                 }`}
               />
             </button>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Announcement Text</label>
@@ -420,9 +419,12 @@ export default function AdminSettingsPage() {
 
         {/* BDCourier Settings */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
-            <Save size={18} className="text-[#ff6b35]" />
-            <h2 className="font-bold text-gray-900">BDCourier API Configuration</h2>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Package size={18} className="text-[#ff6b35]" />
+              <h2 className="font-bold text-gray-900">BDCourier API Configuration</h2>
+            </div>
+            <SectionSaveBtn id="bdcourier" fields={['bdcourier_api_key']} />
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">BDCourier API Key</label>
@@ -440,12 +442,15 @@ export default function AdminSettingsPage() {
 
         {/* Pathao Courier API Settings */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-1">
-            <Package size={18} className="text-[#ff6b35]" />
-            <div>
-              <h2 className="font-bold text-gray-900">Pathao Courier API</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Integrate Pathao to send orders directly from the Order Management panel</p>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-1">
+            <div className="flex items-center gap-2">
+              <Package size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Pathao Courier API</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Integrate Pathao to send orders directly from the Order Management panel</p>
+              </div>
             </div>
+            <SectionSaveBtn id="pathao" fields={['pathao_environment', 'pathao_base_url', 'pathao_client_id', 'pathao_client_secret', 'pathao_username', 'pathao_password', 'pathao_store_id']} />
           </div>
 
           {/* Environment Toggle */}
@@ -615,12 +620,15 @@ export default function AdminSettingsPage() {
 
         {/* Steadfast Courier API Settings */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-1">
-            <Package size={18} className="text-[#ff6b35]" />
-            <div>
-              <h2 className="font-bold text-gray-900">Steadfast Courier API</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Integrate Steadfast to send orders directly from the Order Management panel</p>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-1">
+            <div className="flex items-center gap-2">
+              <Package size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Steadfast Courier API</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Integrate Steadfast to send orders directly from the Order Management panel</p>
+              </div>
             </div>
+            <SectionSaveBtn id="steadfast" fields={['steadfast_api_key', 'steadfast_secret_key']} />
           </div>
 
           {/* Credentials Grid */}
@@ -684,9 +692,12 @@ export default function AdminSettingsPage() {
 
         {/* Social Links */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
-            <Share2 size={18} className="text-[#ff6b35]" />
-            <h2 className="font-bold text-gray-900">Social Media Links</h2>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Share2 size={18} className="text-[#ff6b35]" />
+              <h2 className="font-bold text-gray-900">Social Media Links</h2>
+            </div>
+            <SectionSaveBtn id="social" fields={['facebook_url', 'instagram_url', 'youtube_url']} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -727,12 +738,15 @@ export default function AdminSettingsPage() {
 
         {/* Tracking & Analytics (GTM, GA4, Meta Pixel, TikTok CAPI) */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
-            <Zap size={18} className="text-[#ff6b35]" />
-            <div>
-              <h2 className="font-bold text-gray-900">Tracking, Pixels & Conversions API (CAPI)</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Configure GTM, Google Analytics 4, Meta Facebook Pixel, and TikTok Pixel with CAPI</p>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Zap size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Tracking, Pixels & Conversions API (CAPI)</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Configure GTM, Google Analytics 4, Meta Facebook Pixel, and TikTok Pixel with CAPI</p>
+              </div>
             </div>
+            <SectionSaveBtn id="tracking" fields={['tracking_gtm_id', 'tracking_ga4_id', 'tracking_fb_pixel_id', 'tracking_fb_capi_token', 'tracking_fb_capi_test_code', 'tracking_tiktok_pixel_id', 'tracking_tiktok_capi_token']} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -861,8 +875,10 @@ export default function AdminSettingsPage() {
                 <p className="text-xs text-gray-400 mt-0.5">Let Google Gemini reply to customer messages automatically</p>
               </div>
             </div>
-            {/* Toggle Switch */}
-            <label className="relative inline-flex items-center cursor-pointer">
+            <div className="flex items-center gap-3">
+              <SectionSaveBtn id="ai" fields={['chat_ai_active', 'chat_ai_instructions', 'chat_ai_api_key']} />
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
                 name="chat_ai_active"
@@ -871,7 +887,8 @@ export default function AdminSettingsPage() {
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff6b35]"></div>
-            </label>
+              </label>
+            </div>
           </div>
 
           {settings.chat_ai_active && (
@@ -915,9 +932,12 @@ export default function AdminSettingsPage() {
 
         {/* SEO Metadata */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
-            <Globe size={18} className="text-[#ff6b35]" />
-            <h2 className="font-bold text-gray-900">Search Engine Optimization (SEO)</h2>
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Globe size={18} className="text-[#ff6b35]" />
+              <h2 className="font-bold text-gray-900">Search Engine Optimization (SEO)</h2>
+            </div>
+            <SectionSaveBtn id="seo" fields={['seo_title', 'seo_description']} />
           </div>
           <div className="space-y-4">
             <div>
@@ -945,18 +965,7 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
-        {/* Submit */}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold rounded-xl transition-all shadow-lg shadow-[#ff6b35]/20 cursor-pointer disabled:opacity-50"
-          >
-            {saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}
-            Save Settings
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }
