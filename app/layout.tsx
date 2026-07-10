@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Hind_Siliguri } from 'next/font/google';
 import './globals.css';
 import { ToastNotification } from '@/components/shared/ToastNotification';
+import { TrackingScripts } from '@/components/shared/TrackingScripts';
 import { getSettings } from '@/lib/db';
 
 const hindSiliguri = Hind_Siliguri({
@@ -58,11 +59,11 @@ export async function generateMetadata(): Promise<Metadata> {
       description,
       images: [
         {
-          url: '/og-image.jpg',
+          url: '/og-image.png',
           width: 1200,
           height: 630,
           alt: siteName,
-          type: 'image/jpeg',
+          type: 'image/png',
         },
       ],
     },
@@ -72,7 +73,10 @@ export async function generateMetadata(): Promise<Metadata> {
       creator: '@originhaat',
       title,
       description,
-      images: ['/og-image.jpg'],
+      images: ['/og-image.png'],
+    },
+    verification: {
+      google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
     },
     category: 'shopping',
     classification: 'E-commerce',
@@ -114,7 +118,7 @@ export default async function RootLayout({
     url: 'https://originhaat.com',
     logo: {
       '@type': 'ImageObject',
-      url: 'https://originhaat.com/images/logo.png',
+      url: 'https://originhaat.com/logo.png',
     },
     sameAs: [
       settings?.facebook_url || 'https://www.facebook.com/originhaat',
@@ -144,6 +148,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
         {children}
+        <TrackingScripts settings={settings as any} />
         <ToastNotification />
       </body>
     </html>

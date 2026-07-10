@@ -218,9 +218,18 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
     if (!messageInput.trim() || !activeChat) return;
     const body = messageInput;
     setMessageInput('');
-    await supabase.from('oh_chat_messages').insert({
+    const { error } = await supabase.from('oh_chat_messages').insert({
       chat_id: activeChat.id, sender_role: 'customer', sender_name: name, body
     });
+
+    if (!error) {
+      // Fire AI auto-reply in background
+      fetch('/api/chat/auto-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: activeChat.id, message: body, customerName: name }),
+      }).catch(err => console.error('[AI Auto-Reply Trigger Error]', err));
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck } from 'lucide-react';
-import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { showSuccessAlert, showErrorAlert, showWarningAlert } from '@/lib/alerts';
 
 interface OrderItem {
   id: string;
@@ -30,6 +31,10 @@ interface Order {
   pathao_order_status?: string | null;
   pathao_delivery_fee?: number | null;
   pathao_sent_at?: string | null;
+  steadfast_consignment_id?: string | null;
+  steadfast_tracking_code?: string | null;
+  steadfast_order_status?: string | null;
+  steadfast_sent_at?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -39,6 +44,7 @@ const statusColors: Record<string, string> = {
   shipped: 'bg-sky-50 text-sky-700 border border-sky-200/50',
   delivered: 'bg-emerald-50 text-emerald-700 border border-emerald-200/50',
   cancelled: 'bg-rose-50 text-rose-700 border border-rose-200/50',
+  incomplete: 'bg-gray-100 text-gray-700 border border-gray-200',
 };
 
 const statusLabels: Record<string, string> = {
@@ -48,9 +54,13 @@ const statusLabels: Record<string, string> = {
   shipped: 'Shipped',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
+  incomplete: 'Incomplete',
 };
 
-export default function AdminOrdersPage() {
+function OrdersPageContent() {
+  const searchParams = useSearchParams();
+  const statusParam = searchParams.get('status');
+
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,6 +68,7 @@ export default function AdminOrdersPage() {
   const [checkingRatio, setCheckingRatio] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [sendingToPathao, setSendingToPathao] = useState(false);
+  const [sendingToSteadfast, setSendingToSteadfast] = useState(false);
 
   const handleToggleSelectAll = () => {
     if (selectedOrderIds.length === filteredOrders.length) {
@@ -78,6 +89,17 @@ export default function AdminOrdersPage() {
   // Search & Filter
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  // Sync statusFilter with URL query param from sidebar
+  useEffect(() => {
+    if (statusParam) {
+      if (statusParam === 'all') {
+        setStatusFilter('');
+      } else {
+        setStatusFilter(statusParam);
+      }
+    }
+  }, [statusParam]);
 
   const handleCheckCourierRatio = async (phone: string, orderId: string) => {
     setCheckingRatio(true);
@@ -104,7 +126,11 @@ export default function AdminOrdersPage() {
       }
     } catch (err: any) {
       console.error(err);
-      showErrorAlert('Check Failed', err.message || 'Failed to retrieve courier success ratio.');
+      if (err.message.includes('BDCourier API Key is not configured') || err.message.includes('not configured')) {
+        showWarningAlert('Keys Not Set', 'BDCourier API Key is not configured in Admin Settings. Please go to settings and configure your key first.');
+      } else {
+        showErrorAlert('Check Failed', err.message || 'Failed to retrieve courier success ratio.');
+      }
     } finally {
       setCheckingRatio(false);
     }
@@ -150,6 +176,61 @@ export default function AdminOrdersPage() {
       showErrorAlert('Pathao Error', err.message || 'Failed to send order to Pathao.');
     } finally {
       setSendingToPathao(false);
+    }
+  };
+
+  const handleSendToSteadfast = async (orderIdOrIds: string | string[]) => {
+    setSendingToSteadfast(true);
+    const ids = Array.isArray(orderIdOrIds) ? orderIdOrIds : [orderIdOrIds];
+    try {
+      const res = await fetch('/api/steadfast/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderIds: ids }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send to Steadfast');
+
+      // Update local state with returned consignment data
+      if (data.results) {
+        setOrders(prev => prev.map(o => {
+          const result = data.results.find((r: any) => r.orderId === o.id);
+          if (result?.success) {
+            return {
+              ...o,
+              steadfast_consignment_id: result.consignment_id,
+              steadfast_tracking_code: result.tracking_code,
+              steadfast_order_status: 'in_review',
+              steadfast_sent_at: new Date().toISOString()
+            };
+          }
+          return o;
+        }));
+        // Update selected order if open
+        if (selectedOrder) {
+          const result = data.results.find((r: any) => r.orderId === selectedOrder.id);
+          if (result?.success) {
+            setSelectedOrder(prev => prev ? {
+              ...prev,
+              steadfast_consignment_id: result.consignment_id,
+              steadfast_tracking_code: result.tracking_code,
+              steadfast_order_status: 'in_review',
+              steadfast_sent_at: new Date().toISOString()
+            } : null);
+          }
+        }
+      }
+
+      if (data.success) {
+        showSuccessAlert('Sent to Steadfast! 🚚', data.message || 'Order(s) successfully created on Steadfast.');
+      } else {
+        showErrorAlert('Partial Success', data.message);
+      }
+    } catch (err: any) {
+      console.error(err);
+      showErrorAlert('Steadfast Error', err.message || 'Failed to send order to Steadfast.');
+    } finally {
+      setSendingToSteadfast(false);
     }
   };
 
@@ -746,6 +827,24 @@ export default function AdminOrdersPage() {
               <span>Send to Pathao</span>
             </button>
             <button
+              onClick={() => {
+                const unsentIds = selectedOrderIds.filter(id => {
+                  const o = orders.find(or => or.id === id);
+                  return o && !o.steadfast_consignment_id;
+                });
+                if (unsentIds.length === 0) {
+                  showErrorAlert('All Sent', 'All selected orders are already sent to Steadfast.');
+                  return;
+                }
+                handleSendToSteadfast(unsentIds);
+              }}
+              disabled={sendingToSteadfast}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              {sendingToSteadfast ? <RefreshCw size={14} className="animate-spin" /> : <Truck size={14} />}
+              <span>Send to Steadfast</span>
+            </button>
+            <button
               onClick={() => setSelectedOrderIds([])}
               className="px-4 py-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs font-bold rounded-xl transition-all cursor-pointer"
             >
@@ -1193,6 +1292,68 @@ export default function AdminOrdersPage() {
                 </div>
               </div>
 
+              {/* Steadfast Courier Section */}
+              <div className="bg-emerald-50/60 rounded-xl border border-emerald-100 overflow-hidden">
+                <div className="px-4 py-3 border-b border-emerald-100 flex items-center justify-between bg-emerald-50">
+                  <div className="flex items-center gap-2">
+                    <Truck size={16} className="text-emerald-600" />
+                    <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Steadfast Courier</span>
+                  </div>
+                  {selectedOrder.steadfast_consignment_id && (
+                    <span className="text-[10px] font-bold text-emerald-400 font-mono">
+                      ID: {selectedOrder.steadfast_consignment_id}
+                    </span>
+                  )}
+                </div>
+                <div className="p-4">
+                  {selectedOrder.steadfast_consignment_id ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-700">
+                        <CheckCircle2 size={16} className="text-emerald-500" />
+                        <span className="text-xs font-bold">Order sent to Steadfast successfully</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 bg-white rounded-xl p-3 border border-emerald-100">
+                        <div className="text-center">
+                          <span className="text-[10px] font-bold text-gray-400 block">Tracking Code</span>
+                          <span className="text-xs font-mono font-bold text-emerald-700 mt-0.5 block">{selectedOrder.steadfast_tracking_code || '—'}</span>
+                        </div>
+                        <div className="text-center border-x border-emerald-50">
+                          <span className="text-[10px] font-bold text-gray-400 block">Status</span>
+                          <span className="text-xs font-semibold text-gray-800 mt-0.5 block">{selectedOrder.steadfast_order_status || 'Pending'}</span>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-[10px] font-bold text-gray-400 block">Consignment ID</span>
+                          <span className="text-xs font-mono font-bold text-gray-800 mt-0.5 block">
+                            {selectedOrder.steadfast_consignment_id}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedOrder.steadfast_sent_at && (
+                        <p className="text-[10px] text-gray-400 font-medium">
+                          Sent: {new Date(selectedOrder.steadfast_sent_at).toLocaleString('en-US')}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-4">
+                      <p className="text-xs text-gray-500">This order has not been sent to Steadfast yet.</p>
+                      <button
+                        type="button"
+                        onClick={() => handleSendToSteadfast(selectedOrder.id)}
+                        disabled={sendingToSteadfast}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 shrink-0"
+                      >
+                        {sendingToSteadfast ? (
+                          <><RefreshCw size={14} className="animate-spin" /><span>Sending...</span></>
+                        ) : (
+                          <><Truck size={14} /><span>Send to Steadfast</span></>
+                        )}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* WhatsApp template generator */}
               <div className="flex gap-2 justify-end pt-4 border-t border-gray-100">
                 <a
@@ -1220,5 +1381,18 @@ export default function AdminOrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[50vh] text-black">
+        <RefreshCw className="animate-spin text-[#ff6b35] mr-2" />
+        <span>Loading orders...</span>
+      </div>
+    }>
+      <OrdersPageContent />
+    </Suspense>
   );
 }

@@ -14,6 +14,8 @@ import { Loader2, CheckCircle, ArrowLeft, MessageCircle, Tag, Check, AlertCircle
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
+import { trackInitiateCheckout } from '@/lib/tracking';
+
 interface AppliedCoupon {
   code: string;
   discount_amount: number;
@@ -38,6 +40,15 @@ export default function CheckoutPage() {
   const [couponApplied, setCouponApplied] = useState<AppliedCoupon | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState('');
+
+  // Incomplete order tracking states
+  const [incompleteOrderId, setIncompleteOrderId] = useState<string | null>(null);
+
+  // Load incomplete order ID from session on mount
+  useEffect(() => {
+    const cached = sessionStorage.getItem('incomplete_order_id');
+    if (cached) setIncompleteOrderId(cached);
+  }, []);
 
   const {
     register,
@@ -89,6 +100,72 @@ export default function CheckoutPage() {
   // Calculate grand total
   const discountAmount = couponApplied ? couponApplied.discount_amount : 0;
   const grandTotal = Math.max(totalPrice + deliveryCharge - discountAmount, 0);
+
+  // Trigger InitiateCheckout event (moved below deliveryCharge declaration)
+  useEffect(() => {
+    if (items.length > 0) {
+      const sessionKey = 'checkout_initiated_fired';
+      if (!sessionStorage.getItem(sessionKey)) {
+        trackInitiateCheckout(items, totalPrice);
+        sessionStorage.setItem(sessionKey, 'true');
+      }
+    }
+  }, [items, totalPrice]);
+
+  // Track incomplete checkouts in real-time (debounced - moved below deliveryCharge declaration)
+  useEffect(() => {
+    const name = watchedValues.name?.trim() || '';
+    const phone = watchedValues.phone?.trim() || '';
+    const address = watchedValues.address?.trim() || '';
+    const district = watchedValues.district || '';
+    const note = watchedValues.note?.trim() || '';
+
+    // Only track if phone has 11 digits and name has at least 2 chars
+    if (phone.replace(/[^0-9]/g, '').length >= 11 && name.length >= 2) {
+      const delayDebounceFn = setTimeout(async () => {
+        try {
+          const res = await fetch('/api/orders/incomplete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              incompleteOrderId,
+              customer_name: name,
+              phone,
+              address,
+              district,
+              note,
+              items,
+              subtotal: totalPrice,
+              delivery_charge: deliveryCharge,
+              grand_total: totalPrice + deliveryCharge - (couponApplied?.discount_amount || 0)
+            }),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.incompleteOrderId && !incompleteOrderId) {
+              setIncompleteOrderId(data.incompleteOrderId);
+              sessionStorage.setItem('incomplete_order_id', data.incompleteOrderId);
+            }
+          }
+        } catch (err) {
+          console.error('[Incomplete Track Error]', err);
+        }
+      }, 2000); // 2 seconds debounce
+
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [
+    watchedValues.name,
+    watchedValues.phone,
+    watchedValues.address,
+    watchedValues.district,
+    watchedValues.note,
+    items,
+    totalPrice,
+    deliveryCharge,
+    couponApplied,
+    incompleteOrderId
+  ]);
 
   const handleApplyCoupon = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -155,6 +232,7 @@ export default function CheckoutPage() {
           discount_amount: discountAmount,
           grand_total: grandTotal,
           coupon_code: couponApplied?.code || null,
+          incompleteOrderId: incompleteOrderId || undefined,
         }),
       });
 
@@ -163,6 +241,9 @@ export default function CheckoutPage() {
       if (!res.ok) {
         throw new Error(result.error || 'Order failed');
       }
+
+      // Clear incomplete order tracking on success
+      sessionStorage.removeItem('incomplete_order_id');
 
       // Build WhatsApp message
       const orderItems = items.map((item) => ({

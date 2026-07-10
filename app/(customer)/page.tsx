@@ -19,7 +19,7 @@ export const metadata: Metadata = {
     title: 'Origin Haat — বাংলাদেশের সেরা অনলাইন শপিং',
     description: 'সেরা দামে সেরা পণ্য। ক্যাশ অন ডেলিভারি উপলব্ধ। বাংলাদেশ জুড়ে দ্রুত ডেলিভারি।',
     url: 'https://originhaat.com',
-    images: [{ url: '/og-image.jpg', width: 1200, height: 630 }],
+    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
   },
 };
 
@@ -48,6 +48,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <h1 className="sr-only">Origin Haat — বাংলাদেশের সেরা অনলাইন শপিং | ক্যাশ অন ডেলিভারি</h1>
       <HeroSection banners={banners} />
       <Categories categories={categories} />
       <TrustBar />

@@ -13,6 +13,8 @@ interface ProductCardProps {
   product: Product;
 }
 
+import { trackAddToCart } from '@/lib/tracking';
+
 export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const discount = calculateDiscount(product.original_price, product.price);
@@ -25,6 +27,7 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     if (product.stock === 0) return;
     addItem(product, 1);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, 1);
     showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
@@ -33,6 +36,7 @@ export function ProductCard({ product }: ProductCardProps) {
     e.stopPropagation();
     if (product.stock === 0) return;
     addItem(product, 1);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, 1);
     router.push('/checkout');
   };
 

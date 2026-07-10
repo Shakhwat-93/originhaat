@@ -8,6 +8,7 @@ import { Product } from '@/types';
 import { calculateDiscount, formatBDTNumeric } from '@/lib/utils';
 import { Star, Minus, Plus, Lock, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { trackAddToCart } from '@/lib/tracking';
 
 interface ProductInfoProps {
   product: Product;
@@ -40,11 +41,13 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
   const handleAddToCart = () => {
     addItem(product, quantity);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
     showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
   const handleOrderNow = () => {
     addItem(product, quantity);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
     router.push('/checkout');
   };
 

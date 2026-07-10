@@ -90,6 +90,7 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/admin/orders?status=confirmed', label: 'Confirmed', dotColor: '#10b981' },
       { href: '/admin/orders?status=cancelled', label: 'Cancelled', dotColor: '#f87171' },
       { href: '/admin/orders?status=fake', label: 'Fake Order', dotColor: '#92400e' },
+      { href: '/admin/orders?status=incomplete', label: 'Incomplete', dotColor: '#9ca3af' },
     ]
   },
   { 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSettings } from '@/lib/db';
+import { sendServerPurchaseEvent } from '@/lib/capi';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -14,7 +16,7 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { customer_name, phone, address, district, note, items, subtotal, delivery_charge, grand_total } = body;
+    const { incompleteOrderId, customer_name, phone, address, district, note, items, subtotal, delivery_charge, grand_total } = body;
 
     if (!customer_name || !phone || !address || !district || !items?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -25,14 +27,50 @@ export async function POST(request: NextRequest) {
                        request.headers.get('x-real-ip') ||
                        'unknown';
 
-    const { data: order, error: orderError } = await supabase
-      .from('oh_orders')
-      .insert({ order_number, customer_name, phone, address, district, note: note || null, subtotal, delivery_charge, grand_total, status: 'pending', payment_method: 'cod', ip_address })
-      .select()
-      .single();
+    let order = null;
+    let orderError = null;
 
-    if (orderError) {
-      console.error('Order insert error:', orderError);
+    if (incompleteOrderId) {
+      // Upgrade existing incomplete order to pending
+      const { data, error } = await supabase
+        .from('oh_orders')
+        .update({
+          order_number,
+          customer_name,
+          phone,
+          address,
+          district,
+          note: note || null,
+          subtotal,
+          delivery_charge,
+          grand_total,
+          status: 'pending',
+          ip_address,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', incompleteOrderId)
+        .select()
+        .single();
+      order = data;
+      orderError = error;
+
+      if (!orderError && order) {
+        // Delete old items so we can re-insert them cleanly
+        await supabase.from('oh_order_items').delete().eq('order_id', incompleteOrderId);
+      }
+    } else {
+      // Create new order
+      const { data, error } = await supabase
+        .from('oh_orders')
+        .insert({ order_number, customer_name, phone, address, district, note: note || null, subtotal, delivery_charge, grand_total, status: 'pending', payment_method: 'cod', ip_address })
+        .select()
+        .single();
+      order = data;
+      orderError = error;
+    }
+
+    if (orderError || !order) {
+      console.error('Order upsert error:', orderError);
       return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
     }
 
@@ -52,6 +90,34 @@ export async function POST(request: NextRequest) {
 
     const { error: itemsError } = await supabase.from('oh_order_items').insert(orderItems);
     if (itemsError) console.error('Order items insert error:', itemsError);
+
+    // Fetch settings dynamically to get CAPI keys
+    const settings = await getSettings();
+
+    // Trigger Conversions API (CAPI) events for Meta and TikTok
+    try {
+      const userAgent = request.headers.get('user-agent') || '';
+      const capiItems = orderItems.map((item: any) => ({
+        product_id: item.product_id,
+        product_name: item.product_name,
+        price: item.price,
+        quantity: item.quantity
+      }));
+
+      // Fire CAPI asynchronously to keep checkout response fast
+      sendServerPurchaseEvent({
+        orderNumber: order.order_number,
+        total: grand_total,
+        customerName: customer_name,
+        phone,
+        ipAddress: ip_address,
+        userAgent,
+        items: capiItems,
+        settings: settings as any
+      }).catch(err => console.error('[CAPI Purchase Event Fire Error]', err));
+    } catch (capiErr) {
+      console.error('[CAPI Event Preparation Error]', capiErr);
+    }
 
     return NextResponse.json({ success: true, order_id: order.id, order_number: order.order_number });
   } catch (error) {

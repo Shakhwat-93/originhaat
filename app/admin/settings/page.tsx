@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 import type { ChangeEvent } from 'react';
 
@@ -28,6 +28,21 @@ interface Settings {
   pathao_username: string;
   pathao_password: string;
   pathao_store_id: number | null;
+  // Steadfast fields
+  steadfast_api_key?: string | null;
+  steadfast_secret_key?: string | null;
+  // Tracking fields
+  tracking_gtm_id?: string | null;
+  tracking_ga4_id?: string | null;
+  tracking_fb_pixel_id?: string | null;
+  tracking_fb_capi_token?: string | null;
+  tracking_fb_capi_test_code?: string | null;
+  tracking_tiktok_pixel_id?: string | null;
+  tracking_tiktok_capi_token?: string | null;
+  // AI Chat fields
+  chat_ai_active?: boolean;
+  chat_ai_instructions?: string;
+  chat_ai_api_key?: string | null;
 }
 
 interface PathaoStore {
@@ -59,6 +74,18 @@ export default function AdminSettingsPage() {
     pathao_username: '',
     pathao_password: '',
     pathao_store_id: null,
+    steadfast_api_key: '',
+    steadfast_secret_key: '',
+    tracking_gtm_id: '',
+    tracking_ga4_id: '',
+    tracking_fb_pixel_id: '',
+    tracking_fb_capi_token: '',
+    tracking_fb_capi_test_code: '',
+    tracking_tiktok_pixel_id: '',
+    tracking_tiktok_capi_token: '',
+    chat_ai_active: false,
+    chat_ai_instructions: '',
+    chat_ai_api_key: '',
   });
 
   // Pathao-specific state
@@ -69,9 +96,50 @@ export default function AdminSettingsPage() {
   const [pathaoStores, setPathaoStores] = useState<PathaoStore[]>([]);
   const [loadingStores, setLoadingStores] = useState(false);
 
+  // Steadfast-specific state
+  const [showSteadfastSecretKey, setShowSteadfastSecretKey] = useState(false);
+  const [testingSteadfastConnection, setTestingSteadfastConnection] = useState(false);
+  const [steadfastTestStatus, setSteadfastTestStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Tracking visibility states
+  const [showFbcapiToken, setShowFbcapiToken] = useState(false);
+  const [showTiktokcapiToken, setShowTiktokcapiToken] = useState(false);
+  const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const handleTestSteadfastConnection = async () => {
+    setTestingSteadfastConnection(true);
+    setSteadfastTestStatus(null);
+    try {
+      // First save current credential fields
+      const { error: saveErr } = await supabase
+        .from('oh_settings')
+        .update({
+          steadfast_api_key: settings.steadfast_api_key || '',
+          steadfast_secret_key: settings.steadfast_secret_key || '',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', 1);
+
+      if (saveErr) throw new Error('Failed to save credentials before testing');
+
+      const res = await fetch('/api/steadfast/balance');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Connection failed');
+
+      setSteadfastTestStatus({
+        type: 'success',
+        message: `✓ Connection successful! Current Balance: ৳${data.balance}`
+      });
+    } catch (err: any) {
+      setSteadfastTestStatus({ type: 'error', message: err.message || 'Connection failed' });
+    } finally {
+      setTestingSteadfastConnection(false);
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -545,6 +613,75 @@ export default function AdminSettingsPage() {
           </div>
         </div>
 
+        {/* Steadfast Courier API Settings */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-1">
+            <Package size={18} className="text-[#ff6b35]" />
+            <div>
+              <h2 className="font-bold text-gray-900">Steadfast Courier API</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Integrate Steadfast to send orders directly from the Order Management panel</p>
+            </div>
+          </div>
+
+          {/* Credentials Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">API Key</label>
+              <input
+                type="text"
+                name="steadfast_api_key"
+                value={settings.steadfast_api_key || ''}
+                onChange={handleChange}
+                placeholder="API Key from Steadfast"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Secret Key (Client ID)</label>
+              <div className="relative">
+                <input
+                  type={showSteadfastSecretKey ? 'text' : 'password'}
+                  name="steadfast_secret_key"
+                  value={settings.steadfast_secret_key || ''}
+                  onChange={handleChange}
+                  placeholder="Secret Key from Steadfast"
+                  className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSteadfastSecretKey(p => !p)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  {showSteadfastSecretKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Test Connection */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleTestSteadfastConnection}
+              disabled={testingSteadfastConnection || !settings.steadfast_api_key || !settings.steadfast_secret_key}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-sm font-bold rounded-xl transition-all shadow-sm shadow-indigo-200 cursor-pointer"
+            >
+              {testingSteadfastConnection ? <RefreshCw size={15} className="animate-spin" /> : <Zap size={15} />}
+              Test Connection
+            </button>
+            {steadfastTestStatus && (
+              <div className={`flex items-center gap-2 text-xs font-semibold px-3 py-2 rounded-xl border ${
+                steadfastTestStatus.type === 'success'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
+                  : 'bg-red-50 text-red-700 border-red-100'
+              }`}>
+                {steadfastTestStatus.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                {steadfastTestStatus.message}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Social Links */}
         <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
           <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
@@ -586,6 +723,194 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Tracking & Analytics (GTM, GA4, Meta Pixel, TikTok CAPI) */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-3 mb-2">
+            <Zap size={18} className="text-[#ff6b35]" />
+            <div>
+              <h2 className="font-bold text-gray-900">Tracking, Pixels & Conversions API (CAPI)</h2>
+              <p className="text-xs text-gray-400 mt-0.5">Configure GTM, Google Analytics 4, Meta Facebook Pixel, and TikTok Pixel with CAPI</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Google Tools */}
+            <div className="space-y-4 border-r border-gray-100 pr-0 md:pr-6">
+              <h3 className="font-bold text-[#ff6b35] text-sm">Google Analytics & GTM</h3>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Google Tag Manager (GTM) ID</label>
+                <input
+                  type="text"
+                  name="tracking_gtm_id"
+                  value={settings.tracking_gtm_id || ''}
+                  onChange={handleChange}
+                  placeholder="GTM-XXXXXX"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Google Analytics 4 (GA4) Measurement ID</label>
+                <input
+                  type="text"
+                  name="tracking_ga4_id"
+                  value={settings.tracking_ga4_id || ''}
+                  onChange={handleChange}
+                  placeholder="G-XXXXXX"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                />
+              </div>
+            </div>
+
+            {/* Meta (Facebook) Tools */}
+            <div className="space-y-4">
+              <h3 className="font-bold text-indigo-600 text-sm">Meta Facebook Pixel & CAPI</h3>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Meta Pixel ID</label>
+                <input
+                  type="text"
+                  name="tracking_fb_pixel_id"
+                  value={settings.tracking_fb_pixel_id || ''}
+                  onChange={handleChange}
+                  placeholder="Pixel ID"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Meta Conversions API (CAPI) Access Token</label>
+                <div className="relative">
+                  <input
+                    type={showFbcapiToken ? 'text' : 'password'}
+                    name="tracking_fb_capi_token"
+                    value={settings.tracking_fb_capi_token || ''}
+                    onChange={handleChange}
+                    placeholder="EAA..."
+                    className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowFbcapiToken(p => !p)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showFbcapiToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Meta CAPI Test Event Code (Optional)</label>
+                <input
+                  type="text"
+                  name="tracking_fb_capi_test_code"
+                  value={settings.tracking_fb_capi_test_code || ''}
+                  onChange={handleChange}
+                  placeholder="TESTXXXXX"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                />
+                <p className="text-[11px] text-gray-400 mt-1">Use only when testing events in Meta Events Manager.</p>
+              </div>
+            </div>
+
+            {/* TikTok Tools */}
+            <div className="space-y-4 md:col-span-2 border-t border-gray-100 pt-6">
+              <h3 className="font-bold text-emerald-600 text-sm">TikTok Pixel & CAPI</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">TikTok Pixel ID</label>
+                  <input
+                    type="text"
+                    name="tracking_tiktok_pixel_id"
+                    value={settings.tracking_tiktok_pixel_id || ''}
+                    onChange={handleChange}
+                    placeholder="Pixel ID"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">TikTok Conversions API (CAPI) Access Token</label>
+                  <div className="relative">
+                    <input
+                      type={showTiktokcapiToken ? 'text' : 'password'}
+                      name="tracking_tiktok_capi_token"
+                      value={settings.tracking_tiktok_capi_token || ''}
+                      onChange={handleChange}
+                      placeholder="TikTok Access Token"
+                      className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowTiktokcapiToken(p => !p)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showTiktokcapiToken ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* AI Chat Auto-Responder Settings */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">AI Chat Auto-Responder</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Let Google Gemini reply to customer messages automatically</p>
+              </div>
+            </div>
+            {/* Toggle Switch */}
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="chat_ai_active"
+                checked={settings.chat_ai_active || false}
+                onChange={(e) => setSettings(prev => ({ ...prev, chat_ai_active: e.target.checked }))}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff6b35]"></div>
+            </label>
+          </div>
+
+          {settings.chat_ai_active && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Gemini API Key</label>
+                <div className="relative">
+                  <input
+                    type={showGeminiApiKey ? 'text' : 'password'}
+                    name="chat_ai_api_key"
+                    value={settings.chat_ai_api_key || ''}
+                    onChange={handleChange}
+                    placeholder="Enter your Gemini API key (from Google AI Studio)"
+                    className="w-full px-4 py-2.5 pr-10 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGeminiApiKey(p => !p)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  >
+                    {showGeminiApiKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1">Get a free key from <a href="https://aistudio.google.com/" target="_blank" rel="noreferrer" className="text-[#ff6b35] hover:underline">Google AI Studio</a>.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">AI Instructions / System Prompt</label>
+                <textarea
+                  name="chat_ai_instructions"
+                  value={settings.chat_ai_instructions || ''}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Define how the AI assistant should behave, including refund policies, delivery charges, phone numbers, and language."
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black leading-relaxed"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* SEO Metadata */}

@@ -17,6 +17,8 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
 
     if (!auth && pathname !== '/admin') {
       router.push('/admin');
+    } else if (auth && pathname === '/admin') {
+      router.push('/admin/dashboard');
     }
   }, [pathname, router]);
 
@@ -33,9 +35,8 @@ export default function AdminRootLayout({ children }: { children: React.ReactNod
     return null;
   }
 
-  // If authenticated and on login page, redirect to dashboard
+  // If authenticated and on login page, show blank while redirecting
   if (authenticated && pathname === '/admin') {
-    router.push('/admin/dashboard');
     return null;
   }
 

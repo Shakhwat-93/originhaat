@@ -10,6 +10,8 @@ import { formatBDTNumeric } from '@/lib/utils';
 import { ShoppingCart, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { trackAddToCart } from '@/lib/tracking';
+
 interface StickyProductCTAProps {
   product: Product;
   quantity: number;
@@ -31,11 +33,13 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
 
   const handleAddToCart = () => {
     addItem(product, quantity);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
     showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
   const handleOrderNow = () => {
     addItem(product, quantity);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
     router.push('/checkout');
   };
 

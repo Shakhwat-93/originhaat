@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { CheckCircle, Home, MessageCircle, Package } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
+import { trackPurchase } from '@/lib/tracking';
 
 interface StoredOrder {
   id: string;
@@ -12,6 +13,8 @@ interface StoredOrder {
   phone: string;
   district: string;
   total: number;
+  deliveryCharge: number;
+  items: Array<{ product: { id: string; name_bn: string; price: number }; quantity: number }>;
   whatsappMessage: string;
 }
 
@@ -22,7 +25,10 @@ export default function OrderSuccessPage() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('lastOrder');
-      if (stored) setOrder(JSON.parse(stored));
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setOrder(parsed);
+      }
     } catch {
       // ignore
     }
@@ -42,6 +48,13 @@ export default function OrderSuccessPage() {
     };
     fetchWhatsappNumber();
   }, []);
+
+  // Trigger Purchase tracking when order details are loaded
+  useEffect(() => {
+    if (order) {
+      trackPurchase(order);
+    }
+  }, [order]);
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-16">

@@ -6,6 +6,7 @@ import { ProductGallery } from '@/components/product/ProductGallery';
 import { ProductInfo } from '@/components/product/ProductInfo';
 import { ProductReviews } from '@/components/product/ProductReviews';
 import { ProductCard } from '@/components/product/ProductCard';
+import { ProductViewTracker } from '@/components/product/ProductViewTracker';
 
 const ProductFAQ = dynamic(
   () => import('@/components/product/ProductFAQ').then((mod) => mod.ProductFAQ)
@@ -60,13 +61,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       images: firstImage
         ? [{ url: firstImage, width: 800, height: 800, alt: product.name_bn }]
-        : [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Origin Haat' }],
+        : [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Origin Haat' }],
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: firstImage ? [firstImage] : ['/og-image.jpg'],
+      images: firstImage ? [firstImage] : ['/og-image.png'],
     },
   };
 }
@@ -200,6 +201,7 @@ export default async function ProductPage({ params }: Props) {
 
       {/* Sticky Mobile CTA */}
       <StickyProductCTA product={product as any} quantity={1} />
+      <ProductViewTracker product={{ id: product.id, name_bn: product.name_bn, price: product.sale_price || product.price }} />
       {/* Bottom padding for mobile sticky bar */}
       <div className="h-24 md:hidden" />
     </>
