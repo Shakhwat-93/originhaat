@@ -884,7 +884,7 @@ export default function InboxDashboard() {
           {/* LEFT — Conversation List */}
           <div className={`w-full md:w-72 border-r border-gray-200 bg-white flex flex-col shrink-0 ${activeMobileView === 'list' ? 'flex' : 'hidden md:flex'}`}>
             {/* Status Tabs */}
-            <div className="flex flex-wrap gap-1 px-3 py-2.5 border-b border-gray-100 bg-gray-50/50">
+            <div className="flex flex-wrap gap-1 px-3 py-2.5 border-b border-gray-100 bg-gray-50">
               {([
                 { id: 'active', label: 'Active', count: statusCounts.active, color: 'bg-emerald-500/10 text-emerald-700' },
                 { id: 'pending', label: 'Pending', count: statusCounts.pending, color: 'bg-amber-500/10 text-amber-700' },

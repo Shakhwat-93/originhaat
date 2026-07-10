@@ -601,6 +601,48 @@ h1, h2, h3, h4, h5, h6 {
   background: #2e2e33 !important;
 }
 
+/* Status badges with opacity shorthands (like bg-emerald-500/10) in dark mode */
+.admin-dark .bg-emerald-500\/10,
+.admin-dark .bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34d399 !important;
+}
+
+.admin-dark .bg-amber-500\/10,
+.admin-dark .bg-amber-500\/20 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #fbbf24 !important;
+}
+
+.admin-dark .bg-purple-500\/10,
+.admin-dark .bg-purple-500\/20 {
+  background-color: rgba(139, 92, 246, 0.15) !important;
+  color: #a78bfa !important;
+}
+
+.admin-dark .bg-blue-500\/10,
+.admin-dark .bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+  color: #60a5fa !important;
+}
+
+.admin-dark .bg-gray-500\/10,
+.admin-dark .bg-gray-500\/20 {
+  background-color: rgba(115, 115, 115, 0.15) !important;
+  color: #d4d4d4 !important;
+}
+
+.admin-dark .bg-red-500\/10,
+.admin-dark .bg-red-500\/20 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+  color: #f87171 !important;
+}
+
+.admin-dark button.text-gray-500:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #ffffff !important;
+}
+
 /* ─── Premium Sunset Gradient Overrides (Rose to Orange) ─── */
 
 /* 1. Main Background Gradients */
