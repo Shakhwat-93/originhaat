@@ -27,6 +27,7 @@ import {
   Search,
   Bell,
   Moon,
+  Sun,
   Info,
   Download,
   Plus,
@@ -142,6 +143,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('admin_theme') as 'light' | 'dark' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+    } else {
+      setTheme('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+    localStorage.setItem('admin_theme', nextTheme);
+  };
   
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     catalog: true,
@@ -228,7 +246,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="admin-light flex h-screen overflow-hidden bg-[#f4f7f6] text-[#111827] font-sans antialiased">
+    <div className={`${theme === 'dark' ? 'admin-dark' : 'admin-light'} flex h-screen overflow-hidden bg-[#f4f7f6] text-[#111827] font-sans antialiased`}>
       
       {/* ── Mobile Sidebar Drawer Backdrop ────────────────────────────── */}
       {sidebarOpen && (
@@ -242,20 +260,22 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <aside
         style={{
           width: isCollapsed ? 76 : 260,
-          background: '#ffffff',
+          background: theme === 'dark' ? '#0c0c0e' : '#ffffff',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 50,
           transition: 'width 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'relative',
-          borderRight: '1px solid #e2e8f0',
+          borderRight: theme === 'dark' ? '1px solid #18181b' : '1px solid #e2e8f0',
         }}
         className={`admin-sidebar shrink-0 h-full ${sidebarOpen ? 'sidebar-mobile-open translate-x-0' : '-translate-x-full md:translate-x-0'} fixed md:relative`}
       >
         {/* Collapse toggle */}
         <button
           onClick={toggleCollapse}
-          className="hidden md:flex absolute top-6 -right-3 w-6 h-6 rounded-full bg-white border border-gray-200 text-gray-400 hover:text-[#ff6b35] items-center justify-center cursor-pointer shadow-sm z-50 transition-all hover:scale-105 active:scale-95"
+          className={`hidden md:flex absolute top-6 -right-3 w-6 h-6 rounded-full border items-center justify-center cursor-pointer shadow-sm z-50 transition-all hover:scale-105 active:scale-95 ${
+            theme === 'dark' ? 'bg-[#0c0c0e] border-[#18181b] text-gray-400' : 'bg-white border-gray-200 text-gray-400 hover:text-[#ff6b35]'
+          }`}
         >
           {isCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
         </button>
@@ -264,19 +284,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="px-5 py-4.5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             {/* Round Squircle Branding Logo */}
-            <div className="w-9 h-9 rounded-xl bg-black flex items-center justify-center shrink-0 shadow-sm">
-              <span className="text-white font-extrabold text-base leading-none">O</span>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm border ${
+              theme === 'dark' ? 'bg-white text-black border-gray-800' : 'bg-black text-white border-gray-200'
+            }`}>
+              <span className="font-extrabold text-base leading-none">O</span>
             </div>
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="text-gray-900 font-extrabold text-sm tracking-tight">Origin Haat</span>
+                <span className={`${theme === 'dark' ? 'text-white' : 'text-gray-900'} font-extrabold text-sm tracking-tight`}>Origin Haat</span>
                 <span className="text-[10px] text-gray-400 font-semibold tracking-wider">Canvas Console</span>
               </div>
             )}
           </div>
           {!isCollapsed && (
-            <button className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-50 transition-colors cursor-pointer">
-              <Moon size={15} />
+            <button
+              onClick={toggleTheme}
+              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                theme === 'dark' ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-400 hover:bg-gray-50'
+              }`}
+            >
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
           )}
         </div>
@@ -300,14 +327,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         href={item.href}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
                           isActive 
-                            ? 'bg-[#fff3ef] text-[#ff6b35]' 
+                            ? 'bg-[#fff3ef] text-[#ff6b35] nav-item-active' 
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
                         {isActive && (
-                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg" />
+                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg nav-indicator" />
                         )}
-                        <Icon size={16} className={isActive ? 'text-[#ff6b35]' : 'text-gray-400'} />
+                        <Icon size={16} className={isActive ? 'text-[#ff6b35] nav-icon-active' : 'text-gray-400'} />
                         {!isCollapsed && <span className="flex-1">{item.label}</span>}
                         {!isCollapsed && renderBadge(item.badgeType)}
                       </Link>
@@ -326,14 +353,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         onClick={() => toggleGroup(item.id)}
                         className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
                           isChildActive && !isExpanded
-                            ? 'bg-[#fff3ef] text-[#ff6b35]' 
+                            ? 'bg-[#fff3ef] text-[#ff6b35] nav-item-active' 
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
                         }`}
                       >
                         {isChildActive && !isExpanded && (
-                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg" />
+                          <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg nav-indicator" />
                         )}
-                        <Icon size={16} className={isChildActive ? 'text-[#ff6b35]' : 'text-gray-400'} />
+                        <Icon size={16} className={isChildActive ? 'text-[#ff6b35] nav-icon-active' : 'text-gray-400'} />
                         {!isCollapsed && <span className="flex-1 text-left">{item.label}</span>}
                         {!isCollapsed && (
                           isExpanded ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />
@@ -350,7 +377,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                                 href={child.href}
                                 className={`flex items-center gap-2.5 py-2 pl-6 pr-3.5 rounded-lg text-xs font-bold transition-all ${
                                   isSubActive 
-                                    ? 'bg-[#fff3ef] text-[#ff6b35]' 
+                                    ? 'bg-[#fff3ef] text-[#ff6b35] nav-item-active' 
                                     : 'text-gray-500 hover:text-gray-900'
                                 }`}
                               >
@@ -376,22 +403,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
 
         {/* Profile Card Bottom */}
-        <div className="p-4 border-t border-gray-100 space-y-3">
+        <div className={`p-4 border-t space-y-3 ${theme === 'dark' ? 'border-[#18181b]' : 'border-gray-100'}`}>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-red-500 transition-colors cursor-pointer ${
+              theme === 'dark' ? 'hover:bg-red-950/20' : 'hover:bg-red-50'
+            }`}
           >
             <span className="flex items-center gap-2"><LogOut size={14} /> Logout</span>
           </button>
           
           <div className="flex items-center gap-3 px-2">
             {/* Avatar matching Canvas style */}
-            <div className="w-9 h-9 rounded-full bg-[#ff6b35] flex items-center justify-center shrink-0 text-white font-extrabold text-xs shadow-sm">
+            <div className="w-9 h-9 rounded-full bg-[#ff6b35] flex items-center justify-center shrink-0 text-white font-extrabold text-xs shadow-sm animate-pulse">
               SH
             </div>
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-black text-gray-900 truncate">Shakhwat</p>
+                <p className={`text-xs font-black truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Shakhwat</p>
                 <p className="text-[10px] text-gray-400 font-semibold truncate">Admin</p>
               </div>
             )}
@@ -403,11 +432,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* Top Header */}
-        <header className="h-14 bg-white border-b border-gray-200 px-6 flex items-center justify-between shrink-0 shadow-xs">
+        <header className={`h-14 border-b px-6 flex items-center justify-between shrink-0 transition-colors ${
+          theme === 'dark' ? 'bg-[#0c0c0e] border-[#18181b]' : 'bg-white border-gray-200 shadow-xs'
+        }`}>
           <div className="flex items-center gap-4 flex-1">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="md:hidden p-1.5 rounded-lg border border-gray-200 text-gray-600 cursor-pointer"
+              className={`md:hidden p-1.5 rounded-lg border cursor-pointer ${
+                theme === 'dark' ? 'border-[#262626] text-gray-400' : 'border-gray-200 text-gray-600'
+              }`}
             >
               <Menu size={16} />
             </button>
@@ -418,20 +451,28 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <input 
                 type="text" 
                 placeholder="Search everything..." 
-                className="w-full bg-[#f1f5f9] border border-transparent rounded-full pl-9 pr-4 py-1.8 text-xs focus:bg-white focus:border-gray-200 focus:outline-none text-gray-800 placeholder-gray-400 transition-all"
+                className={`w-full border rounded-full pl-9 pr-4 py-1.8 text-xs focus:outline-none transition-all ${
+                  theme === 'dark' 
+                    ? 'bg-[#161616] border-[#262626] text-white focus:border-gray-800 placeholder-gray-500' 
+                    : 'bg-[#f1f5f9] border-transparent text-gray-800 focus:bg-white focus:border-gray-200 placeholder-gray-400'
+                }`}
               />
             </div>
           </div>
 
           <div className="flex items-center gap-3">
             {/* Online users pill */}
-            <div className="flex items-center bg-gray-50 border border-gray-100 rounded-full py-1 px-2.5 text-[10px] font-bold text-gray-500 gap-1.5">
+            <div className={`flex items-center border rounded-full py-1 px-2.5 text-[10px] font-bold gap-1.5 ${
+              theme === 'dark' ? 'bg-[#161616] border-[#262626] text-gray-400' : 'bg-gray-50 border-gray-100 text-gray-500'
+            }`}>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>1 Online</span>
             </div>
 
             {/* Notification Bell with 9+ badge */}
-            <button className="relative w-8 h-8 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors cursor-pointer">
+            <button className={`relative w-8 h-8 rounded-xl border flex items-center justify-center transition-colors cursor-pointer ${
+              theme === 'dark' ? 'bg-[#161616] border-[#262626] text-gray-400 hover:bg-gray-800' : 'bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100'
+            }`}>
               <Bell size={15} />
               <span className="absolute -top-1 -right-1 bg-blue-500 text-white font-extrabold text-[8px] px-1 py-0.2 rounded-full border border-white">
                 9+
@@ -442,7 +483,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <Link 
               href="/" 
               target="_blank"
-              className="flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 hover:border-[#ff6b35] rounded-xl text-xs font-bold text-gray-600 hover:text-[#ff6b35] transition-all"
+              className={`flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-bold transition-all ${
+                theme === 'dark' 
+                  ? 'border-[#262626] text-gray-400 hover:border-white hover:text-white' 
+                  : 'border-gray-200 text-gray-600 hover:border-[#ff6b35] hover:text-[#ff6b35]'
+              }`}
             >
               <Globe size={13} />
               <span className="hide-mobile">Visit Site</span>
@@ -458,10 +503,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <div className="text-[10px] font-bold text-gray-400 tracking-wider flex items-center gap-1">
               <span>Workspace</span>
               <span>/</span>
-              <span className="text-gray-500 font-black">Task Board</span>
+              <span className={`font-black ${theme === 'dark' ? 'text-gray-300' : 'text-gray-500'}`}>Task Board</span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1">
-              <h2 className="text-lg font-black text-gray-900 tracking-tight">{pageTitle}</h2>
+              <h2 className={`text-lg font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{pageTitle}</h2>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="text-[10px] text-gray-400 font-bold">Last updated Jun 28, 2026</span>
                 <button className="flex items-center gap-1 px-3 py-1.8 bg-[#ff6b35] hover:bg-[#e55520] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer">

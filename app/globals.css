@@ -369,6 +369,238 @@ h1, h2, h3, h4, h5, h6 {
   color: #be123c !important;
 }
 
+/* ─── Premium Admin Dark Theme (Green & Black - matching reference image) ──────────────── */
+.admin-dark {
+  background-color: #09090b !important;
+  color: #fafafa !important;
+}
+
+.admin-dark h1, 
+.admin-dark h2, 
+.admin-dark h3, 
+.admin-dark h4, 
+.admin-dark h5, 
+.admin-dark h6 {
+  color: #ffffff !important;
+}
+
+/* Dark Cards override */
+.admin-dark .bg-white {
+  background-color: #121214 !important;
+  border: 1px solid #1f1f23 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Secondary bg updates */
+.admin-dark .bg-gray-50,
+.admin-dark .bg-gray-100 {
+  background-color: #121214 !important;
+}
+
+.admin-dark .bg-gray-200 {
+  background-color: #1a1a1e !important;
+}
+
+/* Border updates */
+.admin-dark .border-gray-100, 
+.admin-dark .border-gray-200, 
+.admin-dark .border-gray-300 {
+  border-color: #1f1f23 !important;
+}
+
+/* Text color overrides */
+.admin-dark .text-gray-900,
+.admin-dark .text-gray-800,
+.admin-dark .text-gray-700,
+.admin-dark .text-black {
+  color: #f5f5f5 !important;
+}
+
+.admin-dark .text-gray-500,
+.admin-dark .text-gray-600 {
+  color: #a3a3a3 !important;
+}
+
+.admin-dark .text-gray-400 {
+  color: #737373 !important;
+}
+
+/* Forms & inputs styling (Dark/Green focus) */
+.admin-dark input,
+.admin-dark select,
+.admin-dark textarea {
+  background-color: #121214 !important;
+  border: 1px solid #2e2e33 !important;
+  color: #ffffff !important;
+}
+
+.admin-dark input:focus,
+.admin-dark select:focus,
+.admin-dark textarea:focus {
+  border-color: #8bef25 !important;
+  box-shadow: 0 0 0 1px rgba(139, 239, 37, 0.15) !important;
+  outline: none !important;
+}
+
+/* Primary buttons tactile style override (Lime Green) */
+.admin-dark .bg-\[\#ff6b35\], 
+.admin-dark button.bg-\[\#ff6b35\], 
+.admin-dark a.bg-\[\#ff6b35\],
+.admin-dark button.bg-primary {
+  background: linear-gradient(180deg, #9cee32 0%, #8bef25 100%) !important;
+  color: #000000 !important;
+  border: 1px solid #7cdc20 !important;
+  box-shadow: 0 4px 12px rgba(139, 239, 37, 0.15) !important;
+}
+
+.admin-dark .bg-\[\#ff6b35\]:hover,
+.admin-dark button.bg-\[\#ff6b35\]:hover,
+.admin-dark button.bg-primary:hover {
+  background: linear-gradient(180deg, #adfb42 0%, #95f92c 100%) !important;
+}
+
+/* White/secondary buttons mapping in admin dark context */
+.admin-dark button.border-gray-200,
+.admin-dark button.bg-white,
+.admin-dark a.border-gray-200,
+.admin-dark a.bg-white {
+  background: linear-gradient(180deg, #1a1a1e 0%, #161619 100%) !important;
+  color: #ffffff !important;
+  border: 1px solid #2e2e33 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.admin-dark button.border-gray-200:hover,
+.admin-dark button.bg-white:hover,
+.admin-dark a.border-gray-200:hover,
+.admin-dark a.bg-white:hover {
+  background: linear-gradient(180deg, #222228 0%, #1c1c20 100%) !important;
+  border-color: #3e3e46 !important;
+}
+
+/* Sidebar Custom overrides in dark mode */
+.admin-dark .admin-sidebar {
+  background-color: #0c0c0e !important;
+  border-right: 1px solid #18181b !important;
+}
+
+.admin-dark .admin-sidebar .border-b {
+  border-color: #18181b !important;
+}
+
+/* Active navigation item highlighting */
+.admin-dark .nav-item-active {
+  background: rgba(139, 239, 37, 0.08) !important;
+  color: #ffffff !important;
+}
+
+.admin-dark .nav-indicator {
+  background-color: #8bef25 !important;
+  box-shadow: 0 0 10px rgba(139, 239, 37, 0.5) !important;
+}
+
+.admin-dark .nav-icon-active {
+  color: #8bef25 !important;
+}
+
+/* Sub-branch lines */
+.admin-dark .tree-line-branch::before,
+.admin-dark .tree-line-branch-child::before {
+  background-color: #1e1e24 !important;
+}
+
+/* Badges updates for dark mode */
+.admin-dark .bg-emerald-50, 
+.admin-dark .bg-emerald-50\/10 {
+  background-color: rgba(16, 185, 129, 0.12) !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+.admin-dark .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+.admin-dark .bg-\[\#fff3ef\],
+.admin-dark .bg-orange-50 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+.admin-dark .text-\[\#ff6b35\],
+.admin-dark .text-orange-600 {
+  color: #fbbf24 !important;
+}
+
+.admin-dark .bg-blue-50 {
+  background-color: rgba(59, 130, 246, 0.12) !important;
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+.admin-dark .text-blue-700 {
+  color: #60a5fa !important;
+}
+
+.admin-dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.12) !important;
+  border-color: rgba(245, 158, 11, 0.25) !important;
+}
+.admin-dark .text-amber-700 {
+  color: #fbbf24 !important;
+}
+
+.admin-dark .bg-purple-50 {
+  background-color: rgba(139, 92, 246, 0.12) !important;
+  border-color: rgba(139, 92, 246, 0.25) !important;
+}
+.admin-dark .text-purple-700 {
+  color: #a78bfa !important;
+}
+
+.admin-dark .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.12) !important;
+  border-color: rgba(14, 165, 233, 0.25) !important;
+}
+.admin-dark .text-sky-700 {
+  color: #38bdf8 !important;
+}
+
+.admin-dark .bg-rose-50 {
+  background-color: rgba(244, 63, 94, 0.12) !important;
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+.admin-dark .text-rose-700 {
+  color: #fb7185 !important;
+}
+
+/* Tables styling in dark mode */
+.admin-dark table {
+  background-color: #0c0c0e !important;
+}
+.admin-dark tr {
+  background-color: #0c0c0e !important;
+  border-color: #18181b !important;
+}
+.admin-dark tr:hover {
+  background-color: #121214 !important;
+}
+.admin-dark th {
+  background-color: #121214 !important;
+  color: #a3a3a3 !important;
+  border-color: #1f1f23 !important;
+}
+.admin-dark td {
+  border-color: #18181b !important;
+  color: #f5f5f5 !important;
+}
+
+/* Scrollbar dark override */
+.admin-dark ::-webkit-scrollbar-track {
+  background: #09090b !important;
+}
+.admin-dark ::-webkit-scrollbar-thumb {
+  background: #1f1f23 !important;
+}
+.admin-dark ::-webkit-scrollbar-thumb:hover {
+  background: #2e2e33 !important;
+}
+
 /* ─── Premium Sunset Gradient Overrides (Rose to Orange) ─── */
 
 /* 1. Main Background Gradients */
