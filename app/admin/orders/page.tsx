@@ -1559,7 +1559,8 @@ function OrdersPageContent() {
                 <th className="px-4 py-3">Customer & Zone</th>
                 <th className="px-4 py-3">Products</th>
                 <th className="px-4 py-3">Fulfillment</th>
-                <th className="px-4 py-3 text-right">Total & Actions</th>
+                <th className="px-4 py-3">Actions</th>
+                <th className="px-4 py-3 text-right">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -1577,6 +1578,7 @@ function OrdersPageContent() {
                     </td>
                     <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-32" /></td>
                     <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-full w-20" /></td>
+                    <td className="px-4 py-4"><div className="h-8 bg-gray-100 rounded-xl w-36" /></td>
                     <td className="px-4 py-4 text-right"><div className="h-8 bg-gray-200 rounded-lg w-16 ml-auto" /></td>
                   </tr>
                 ))
@@ -1672,24 +1674,10 @@ function OrdersPageContent() {
                       <td className="px-4 py-3">
                         {order.status === 'trash' ? (
                           <div className="flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => handleRestoreFromTrash(order.id)}
-                              className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 cursor-pointer transition-colors"
-                              title="Restore"
-                            >
-                              <RefreshCw size={13} />
-                            </button>
-                            {canDelete && (
-                              <button
-                                type="button"
-                                onClick={() => handlePermanentDelete(order.id)}
-                                className="p-1.5 hover:bg-rose-50 rounded-lg text-rose-600 cursor-pointer"
-                                title="Delete Permanently"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold bg-neutral-100 text-neutral-500 border border-neutral-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 shrink-0" />
+                              Trash
+                            </span>
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1.5 items-start">
@@ -1724,97 +1712,121 @@ function OrdersPageContent() {
                         )}
                       </td>
 
-                      {/* TOTAL & ACTIONS */}
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex flex-col items-end gap-1.5 relative min-h-[40px] justify-center">
-                          <p className="text-[14px] font-black text-gray-900 leading-none group-hover:opacity-0 transition-opacity">৳{Number(order.grand_total).toLocaleString()}</p>
-                          
-                          <div className="absolute right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs pl-2 py-1">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedOrder(order)}
-                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600 cursor-pointer transition-colors"
-                              title="View details"
+                      {/* ACTIONS */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrder(order)}
+                            className="p-1.5 rounded-xl text-[#3b82f6] bg-[#eff6ff] hover:bg-[#dbeafe] border border-[#bfdbfe]/50 cursor-pointer transition-all shadow-xs"
+                            title="View details"
+                          >
+                            <Eye size={13} />
+                          </button>
+                          {order.status === 'incomplete' && (
+                            <a
+                              href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                                `হ্যালো ${order.customer_name}! আপনি অরিজিন হাট (Origin Haat) থেকে চমৎকার কিছু গ্যাজেট নেওয়ার সিদ্ধান্ত নিয়েছিলেন, কিন্তু আপনার অর্ডারটি শেষ করা হয়নি। আমরা কি অর্ডারটি সম্পন্ন করতে কোনো সহযোগিতা করতে পারি?`
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-xl text-[#10b981] bg-[#ecfdf5] hover:bg-[#d1fae5] border border-[#a7f3d0]/50 cursor-pointer transition-all shadow-xs"
+                              title="WhatsApp Follow-up (রিকভারি)"
                             >
-                              <Eye size={13} />
-                            </button>
-                            {order.status === 'incomplete' && (
-                              <a
-                                href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                                  `হ্যালো ${order.customer_name}! আপনি অরিজিন হাট (Origin Haat) থেকে চমৎকার কিছু গ্যাজেট নেওয়ার সিদ্ধান্ত নিয়েছিলেন, কিন্তু আপনার অর্ডারটি শেষ করা হয়নি। আমরা কি অর্ডারটি সম্পন্ন করতে কোনো সহযোগিতা করতে পারি?`
-                                )}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 cursor-pointer transition-colors"
-                                title="WhatsApp Follow-up (রিকভারি)"
+                              <MessageCircle size={13} />
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setTimeout(() => {
+                                const items = order.oh_order_items?.map(item => ({
+                                  id: item.id || Math.random().toString(),
+                                  product_id: item.product_id,
+                                  product_slug: item.product_slug || '',
+                                  product_name: item.product_name,
+                                  product_image: item.product_image || null,
+                                  price: item.price,
+                                  quantity: item.quantity,
+                                  subtotal: item.price * item.quantity
+                                })) || [];
+                                setEditForm({
+                                  customer_name: order.customer_name || '',
+                                  phone: order.phone || '',
+                                  address: order.address || '',
+                                  district: order.district || '',
+                                  note: order.note || '',
+                                  delivery_charge: order.delivery_charge || 0,
+                                  discount_amount: order.discount_amount || 0,
+                                  subtotal: order.subtotal || 0,
+                                  grand_total: order.grand_total || 0,
+                                  items
+                                });
+                                setIsEditing(true);
+                                fetchProductsCatalog();
+                              }, 50);
+                            }}
+                            className="p-1.5 rounded-xl text-[#6366f1] bg-[#eef2ff] hover:bg-[#e0e7ff] border border-[#c7d2fe]/50 cursor-pointer transition-all shadow-xs"
+                            title="Edit"
+                          >
+                            <Edit size={13} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePrintOrders([order])}
+                            className="p-1.5 rounded-xl text-[#64748b] bg-[#f8fafc] hover:bg-[#f1f5f9] border border-[#e2e8f0]/80 cursor-pointer transition-all shadow-xs"
+                            title="Print"
+                          >
+                            <Printer size={13} />
+                          </button>
+                          {order.status === 'trash' ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleRestoreFromTrash(order.id)}
+                                className="p-1.5 rounded-xl text-[#0d9488] bg-[#f0fdfa] hover:bg-[#ccfbf1] border border-[#99f6e4]/60 cursor-pointer transition-all shadow-xs"
+                                title="Restore"
                               >
-                                <MessageCircle size={13} />
-                              </a>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedOrder(order);
-                                setTimeout(() => {
-                                  const items = order.oh_order_items?.map(item => ({
-                                    id: item.id || Math.random().toString(),
-                                    product_id: item.product_id,
-                                    product_slug: item.product_slug || '',
-                                    product_name: item.product_name,
-                                    product_image: item.product_image || null,
-                                    price: item.price,
-                                    quantity: item.quantity,
-                                    subtotal: item.price * item.quantity
-                                  })) || [];
-                                  setEditForm({
-                                    customer_name: order.customer_name || '',
-                                    phone: order.phone || '',
-                                    address: order.address || '',
-                                    district: order.district || '',
-                                    note: order.note || '',
-                                    delivery_charge: order.delivery_charge || 0,
-                                    discount_amount: order.discount_amount || 0,
-                                    subtotal: order.subtotal || 0,
-                                    grand_total: order.grand_total || 0,
-                                    items
-                                  });
-                                  setIsEditing(true);
-                                  fetchProductsCatalog();
-                                }, 50);
-                              }}
-                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer transition-colors"
-                              title="Edit"
-                            >
-                              <Edit size={13} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handlePrintOrders([order])}
-                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer transition-colors"
-                              title="Print"
-                            >
-                              <Printer size={13} />
-                            </button>
-                            {order.status !== 'trash' && canDelete && (
+                                <RefreshCw size={13} />
+                              </button>
+                              {canDelete && (
+                                <button
+                                  type="button"
+                                  onClick={() => handlePermanentDelete(order.id)}
+                                  className="p-1.5 rounded-xl text-[#ef4444] bg-[#fff5f5] hover:bg-[#ffe3e3] border border-[#fecaca]/60 cursor-pointer transition-all shadow-xs"
+                                  title="Delete Permanently"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            canDelete && (
                               <button
                                 type="button"
                                 onClick={() => handleMoveToTrash(order.id)}
-                                className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-600 cursor-pointer transition-colors"
+                                className="p-1.5 rounded-xl text-[#ef4444] bg-[#fff5f5] hover:bg-[#ffe3e3] border border-[#fecaca]/60 cursor-pointer transition-all shadow-xs"
                                 title="Move to Trash"
                               >
                                 <Trash2 size={13} />
                               </button>
-                            )}
-                          </div>
+                            )
+                          )}
                         </div>
                       </td>
-                  </tr>
-                );
+
+                      {/* TOTAL */}
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <p className="text-[14px] font-black text-gray-900 leading-none">৳{Number(order.grand_total).toLocaleString()}</p>
+                      </td>
+                    </tr>
+                  );
                 })
               )}
               {!loading && filteredOrders.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
                     No orders found.
                   </td>
                 </tr>
