@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { ShoppingCart, Phone, Menu, X, Search, ChevronDown, Route, Smartphone } from 'lucide-react';
+import { ShoppingCart, Phone, Menu, X, Search, ChevronDown, Route, Smartphone, Download } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { usePWAInstallable } from '@/hooks/usePWAInstallable';
@@ -274,7 +274,7 @@ export function Header() {
                   aria-label="অ্যাপ ইনস্টল করুন"
                   title="Install App"
                 >
-                  <Smartphone size={20} />
+                  <Download size={20} />
                 </button>
               )}
               <Link
@@ -342,7 +342,7 @@ export function Header() {
                   className="flex items-center gap-1.5 px-3 py-2 bg-[#fff3ef] border border-[#ff6b35]/20 hover:bg-[#ffe6dc] text-[#ff6b35] text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
                   title="Install App"
                 >
-                  <Smartphone size={14} />
+                  <Download size={14} />
                   <span>অ্যাপ ডাউনলোড</span>
                 </button>
               )}
