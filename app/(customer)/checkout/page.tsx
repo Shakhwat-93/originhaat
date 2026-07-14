@@ -315,7 +315,7 @@ export default function CheckoutPage() {
                   <input
                     id="name"
                     type="text"
-                    placeholder="যেমন: মোঃ রাহেলা বেগম"
+                    placeholder="আপনার নাম দিন"
                     className={cn(
                       'w-full px-4 py-3 border-2 rounded-xl text-[#111827] placeholder-[#9ca3af] focus:outline-none transition-colors text-sm text-black bg-white',
                       errors.name
