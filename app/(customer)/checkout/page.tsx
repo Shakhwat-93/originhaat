@@ -23,6 +23,7 @@ interface AppliedCoupon {
 export default function CheckoutPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [warningMessage, setWarningMessage] = useState<string | null>(null);
   const { items, getTotalPrice, clearCart } = useCartStore();
   const showToast = useUIStore((s) => s.showToast);
 
@@ -239,6 +240,10 @@ export default function CheckoutPage() {
       const result = await res.json();
 
       if (!res.ok) {
+        if (result.error === 'ORDER_LIMIT_REACHED' || res.status === 429) {
+          setWarningMessage(result.message || 'আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে অনুগ্রহ করে আরও কিছুক্ষণ অপেক্ষা করুন।');
+          return;
+        }
         throw new Error(result.message || result.error || 'Order failed');
       }
 
@@ -605,6 +610,30 @@ export default function CheckoutPage() {
           </div>
         </div>
       </form>
+
+      {/* Warning Modal */}
+      {warningMessage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-6 max-w-sm w-full border border-gray-100 shadow-2xl text-center space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 bg-amber-50 rounded-full flex items-center justify-center text-amber-500 mx-auto">
+              <AlertCircle size={24} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-gray-900">অর্ডার সীমাবদ্ধতা</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                {warningMessage}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setWarningMessage(null)}
+              className="w-full py-3 bg-[#ff6b35] hover:bg-[#e55520] text-white text-sm font-bold rounded-xl transition-colors cursor-pointer"
+            >
+              ঠিক আছে
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
