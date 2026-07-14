@@ -15,6 +15,7 @@ import {
   XCircle,
   FileText,
   Download,
+  Clock,
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
@@ -44,6 +45,7 @@ interface Order {
 export default function SalesReportPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; label: string; revenue: number } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // Filters state
@@ -228,6 +230,67 @@ export default function SalesReportPage() {
     };
   }, [filteredOrders]);
 
+  // Group daily revenue and sales count
+  const dailyData = useMemo(() => {
+    const group: Record<string, { label: string; revenue: number; count: number; date: Date }> = {};
+    const today = new Date();
+    
+    // Auto populate dates for week/month presets
+    let daysCount = 7;
+    if (dateFilter === 'month') daysCount = 30;
+    else if (dateFilter === 'today' || dateFilter === 'yesterday') daysCount = 1;
+
+    if (dateFilter === 'week' || dateFilter === 'month') {
+      for (let i = daysCount - 1; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(today.getDate() - i);
+        const key = d.toDateString();
+        const label = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+        group[key] = { label, revenue: 0, count: 0, date: new Date(d) };
+      }
+    }
+
+    filteredOrders.forEach(o => {
+      const orderDate = new Date(o.created_at);
+      const dateKey = orderDate.toDateString();
+      const isSuccess = ['confirmed', 'delivered', 'processing', 'shipped'].includes(o.status);
+
+      if (group[dateKey]) {
+        if (isSuccess) {
+          group[dateKey].revenue += Number(o.grand_total || 0);
+        }
+        group[dateKey].count += 1;
+      } else if (dateFilter === 'custom' || dateFilter === 'today' || dateFilter === 'yesterday') {
+        const label = orderDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+        if (!group[dateKey]) {
+          group[dateKey] = { label, revenue: 0, count: 0, date: orderDate };
+        }
+        if (isSuccess) {
+          group[dateKey].revenue += Number(o.grand_total || 0);
+        }
+        group[dateKey].count += 1;
+      }
+    });
+
+    return Object.values(group).sort((a, b) => a.date.getTime() - b.date.getTime());
+  }, [filteredOrders, dateFilter]);
+
+  // Hourly sales peaks distribution (0-23 hours)
+  const hourlyData = useMemo(() => {
+    const distribution = Array.from({ length: 24 }, (_, i) => ({
+      hour: i,
+      label: `${i === 0 ? 12 : i > 12 ? i - 12 : i}${i >= 12 ? 'PM' : 'AM'}`,
+      count: 0
+    }));
+
+    filteredOrders.forEach(o => {
+      const hour = new Date(o.created_at).getHours();
+      distribution[hour].count += 1;
+    });
+
+    return distribution;
+  }, [filteredOrders]);
+
   // CSV Export utility
   const exportToCSV = () => {
     if (productStats.list.length === 0) {
@@ -395,6 +458,170 @@ export default function SalesReportPage() {
           </div>
         ))}
       </div>
+
+      {/* Visual Analytics Row */}
+      {(() => {
+        const chartWidth = 600;
+        const chartHeight = 220;
+        const chartPadding = 35;
+        const maxRevenue = Math.max(...dailyData.map(d => d.revenue), 1000);
+
+        const points = dailyData.map((d, i) => {
+          const x = chartPadding + (i / Math.max(dailyData.length - 1, 1)) * (chartWidth - 2 * chartPadding);
+          const y = chartHeight - chartPadding - (d.revenue / maxRevenue) * (chartHeight - 2 * chartPadding);
+          return { x, y, label: d.label, revenue: d.revenue };
+        });
+
+        const linePath = points.reduce((acc, p, i) => {
+          return i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
+        }, '');
+
+        const areaPath = points.length > 0 
+          ? `${linePath} L ${points[points.length - 1].x} ${chartHeight - chartPadding} L ${points[0].x} ${chartHeight - chartPadding} Z` 
+          : '';
+
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Revenue Line Chart */}
+            <div className="lg:col-span-2 bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs space-y-4 relative">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <TrendingUp size={16} className="text-[#ff6b35]" />
+                  <h3 className="text-sm font-bold text-gray-900">Revenue Trend Line</h3>
+                </div>
+                <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full">Excl. Cancelled</span>
+              </div>
+
+              {dailyData.length === 0 ? (
+                <div className="h-[220px] flex items-center justify-center text-gray-400 text-xs">No revenue data to plot.</div>
+              ) : (
+                <div className="relative">
+                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto overflow-visible">
+                    {/* Grid Lines */}
+                    {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+                      const y = chartPadding + ratio * (chartHeight - 2 * chartPadding);
+                      const val = Math.round(maxRevenue * (1 - ratio));
+                      return (
+                        <g key={i}>
+                          <line x1={chartPadding} y1={y} x2={chartWidth - chartPadding} y2={y} stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3,3" />
+                          <text x={chartPadding - 5} y={y + 4} textAnchor="end" className="text-[9px] fill-gray-400 font-mono font-medium">৳{val >= 1000 ? `${(val/1000).toFixed(1)}k` : val}</text>
+                        </g>
+                      );
+                    })}
+
+                    {/* X axis labels */}
+                    {points.map((p, i) => {
+                      const showLabel = dailyData.length <= 7 || i % 4 === 0 || i === dailyData.length - 1;
+                      if (!showLabel) return null;
+                      return (
+                        <text key={i} x={p.x} y={chartHeight - chartPadding + 14} textAnchor="middle" className="text-[9px] fill-gray-400 font-bold">
+                          {p.label}
+                        </text>
+                      );
+                    })}
+
+                    {/* Shaded Area */}
+                    {areaPath && (
+                      <path d={areaPath} fill="url(#revenueGrad)" opacity="0.15" />
+                    )}
+
+                    {/* Line Path */}
+                    {linePath && (
+                      <path d={linePath} fill="none" stroke="#ff6b35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    )}
+
+                    {/* Interactive circles */}
+                    {points.map((p, i) => (
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r={hoveredPoint?.label === p.label ? 6 : 4}
+                        fill={hoveredPoint?.label === p.label ? "#ff6b35" : "#ffffff"}
+                        stroke="#ff6b35"
+                        strokeWidth="2.5"
+                        className="cursor-pointer transition-all duration-150"
+                        onMouseEnter={() => setHoveredPoint(p)}
+                        onMouseLeave={() => setHoveredPoint(null)}
+                      />
+                    ))}
+
+                    {/* Gradients */}
+                    <defs>
+                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#ff6b35" />
+                        <stop offset="100%" stopColor="#ffffff" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+
+                  {/* Tooltip Overlay */}
+                  {hoveredPoint && (
+                    <div
+                      className="absolute z-10 bg-gray-900 text-white rounded-xl px-3 py-2 text-[11px] shadow-lg pointer-events-none space-y-0.5 border border-gray-850"
+                      style={{
+                        left: `${(hoveredPoint.x / chartWidth) * 100}%`,
+                        top: `${(hoveredPoint.y / chartHeight) * 100 - 25}%`,
+                        transform: 'translate(-50%, -100%)'
+                      }}
+                    >
+                      <p className="font-bold text-[#ff6b35] text-center">{hoveredPoint.label}</p>
+                      <p className="font-mono text-center">Revenue: ৳{hoveredPoint.revenue.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Hourly Peaks Bar Chart */}
+            <div className="bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs flex flex-col justify-between">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-[#ff6b35]" />
+                  <h3 className="text-sm font-bold text-gray-900">Hourly Order Traffic</h3>
+                </div>
+                <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full">24 Hrs</span>
+              </div>
+
+              <div className="flex items-end justify-between gap-1 h-[180px] pt-4 px-2">
+                {(() => {
+                  const maxCount = Math.max(...hourlyData.map(h => h.count), 1);
+                  return hourlyData.map((h, i) => {
+                    const heightPercent = `${(h.count / maxCount) * 100}%`;
+                    const showHourLabel = i % 4 === 0;
+
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center group h-full justify-end relative">
+                        {/* Tooltip */}
+                        {h.count > 0 && (
+                          <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[9px] font-bold py-1 px-2 rounded pointer-events-none z-10 whitespace-nowrap">
+                            {h.count} orders
+                          </div>
+                        )}
+                        
+                        {/* Bar */}
+                        <div
+                          style={{ height: heightPercent }}
+                          className={`w-full min-h-[3px] rounded-t-sm transition-all duration-300 ${
+                            h.count > 0 
+                              ? 'bg-gradient-to-t from-[#ff6b35] to-[#ff9e7a] group-hover:from-[#e55520] group-hover:to-[#ff8c60]' 
+                              : 'bg-gray-100'
+                          }`}
+                        />
+                        
+                        {/* Label */}
+                        <span className="text-[8px] text-gray-400 font-semibold font-mono mt-1.5 transform scale-90 origin-top">
+                          {showHourLabel ? h.label : ''}
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Leaderboard Grid Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

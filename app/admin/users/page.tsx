@@ -153,7 +153,8 @@ export default function AdminUsersPage() {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'x-admin-key': adminKey
+          'x-admin-key': adminKey,
+          'x-admin-username': currentUser?.username || 'admin'
         },
         body: JSON.stringify(body)
       });
@@ -193,7 +194,8 @@ export default function AdminUsersPage() {
       const res = await fetch(`/api/admin/users?id=${user.id}`, {
         method: 'DELETE',
         headers: {
-          'x-admin-key': adminKey
+          'x-admin-key': adminKey,
+          'x-admin-username': currentUser?.username || 'admin'
         }
       });
 

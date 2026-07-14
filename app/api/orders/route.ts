@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSettings } from '@/lib/db';
 import { sendServerPurchaseEvent } from '@/lib/capi';
+import { writeAuditLog } from '@/lib/audit';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -222,6 +223,7 @@ export async function PATCH(request: NextRequest) {
   if (authHeader !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const adminUsername = request.headers.get('x-admin-username') || 'admin';
 
   try {
     const body = await request.json();
@@ -375,6 +377,18 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
+    try {
+      const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+      await writeAuditLog(
+        adminUsername,
+        'UPDATE_ORDER',
+        `Updated order #${existingOrder.order_number}. Fields changed: ${Object.keys(updateFields).filter(k => k !== 'updated_at').join(', ')}`,
+        ipAddress
+      );
+    } catch (logErr) {
+      console.error('Audit logging failed:', logErr);
+    }
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('PATCH API error:', err);
@@ -390,6 +404,8 @@ export async function DELETE(request: NextRequest) {
   if (authHeader !== process.env.ADMIN_PASSWORD) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const adminUsername = request.headers.get('x-admin-username') || 'admin';
+  const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
   try {
     const { searchParams } = new URL(request.url);
@@ -404,12 +420,21 @@ export async function DELETE(request: NextRequest) {
         .eq('status', 'trash');
 
       if (error) throw error;
+
+      await writeAuditLog(adminUsername, 'EMPTY_TRASH', 'Emptied all orders from trash bin', ipAddress);
       return NextResponse.json({ success: true });
     }
 
     if (!id) {
       return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 });
     }
+
+    // Get order number before deletion
+    const { data: orderToDelete } = await supabase
+      .from('oh_orders')
+      .select('order_number')
+      .eq('id', id)
+      .single();
 
     // Delete order permanently
     const { error } = await supabase
@@ -418,6 +443,13 @@ export async function DELETE(request: NextRequest) {
       .eq('id', id);
 
     if (error) throw error;
+
+    await writeAuditLog(
+      adminUsername,
+      'PERMANENT_DELETE_ORDER',
+      `Permanently deleted order #${orderToDelete?.order_number || id}`,
+      ipAddress
+    );
     return NextResponse.json({ success: true });
   } catch (err: any) {
     console.error('DELETE Order error:', err);

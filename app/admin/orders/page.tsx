@@ -265,6 +265,7 @@ function OrdersPageContent() {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+          'x-admin-username': adminUsername,
         },
         body: JSON.stringify({
           orderId: selectedOrder.id,
@@ -358,6 +359,7 @@ function OrdersPageContent() {
   // Permissions State
   const [permissions, setPermissions] = useState<string[]>([]);
   const [userRole, setUserRole] = useState<string>('');
+  const [adminUsername, setAdminUsername] = useState<string>('admin');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -367,6 +369,7 @@ function OrdersPageContent() {
           const parsed = JSON.parse(userStr);
           setPermissions(parsed.permissions || []);
           setUserRole(parsed.role || '');
+          setAdminUsername(parsed.username || 'admin');
         } catch (e) {
           console.error(e);
         }
@@ -390,6 +393,7 @@ function OrdersPageContent() {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+          'x-admin-username': adminUsername,
         },
         body: JSON.stringify({ orderId, status: 'trash' }),
       });
@@ -413,6 +417,7 @@ function OrdersPageContent() {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+          'x-admin-username': adminUsername,
         },
         body: JSON.stringify({ orderId, status: 'processing' }), // restore back to processing
       });
@@ -442,6 +447,7 @@ function OrdersPageContent() {
         method: 'DELETE',
         headers: {
           'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+          'x-admin-username': adminUsername,
         },
       });
 
@@ -470,6 +476,7 @@ function OrdersPageContent() {
         method: 'DELETE',
         headers: {
           'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+          'x-admin-username': adminUsername,
         },
       });
 
@@ -667,6 +674,7 @@ function OrdersPageContent() {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+          'x-admin-username': adminUsername,
         },
         body: JSON.stringify({ orderId, status: newStatus }),
       });

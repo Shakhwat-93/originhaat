@@ -5,8 +5,9 @@ const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supa
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
 const supabase = createClient(
   supabaseUrl,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder'
 );
+import { writeAuditLog } from '@/lib/audit';
 
 function checkAuth(request: NextRequest) {
   const authHeader = request.headers.get('x-admin-key');
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const adminUsername = request.headers.get('x-admin-username') || 'admin';
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+
     const { data: newUser, error } = await supabase
       .from('oh_admin_users')
       .insert({
@@ -62,6 +66,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
     }
 
+    await writeAuditLog(
+      adminUsername,
+      'CREATE_ADMIN_USER',
+      `Created admin/moderator user: ${newUser.username} (${newUser.role})`,
+      ipAddress
+    );
+
     return NextResponse.json(newUser);
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -79,6 +90,9 @@ export async function PATCH(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'Missing user id' }, { status: 400 });
     }
+
+    const adminUsername = request.headers.get('x-admin-username') || 'admin';
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
     const updateFields: any = {};
     if (username !== undefined) updateFields.username = username.trim().toLowerCase();
@@ -101,6 +115,13 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 
+    await writeAuditLog(
+      adminUsername,
+      'UPDATE_ADMIN_USER',
+      `Updated user: ${updatedUser.username}. Fields: ${Object.keys(updateFields).filter(k => k !== 'password').join(', ')}`,
+      ipAddress
+    );
+
     return NextResponse.json(updatedUser);
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -119,6 +140,9 @@ export async function DELETE(request: NextRequest) {
     if (!id) {
       return NextResponse.json({ error: 'Missing user id' }, { status: 400 });
     }
+
+    const adminUsername = request.headers.get('x-admin-username') || 'admin';
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
     // Load user to check if they are the master 'admin' account to prevent lockout
     const { data: user } = await supabase
@@ -140,6 +164,13 @@ export async function DELETE(request: NextRequest) {
       console.error('Failed to delete user:', error);
       return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
     }
+
+    await writeAuditLog(
+      adminUsername,
+      'DELETE_ADMIN_USER',
+      `Deleted user account: ${user?.username || id}`,
+      ipAddress
+    );
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
