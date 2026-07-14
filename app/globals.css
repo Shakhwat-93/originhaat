@@ -836,3 +836,29 @@ svg.text-primary {
   scrollbar-width: none !important;
 }
 
+/* 5. Global premium interactions & micro-animations */
+button, 
+input, 
+select, 
+textarea, 
+a {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:active:not(:disabled),
+a.cursor-pointer:active {
+  transform: scale(0.97);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1) !important;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+

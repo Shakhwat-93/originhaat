@@ -1560,7 +1560,33 @@ function OrdersPageContent() {
               </tr>
             </thead>
             <tbody>
-              {filteredOrders.map((order) => {
+              {loading ? (
+                Array.from({ length: 6 }).map((_, idx) => (
+                  <tr key={idx} className="border-b border-gray-100 last:border-0 animate-pulse">
+                    <td className="pl-5 pr-3 py-4"><div className="w-4 h-4 bg-gray-250 rounded-sm" /></td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 bg-gray-200 rounded-md w-24" />
+                      <div className="h-3 bg-gray-100 rounded-md w-16 mt-1.5" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 bg-gray-200 rounded-md w-20" />
+                      <div className="h-3 bg-gray-100 rounded-md w-12 mt-1.5" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="h-4 bg-gray-200 rounded-md w-28" />
+                      <div className="h-3 bg-gray-100 rounded-md w-24 mt-1.5" />
+                    </td>
+                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-32" /></td>
+                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-16" /></td>
+                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-20" /></td>
+                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-12" /></td>
+                    <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-full w-20" /></td>
+                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-12" /></td>
+                    <td className="px-4 py-4 text-right"><div className="h-8 bg-gray-200 rounded-lg w-16 ml-auto" /></td>
+                  </tr>
+                ))
+              ) : (
+                filteredOrders.map((order) => {
                 const isInsideDhaka = order.district?.toLowerCase().includes('dhaka');
                 const deliveryZone = isInsideDhaka ? 'Inside Dhaka' : 'Outside Dhaka';
                 const itemsCount = order.oh_order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
@@ -1808,8 +1834,9 @@ function OrdersPageContent() {
                     </td>
                   </tr>
                 );
-              })}
-              {filteredOrders.length === 0 && (
+                })
+              )}
+              {!loading && filteredOrders.length === 0 && (
                 <tr>
                   <td colSpan={11} className="px-6 py-12 text-center text-gray-400">
                     No orders found.
@@ -1823,7 +1850,28 @@ function OrdersPageContent() {
 
       {/* Orders List (Mobile) */}
       <div className="md:hidden space-y-4">
-        {filteredOrders.map((order) => (
+        {loading ? (
+          Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4 animate-pulse">
+              <div className="flex items-center justify-between gap-4">
+                <div className="h-5 bg-gray-200 rounded-md w-36" />
+                <div className="h-4 bg-gray-100 rounded-md w-16" />
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3 py-3 border-t border-b border-gray-50">
+                <div className="space-y-1">
+                  <div className="h-3 bg-gray-100 rounded-sm w-12" />
+                  <div className="h-4 bg-gray-200 rounded-md w-24" />
+                </div>
+                <div className="space-y-1">
+                  <div className="h-3 bg-gray-100 rounded-sm w-12" />
+                  <div className="h-4 bg-gray-200 rounded-md w-16" />
+                </div>
+              </div>
+              <div className="h-10 bg-gray-200 rounded-xl w-full" />
+            </div>
+          ))
+        ) : (
+          filteredOrders.map((order) => (
           <div key={order.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
             {/* Header */}
             <div className="flex items-center justify-between gap-2">
@@ -1920,8 +1968,9 @@ function OrdersPageContent() {
               </div>
             </div>
           </div>
-        ))}
-        {filteredOrders.length === 0 && (
+          ))
+        )}
+        {!loading && filteredOrders.length === 0 && (
           <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center text-gray-400 text-sm shadow-sm">
             No orders found.
           </div>

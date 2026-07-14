@@ -122,6 +122,14 @@ export default function CourierPage() {
   const [courierFilter, setCourierFilter] = useState<'all' | 'pathao' | 'steadfast'>('all');
   const [statusFilter, setStatusFilter] = useState('');
   const { alert, success, error } = useAlerts();
+  const [showWebhooksInfo, setShowWebhooksInfo] = useState(false);
+  const [originUrl, setOriginUrl] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOriginUrl(window.location.origin);
+    }
+  }, []);
 
   // ── Fetch all courier orders from DB ──
   const fetchOrders = useCallback(async (silent = false) => {
@@ -260,6 +268,75 @@ export default function CourierPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Webhook Settings Info Accordion */}
+      <div className="bg-white border border-gray-200/60 rounded-2xl shadow-3xs overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowWebhooksInfo(!showWebhooksInfo)}
+          className="w-full px-5 py-4 flex items-center justify-between text-left focus:outline-none hover:bg-gray-50/40 cursor-pointer"
+        >
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+            <h3 className="text-sm font-bold text-gray-900">Realtime Webhooks Auto-Sync (অটো-স্ট্যাটাস সিঙ্ক)</h3>
+          </div>
+          <ChevronDown
+            size={16}
+            className={`text-gray-400 transition-transform duration-300 ${showWebhooksInfo ? 'rotate-180' : ''}`}
+          />
+        </button>
+
+        {showWebhooksInfo && (
+          <div className="px-5 pb-5 pt-1 border-t border-gray-50 space-y-4 animate-in slide-in-from-top duration-250">
+            <p className="text-[13px] text-gray-500 leading-relaxed">
+              পাঠাও এবং স্টিডফাস্ট কুরিয়ারের প্যানেল থেকে কোনো পার্সেলের স্ট্যাটাস পরিবর্তন হলে তা সরাসরি আপনার অর্ডারে অটোমেটিক সিঙ্ক করার জন্য নিচের Webhook URL গুলো কপি করে কুরিয়ারের ডেভেলপার সেটিংসে পেস্ট করুন।
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Pathao Card */}
+              <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">Pathao Webhook</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `${originUrl}/api/courier/webhooks/pathao?token=${process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'}`;
+                      navigator.clipboard.writeText(url);
+                      success('Pathao webhook URL copied!');
+                    }}
+                    className="text-xs text-gray-500 hover:text-blue-600 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy size={12} /> Copy
+                  </button>
+                </div>
+                <p className="text-[11px] font-mono text-gray-600 bg-white p-2 rounded border border-gray-150 break-all select-all">
+                  {originUrl}/api/courier/webhooks/pathao?token={process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'}
+                </p>
+              </div>
+
+              {/* Steadfast Card */}
+              <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">Steadfast Webhook</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = `${originUrl}/api/courier/webhooks/steadfast?token=${process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'}`;
+                      navigator.clipboard.writeText(url);
+                      success('Steadfast webhook URL copied!');
+                    }}
+                    className="text-xs text-gray-500 hover:text-emerald-600 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Copy size={12} /> Copy
+                  </button>
+                </div>
+                <p className="text-[11px] font-mono text-gray-600 bg-white p-2 rounded border border-gray-150 break-all select-all">
+                  {originUrl}/api/courier/webhooks/steadfast?token={process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
