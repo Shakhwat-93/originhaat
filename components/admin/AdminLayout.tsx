@@ -33,7 +33,8 @@ import {
   Plus,
   FileText,
   ShieldAlert,
-  Truck
+  Truck,
+  TrendingUp
 } from 'lucide-react';
 
 // ─── Menu Navigation Type Definition ──────────────────────────────────────────
@@ -106,6 +107,12 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     type: 'flat', 
+    href: '/admin/reports', 
+    label: 'Sales Report', 
+    icon: TrendingUp 
+  },
+  { 
+    type: 'flat', 
     href: '/admin/inbox', 
     label: 'Inbox', 
     icon: MessageSquare 
@@ -144,6 +151,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/banners':    'Banner Management',
   '/admin/orders':     'Order Management',
   '/admin/courier':    'Courier Shipments',
+  '/admin/reports':    'Sales & Revenue Analytics',
   '/admin/reviews':    'Review Management',
   '/admin/coupons':    'Coupon Management',
   '/admin/settings':   'Site Settings',
