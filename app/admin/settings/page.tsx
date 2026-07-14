@@ -121,6 +121,44 @@ export default function AdminSettingsPage() {
   const [showTiktokcapiToken, setShowTiktokcapiToken] = useState(false);
   const [showGeminiApiKey, setShowGeminiApiKey] = useState(false);
 
+  // System audit log states
+  interface AuditLog {
+    id: string;
+    username: string;
+    action: string;
+    details: string;
+    ip_address: string;
+    created_at: string;
+  }
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [showAuditLogs, setShowAuditLogs] = useState(false);
+
+  const fetchAuditLogs = async () => {
+    setLoadingAudit(true);
+    try {
+      const res = await fetch('/api/admin/audit', {
+        headers: {
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAuditLogs(data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showAuditLogs) {
+      fetchAuditLogs();
+    }
+  }, [showAuditLogs]);
+
   const [loading, setLoading] = useState(true);
   const [savingSection, setSavingSection] = useState<string | null>(null);
 
@@ -1134,6 +1172,100 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* System Activity & Audit Logs */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h2 className="font-bold text-gray-900">System Activity & Audit Trail Logs</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowAuditLogs(!showAuditLogs)}
+              className="px-3.5 py-1.5 border border-gray-200 hover:border-gray-300 text-gray-700 rounded-xl text-xs font-bold transition-all cursor-pointer bg-white"
+            >
+              {showAuditLogs ? 'Hide Logs' : 'View Activity Logs'}
+            </button>
+          </div>
+
+          {showAuditLogs && (
+            <div className="space-y-4 pt-1 animate-in slide-in-from-top duration-250">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <p className="text-[12px] text-gray-400">
+                  Showing the last 100 system operations, order updates, and moderator activities.
+                </p>
+                <button
+                  type="button"
+                  onClick={fetchAuditLogs}
+                  disabled={loadingAudit}
+                  className="text-xs text-[#ff6b35] hover:text-[#e55520] font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw size={12} className={loadingAudit ? 'animate-spin' : ''} />
+                  Refresh List
+                </button>
+              </div>
+
+              {loadingAudit ? (
+                <div className="flex items-center justify-center py-12 gap-2 text-gray-405">
+                  <RefreshCw size={16} className="animate-spin text-[#ff6b35]" />
+                  <span className="text-xs">Loading activity logs...</span>
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div className="text-center py-10 text-gray-450 text-xs">No activity logs recorded yet.</div>
+              ) : (
+                <div className="overflow-x-auto border border-gray-100 rounded-xl">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-gray-55 border-b border-gray-100 text-[10px] uppercase font-bold text-gray-400 tracking-wider">
+                        <th className="px-4 py-2.5">User</th>
+                        <th className="px-4 py-2.5">Action</th>
+                        <th className="px-4 py-2.5">Details</th>
+                        <th className="px-4 py-2.5">IP Address</th>
+                        <th className="px-4 py-2.5 text-right">Time</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {auditLogs.map((log) => {
+                        const isDelete = log.action.includes('DELETE') || log.action.includes('EMPTY');
+                        const isCreate = log.action.includes('CREATE');
+                        const isUpdate = log.action.includes('UPDATE');
+                        
+                        const actionBadge = isDelete 
+                          ? 'bg-rose-50 text-rose-700 border-rose-100' 
+                          : isCreate 
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                            : 'bg-amber-50 text-amber-700 border-amber-100';
+
+                        return (
+                          <tr key={log.id} className="hover:bg-gray-50/40 text-[12px] text-gray-700 transition-colors">
+                            <td className="px-4 py-3 font-semibold text-gray-900">{log.username}</td>
+                            <td className="px-4 py-3">
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${actionBadge}`}>
+                                {log.action}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 font-medium">{log.details}</td>
+                            <td className="px-4 py-3 font-mono text-[10px] text-gray-400">{log.ip_address}</td>
+                            <td className="px-4 py-3 text-right text-gray-400 font-medium">
+                              {new Date(log.created_at).toLocaleString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
       </div>

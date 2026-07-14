@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck, Trash2, Plus, Edit, User, Package } from 'lucide-react';
+import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck, Trash2, Plus, Edit, User, Package, MessageCircle } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAlert } from '@/lib/alerts';
 import { bangladeshDistricts } from '@/data/products';
 import { supabase } from '@/lib/supabase';
@@ -1759,6 +1759,19 @@ function OrdersPageContent() {
                         >
                           <Eye size={13} />
                         </button>
+                        {order.status === 'incomplete' && (
+                          <a
+                            href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                              `হ্যালো ${order.customer_name}! আপনি অরিজিন হাট (Origin Haat) থেকে চমৎকার কিছু গ্যাজেট নেওয়ার সিদ্ধান্ত নিয়েছিলেন, কিন্তু আপনার অর্ডারটি শেষ করা হয়নি। আমরা কি অর্ডারটি সম্পন্ন করতে কোনো সহযোগিতা করতে পারি?`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 cursor-pointer transition-colors"
+                            title="WhatsApp Follow-up (রিকভারি)"
+                          >
+                            <MessageCircle size={13} />
+                          </a>
+                        )}
                         <button
                           type="button"
                           onClick={() => {

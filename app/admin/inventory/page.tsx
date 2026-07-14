@@ -79,6 +79,85 @@ export default function InventoryPage() {
   const [adjustReference, setAdjustReference] = useState<string>('');
   const [savingTransaction, setSavingTransaction] = useState(false);
 
+  // Spreadsheet-style bulk stock editor states
+  const [spreadsheetMode, setSpreadsheetMode] = useState(false);
+  const [editedStocks, setEditedStocks] = useState<Record<string, number>>({});
+  const [editedPrices, setEditedPrices] = useState<Record<string, number>>({});
+  const [savingSpreadsheet, setSavingSpreadsheet] = useState(false);
+
+  const handleSaveSpreadsheet = async () => {
+    setSavingSpreadsheet(true);
+    try {
+      const updatePromises = [];
+      const transactionLogs = [];
+
+      const allIds = Array.from(new Set([
+        ...Object.keys(editedStocks),
+        ...Object.keys(editedPrices)
+      ]));
+
+      for (const id of allIds) {
+        const prod = products.find(p => p.id === id);
+        if (!prod) continue;
+
+        const originalStock = prod.stock || 0;
+        const newStock = editedStocks[id] !== undefined ? editedStocks[id] : originalStock;
+        const originalPrice = prod.price || 0;
+        const newPrice = editedPrices[id] !== undefined ? editedPrices[id] : originalPrice;
+
+        if (newStock === originalStock && newPrice === originalPrice) continue;
+
+        updatePromises.push(
+          supabase
+            .from('oh_products')
+            .update({
+              stock: newStock,
+              price: newPrice,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', id)
+        );
+
+        if (newStock !== originalStock) {
+          transactionLogs.push({
+            product_id: id,
+            quantity: newStock - originalStock,
+            transaction_type: 'audit',
+            reference: 'Bulk Spreadsheet Quick Edit',
+            created_by: 'admin'
+          });
+        }
+      }
+
+      if (updatePromises.length === 0) {
+        setEditedStocks({});
+        setEditedPrices({});
+        return;
+      }
+
+      const results = await Promise.all(updatePromises);
+      const errors = results.filter(r => r.error).map(r => r.error);
+      if (errors.length > 0) {
+        throw new Error(errors[0]?.message || 'Failed to update some products');
+      }
+
+      if (transactionLogs.length > 0) {
+        await supabase.from('oh_inventory_transactions').insert(transactionLogs);
+      }
+
+      showSuccessAlert('সফলভাবে সংরক্ষিত!', `${updatePromises.length} টি প্রোডাক্টের দাম ও স্টক আপডেট করা হয়েছে।`);
+      setEditedStocks({});
+      setEditedPrices({});
+      setSpreadsheetMode(false);
+      fetchData(true);
+    } catch (err: any) {
+      console.error(err);
+      showErrorAlert('সংরক্ষণ ব্যর্থ', err.message || 'ডাটাবেস ত্রুটির কারণে সংরক্ষণ করা সম্ভব হয়নি।');
+    } finally {
+      setSavingSpreadsheet(false);
+    }
+  };
+
   const fetchData = async (silent = false) => {
     if (!silent) setLoading(true);
     else setRefreshing(true);
@@ -213,13 +292,31 @@ export default function InventoryPage() {
             Configure stock-in logs, audit physical stock counts, and view transactional audit trails.
           </p>
         </div>
-        <button
-          onClick={() => fetchData(true)}
-          disabled={refreshing}
-          className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50"
-        >
-          <RefreshCw size={16} className={`text-gray-500 ${refreshing ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {activeTab === 'stock' && (
+            <button
+              onClick={() => {
+                setSpreadsheetMode(!spreadsheetMode);
+                setEditedStocks({});
+                setEditedPrices({});
+              }}
+              className={`px-4 py-2 border rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                spreadsheetMode 
+                  ? 'bg-indigo-50 border-indigo-200 text-indigo-700 shadow-3xs' 
+                  : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              📊 Spreadsheet Editor
+            </button>
+          )}
+          <button
+            onClick={() => fetchData(true)}
+            disabled={refreshing}
+            className="p-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center shrink-0 cursor-pointer disabled:opacity-50 bg-white"
+          >
+            <RefreshCw size={16} className={`text-gray-500 ${refreshing ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
 
       {/* Low Stock Warning Banner */}
@@ -353,13 +450,14 @@ export default function InventoryPage() {
                   <th className="px-6 py-4">Product Info</th>
                   <th className="px-6 py-4">Category</th>
                   <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-center">Current Stock</th>
-                  <th className="px-6 py-4 text-right">Quick Stock Operations</th>
+                  {spreadsheetMode && <th className="px-6 py-4">Price (৳)</th>}
+                  <th className={`px-6 py-4 ${spreadsheetMode ? 'text-center' : 'text-center'}`}>Current Stock</th>
+                  {!spreadsheetMode && <th className="px-6 py-4 text-right">Quick Stock Operations</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-xs">
                 {filteredProducts.map((prod) => {
-                  const currentStock = prod.stock || 0;
+                  const currentStock = editedStocks[prod.id] !== undefined ? editedStocks[prod.id] : prod.stock || 0;
                   const isLow = currentStock > 0 && currentStock <= lowStockLimit;
                   const isOut = currentStock <= 0;
 
@@ -405,37 +503,69 @@ export default function InventoryPage() {
                         </span>
                       </td>
 
+                      {/* Spreadsheet Price input */}
+                      {spreadsheetMode && (
+                        <td className="px-6 py-4">
+                          <div className="relative rounded-lg shadow-3xs w-28">
+                            <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center text-gray-400 text-xs pointer-events-none">৳</span>
+                            <input
+                              type="number"
+                              value={editedPrices[prod.id] !== undefined ? editedPrices[prod.id] : prod.price || 0}
+                              onChange={e => {
+                                const val = parseFloat(e.target.value) || 0;
+                                setEditedPrices(prev => ({ ...prev, [prod.id]: val }));
+                              }}
+                              className="w-full text-xs pl-6 pr-2 py-1.5 border border-gray-200 rounded-lg font-bold text-gray-900 focus:outline-none focus:border-[#ff6b35] text-left"
+                            />
+                          </div>
+                        </td>
+                      )}
+
                       {/* Stock Count */}
-                      <td className="px-6 py-4 text-center font-extrabold text-gray-900 text-sm">
-                        {currentStock}
+                      <td className="px-6 py-4 text-center">
+                        {spreadsheetMode ? (
+                          <input
+                            type="number"
+                            value={editedStocks[prod.id] !== undefined ? editedStocks[prod.id] : prod.stock || 0}
+                            onChange={e => {
+                              const val = parseInt(e.target.value) || 0;
+                              setEditedStocks(prev => ({ ...prev, [prod.id]: val }));
+                            }}
+                            className="w-20 text-center font-bold px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-[#ff6b35] text-black"
+                          />
+                        ) : (
+                          <span className="font-extrabold text-gray-900 text-sm">{currentStock}</span>
+                        )}
                       </td>
 
                       {/* Manual stock adjustments */}
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => handleOpenAdjustModal(prod, 'in')}
-                            className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
-                            title="Restock / Add items"
-                          >
-                            <Plus size={12} /> Stock In
-                          </button>
-                          <button
-                            onClick={() => handleOpenAdjustModal(prod, 'out')}
-                            className="px-2.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
-                            title="Remove / Stock Out items"
-                          >
-                            <Minus size={12} /> Stock Out
-                          </button>
-                          <button
-                            onClick={() => handleOpenAdjustModal(prod, 'audit')}
-                            className="px-2.5 py-1.5 bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
-                            title="Recount physical inventory"
-                          >
-                            <ArrowRightLeft size={12} /> Audit Set
-                          </button>
-                        </div>
-                      </td>
+                      {!spreadsheetMode && (
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={() => handleOpenAdjustModal(prod, 'in')}
+                              className="px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 hover:bg-emerald-100 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                              title="Restock / Add items"
+                            >
+                              <Plus size={12} /> Stock In
+                            </button>
+                            <button
+                              onClick={() => handleOpenAdjustModal(prod, 'out')}
+                              className="px-2.5 py-1.5 bg-rose-50 text-rose-700 border border-rose-100 hover:bg-rose-100 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                              title="Remove / Stock Out items"
+                            >
+                              <Minus size={12} /> Stock Out
+                            </button>
+                            <button
+                              onClick={() => handleOpenAdjustModal(prod, 'audit')}
+                              className="px-2.5 py-1.5 bg-purple-50 text-purple-700 border border-purple-100 hover:bg-purple-100 rounded-lg font-bold text-[10px] flex items-center gap-1 transition-all cursor-pointer"
+                              title="Recount physical inventory"
+                            >
+                              <ArrowRightLeft size={12} /> Audit Set
+                            </button>
+                          </div>
+                        </td>
+                      )}
 
                     </tr>
                   );
@@ -443,7 +573,7 @@ export default function InventoryPage() {
 
                 {filteredProducts.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-gray-400 italic">
+                    <td colSpan={spreadsheetMode ? 5 : 5} className="px-6 py-12 text-center text-gray-400 italic">
                       No matching products found.
                     </td>
                   </tr>
@@ -654,6 +784,40 @@ export default function InventoryPage() {
           </div>
         </div>
       )}
+
+      {/* Sticky Spreadsheet Bulk Save Banner */}
+      {(() => {
+        const changeCount = Object.keys(editedStocks).length + Object.keys(editedPrices).length;
+        if (!spreadsheetMode || changeCount === 0) return null;
+        return (
+          <div className="fixed bottom-6 right-6 left-6 md:left-auto md:w-96 bg-gray-950 text-white rounded-2xl p-4.5 shadow-2xl border border-gray-800 z-50 flex items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <div>
+              <p className="text-xs font-bold text-gray-200">{changeCount} টি পরিবর্তন করা হয়েছে</p>
+              <p className="text-[10px] text-gray-400 font-medium mt-0.5">ডাটাবেসে সেভ করতে ডানপাশের বাটনে ক্লিক করুন।</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditedStocks({});
+                  setEditedPrices({});
+                }}
+                className="px-3 py-2 border border-gray-700 hover:border-gray-600 rounded-xl text-[11px] font-bold text-gray-300 cursor-pointer transition-colors"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveSpreadsheet}
+                disabled={savingSpreadsheet}
+                className="px-4 py-2 bg-[#ff6b35] hover:bg-[#e55520] disabled:opacity-50 text-white rounded-xl text-[11px] font-black flex items-center gap-1.5 cursor-pointer shadow-md shadow-[#ff6b35]/20 transition-all active:scale-97"
+              >
+                {savingSpreadsheet ? <RefreshCw size={12} className="animate-spin" /> : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
