@@ -1371,7 +1371,7 @@ function OrdersPageContent() {
       </div>
 
       {/* Row 2: Search & Controls */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex flex-col md:flex-row md:items-center gap-2.5">
         {/* Search input */}
         <div className="relative flex-1">
           <span className="absolute inset-y-0 left-3.5 flex items-center text-gray-400 pointer-events-none">
@@ -1387,11 +1387,11 @@ function OrdersPageContent() {
         </div>
 
         {/* Date filter */}
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 w-full md:w-auto">
           <select
             value={dateFilter}
             onChange={(e: any) => setDateFilter(e.target.value)}
-            className="appearance-none pl-3.5 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-600 font-medium focus:outline-none focus:border-[#5c59f6] cursor-pointer transition-colors"
+            className="w-full md:w-auto appearance-none pl-3.5 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-600 font-medium focus:outline-none focus:border-[#5c59f6] cursor-pointer transition-colors"
           >
             <option value="all">All Time</option>
             <option value="today">Today</option>
@@ -1404,7 +1404,7 @@ function OrdersPageContent() {
         </div>
 
         {/* Unread badge */}
-        <div className="flex items-center gap-2 px-3.5 py-2.5 bg-[#f0f0fe] border border-[#e0e0fd] rounded-xl shrink-0 select-none">
+        <div className="flex items-center justify-center md:justify-start gap-2 px-3.5 py-2.5 bg-[#f0f0fe] border border-[#e0e0fd] rounded-xl shrink-0 select-none w-full md:w-auto">
           <span className="w-2 h-2 rounded-full bg-[#5c59f6] animate-pulse shrink-0" />
           <span className="text-[13px] font-bold text-[#5c59f6] whitespace-nowrap">
             {orders.filter(o => o.status === 'processing').length} UNREAD

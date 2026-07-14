@@ -374,16 +374,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </div>
             )}
           </div>
-          {!isCollapsed && (
+          
+          <div className="flex items-center gap-1">
+            {!isCollapsed && (
+              <button
+                onClick={toggleTheme}
+                className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  theme === 'dark' ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-400 hover:bg-gray-50'
+                }`}
+                title="Toggle Theme"
+              >
+                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
+            )}
+            
+            {/* Mobile close drawer button */}
             <button
-              onClick={toggleTheme}
-              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                theme === 'dark' ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-400 hover:bg-gray-50'
+              onClick={() => setSidebarOpen(false)}
+              className={`md:hidden p-1.5 rounded-lg transition-colors cursor-pointer ${
+                theme === 'dark' ? 'text-gray-400 hover:bg-gray-850' : 'text-gray-400 hover:bg-gray-50'
               }`}
+              title="Close Menu"
             >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+              <X size={15} />
             </button>
-          )}
+          </div>
         </div>
 
         {/* Navigation list */}
