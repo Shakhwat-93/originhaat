@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { hashPassword } from '@/lib/crypto';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
       .from('oh_admin_users')
       .insert({
         username: username.trim().toLowerCase(),
-        password: password.trim(),
+        password: hashPassword(password.trim()),
         role,
         permissions: permissions || [],
       })
@@ -96,7 +97,7 @@ export async function PATCH(request: NextRequest) {
 
     const updateFields: any = {};
     if (username !== undefined) updateFields.username = username.trim().toLowerCase();
-    if (password !== undefined && password.trim()) updateFields.password = password.trim();
+    if (password !== undefined && password.trim()) updateFields.password = hashPassword(password.trim());
     if (role !== undefined) updateFields.role = role;
     if (permissions !== undefined) updateFields.permissions = permissions;
 
