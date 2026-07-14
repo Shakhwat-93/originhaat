@@ -538,7 +538,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* ── Main Panel View ─────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
         
         {/* Top Header */}
         <header className={`h-14 border-b px-6 flex items-center justify-between shrink-0 transition-colors ${

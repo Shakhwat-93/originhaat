@@ -1555,16 +1555,11 @@ function OrdersPageContent() {
                     className="w-3.5 h-3.5 rounded border-gray-300 text-[#5c59f6] focus:ring-[#5c59f6] cursor-pointer"
                   />
                 </th>
-                <th className="px-4 py-3">Caller</th>
-                <th className="px-4 py-3">Timestamp</th>
-                <th className="px-4 py-3">Customer</th>
-                <th className="px-4 py-3">Product</th>
-                <th className="px-4 py-3">Total</th>
-                <th className="px-4 py-3">Delivery</th>
-                <th className="px-4 py-3">Items</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Wait</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">Order Info</th>
+                <th className="px-4 py-3">Customer & Zone</th>
+                <th className="px-4 py-3">Products</th>
+                <th className="px-4 py-3">Fulfillment</th>
+                <th className="px-4 py-3 text-right">Total & Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1577,247 +1572,106 @@ function OrdersPageContent() {
                       <div className="h-3 bg-gray-100 rounded-md w-16 mt-1.5" />
                     </td>
                     <td className="px-4 py-4">
-                      <div className="h-4 bg-gray-200 rounded-md w-20" />
-                      <div className="h-3 bg-gray-100 rounded-md w-12 mt-1.5" />
-                    </td>
-                    <td className="px-4 py-4">
                       <div className="h-4 bg-gray-200 rounded-md w-28" />
                       <div className="h-3 bg-gray-100 rounded-md w-24 mt-1.5" />
                     </td>
                     <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-32" /></td>
-                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-16" /></td>
-                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-20" /></td>
-                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-12" /></td>
                     <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-full w-20" /></td>
-                    <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-12" /></td>
                     <td className="px-4 py-4 text-right"><div className="h-8 bg-gray-200 rounded-lg w-16 ml-auto" /></td>
                   </tr>
                 ))
               ) : (
                 filteredOrders.map((order) => {
-                const isInsideDhaka = order.district?.toLowerCase().includes('dhaka');
-                const deliveryZone = isInsideDhaka ? 'Inside Dhaka' : 'Outside Dhaka';
-                const itemsCount = order.oh_order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-                const productNames = order.oh_order_items?.map(i => i.product_name).join(', ') || '—';
+                  const isInsideDhaka = order.district?.toLowerCase().includes('dhaka');
+                  const deliveryZone = isInsideDhaka ? 'Inside Dhaka' : 'Outside Dhaka';
+                  const itemsCount = order.oh_order_items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+                  const productNames = order.oh_order_items?.map(i => i.product_name).join(', ') || '—';
 
-                const created = new Date(order.created_at).getTime();
-                const now = Date.now();
-                const diffMins = Math.floor((now - created) / 60000);
-                let responseTime = '';
-                if (order.status === 'processing' || order.status === 'pending') {
-                  if (diffMins < 1) responseTime = '<1m';
-                  else if (diffMins < 60) responseTime = `${diffMins}m`;
-                  else responseTime = `${Math.floor(diffMins / 60)}h ${diffMins % 60}m`;
-                }
+                  const created = new Date(order.created_at).getTime();
+                  const now = Date.now();
+                  const diffMins = Math.floor((now - created) / 60000);
+                  let responseTime = '';
+                  if (order.status === 'processing' || order.status === 'pending') {
+                    if (diffMins < 1) responseTime = '<1m';
+                    else if (diffMins < 60) responseTime = `${diffMins}m`;
+                    else responseTime = `${Math.floor(diffMins / 60)}h ${diffMins % 60}m`;
+                  }
 
-                const statusDotColor =
-                  order.status === 'confirmed' ? 'bg-blue-500' :
-                  order.status === 'delivered' ? 'bg-emerald-500' :
-                  order.status === 'processing' ? 'bg-violet-500' :
-                  order.status === 'pending' ? 'bg-amber-400' :
-                  order.status === 'shipped' ? 'bg-sky-500' :
-                  order.status === 'cancelled' || order.status === 'fake' || order.status === 'trash' ? 'bg-rose-400' :
-                  'bg-gray-300';
+                  const statusDotColor =
+                    order.status === 'confirmed' ? 'bg-blue-500' :
+                    order.status === 'delivered' ? 'bg-emerald-500' :
+                    order.status === 'processing' ? 'bg-violet-500' :
+                    order.status === 'pending' ? 'bg-amber-400' :
+                    order.status === 'shipped' ? 'bg-sky-500' :
+                    order.status === 'cancelled' || order.status === 'fake' || order.status === 'trash' ? 'bg-rose-400' :
+                    'bg-gray-300';
 
-                return (
-                  <tr key={order.id} className="group border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
-                    {/* Checkbox */}
-                    <td className="pl-5 pr-3 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedOrderIds.includes(order.id)}
-                        onChange={() => handleToggleSelect(order.id)}
-                        className="w-3.5 h-3.5 rounded border-gray-300 text-[#5c59f6] focus:ring-[#5c59f6] cursor-pointer"
-                      />
-                    </td>
+                  return (
+                    <tr key={order.id} className="group border-b border-gray-100 last:border-0 hover:bg-gray-50/50 transition-colors">
+                      {/* Checkbox */}
+                      <td className="pl-5 pr-3 py-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={() => handleToggleSelect(order.id)}
+                          className="w-3.5 h-3.5 rounded border-gray-300 text-[#5c59f6] focus:ring-[#5c59f6] cursor-pointer"
+                        />
+                      </td>
 
-                    {/* CALLER */}
-                    <td className="px-4 py-3">
-                      <p className="text-[13px] font-medium text-gray-700 leading-none">Not called</p>
-                      <p className="text-[12px] text-gray-400 font-mono mt-1">#{order.order_number}</p>
-                    </td>
+                      {/* Order Info (Caller, ID & Time) */}
+                      <td className="px-4 py-3">
+                        <p className="text-[13px] font-semibold text-gray-700 leading-none">Not called</p>
+                        <p className="text-[12px] font-bold text-[#ff6b35] mt-1.5 font-mono">#{order.order_number}</p>
+                        <p className="text-[10px] text-gray-400 mt-1 font-semibold">
+                          {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · {new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
+                        </p>
+                      </td>
 
-                    {/* TIMESTAMP */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-[13px] text-gray-600">
-                        {new Date(order.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                      </p>
-                      <p className="text-[12px] text-gray-400 mt-0.5">
-                        {new Date(order.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
-                      </p>
-                    </td>
-
-                    {/* CUSTOMER */}
-                    <td className="px-4 py-3">
-                      <p className="text-[13px] font-semibold text-gray-800 leading-none">{order.customer_name}</p>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className="text-[12px] text-gray-400 font-mono">{order.phone}</span>
-                        {/* Quick actions — only visible on row hover */}
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
-                          <button
-                            type="button"
-                            onClick={() => { navigator.clipboard.writeText(order.phone); showSuccessAlert('কপি হয়েছে!', 'মোবাইল নম্বর কপি করা হয়েছে।'); }}
-                            className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
-                            title="Copy number"
-                          >
-                            <svg className="w-3 h-3 fill-none stroke-current" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                          </button>
-                          <a href={`tel:${order.phone}`} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" title="Call">
-                            <Phone size={11} />
-                          </a>
-                          <a
-                            href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}`}
-                            target="_blank"
-                            className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-emerald-600 cursor-pointer transition-colors"
-                            title="WhatsApp"
-                          >
-                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
-                              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.97C16.528 2.017 14.077 1.001 11.99 1.001c-5.442 0-9.87 4.372-9.874 9.802-.001 1.73.469 3.414 1.36 4.916l-.993 3.629 3.734-.974zm13.705-7.82c-.274-.136-1.62-.8-1.87-.892-.249-.09-.43-.136-.61.136-.18.272-.697.892-.857 1.077-.16.18-.32.2-.592.064-.272-.136-1.15-.424-2.19-1.353-.809-.722-1.355-1.614-1.514-1.886-.16-.272-.017-.42.119-.556.124-.122.272-.32.409-.48.136-.16.18-.272.272-.45.09-.18.045-.338-.023-.475-.068-.136-.61-1.477-.837-2.022-.22-.53-.442-.458-.61-.466-.157-.008-.339-.01-.52-.01-.18 0-.476.067-.724.337-.249.27-1.154 1.129-1.154 2.753 0 1.624 1.177 3.197 1.336 3.414.16.216 2.316 3.537 5.61 4.962.784.34 1.397.543 1.874.694.789.25 1.507.214 2.074.129.632-.094 1.62-.663 1.85-.129.229-.533.229-1.157.16-1.266-.07-.11-.25-.16-.525-.297z" />
-                            </svg>
-                          </a>
+                      {/* Customer & Zone */}
+                      <td className="px-4 py-3">
+                        <p className="text-[13px] font-semibold text-gray-800 leading-none">{order.customer_name}</p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="text-[12px] text-gray-400 font-mono">{order.phone}</span>
+                          {/* Quick actions */}
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">
+                            <button
+                              type="button"
+                              onClick={() => { navigator.clipboard.writeText(order.phone); showSuccessAlert('কপি হয়েছে!', 'মোবাইল নম্বর কপি করা হয়েছে।'); }}
+                              className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors"
+                              title="Copy number"
+                            >
+                              <svg className="w-3 h-3 fill-none stroke-current" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                              </svg>
+                            </button>
+                            <a href={`tel:${order.phone}`} className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600 cursor-pointer transition-colors" title="Call">
+                              <Phone size={11} />
+                            </a>
+                            <a
+                              href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}`}
+                              target="_blank"
+                              className="p-0.5 rounded hover:bg-gray-200 text-gray-400 hover:text-emerald-600 cursor-pointer transition-colors"
+                              title="WhatsApp"
+                            >
+                              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24">
+                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.63-1.023-5.101-2.885-6.97C16.528 2.017 14.077 1.001 11.99 1.001c-5.442 0-9.87 4.372-9.874 9.802-.001 1.73.469 3.414 1.36 4.916l-.993 3.629 3.734-.974zm13.705-7.82c-.274-.136-1.62-.8-1.87-.892-.249-.09-.43-.136-.61.136-.18.272-.697.892-.857 1.077-.16.18-.32.2-.592.064-.272-.136-1.15-.424-2.19-1.353-.809-.722-1.355-1.614-1.514-1.886-.16-.272-.017-.42.119-.556.124-.122.272-.32.409-.48.136-.16.18-.272.272-.45.09-.18.045-.338-.023-.475-.068-.136-.61-1.477-.837-2.022-.22-.53-.442-.458-.61-.466-.157-.008-.339-.01-.52-.01-.18 0-.476.067-.724.337-.249.27-1.154 1.129-1.154 2.753 0 1.624 1.177 3.197 1.336 3.414.16.216 2.316 3.537 5.61 4.962.784.34 1.397.543 1.874.694.789.25 1.507.214 2.074.129.632-.094 1.62-.663 1.85-.129.229-.533.229-1.157.16-1.266-.07-.11-.25-.16-.525-.297z" />
+                              </svg>
+                            </a>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                        <p className="text-[10px] text-gray-400 mt-1 font-bold">{deliveryZone}</p>
+                      </td>
 
-                    {/* PRODUCT */}
-                    <td className="px-4 py-3 max-w-[180px]">
-                      <p className="text-[13px] text-gray-600 truncate">{productNames}</p>
-                    </td>
+                      {/* PRODUCT */}
+                      <td className="px-4 py-3 max-w-[200px]">
+                        <p className="text-[13px] font-semibold text-gray-800 truncate" title={productNames}>{productNames}</p>
+                        <p className="text-[10px] text-gray-400 mt-1 font-bold">Qty: {itemsCount} items</p>
+                      </td>
 
-                    {/* TOTAL */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-[13px] font-semibold text-gray-800">৳{Number(order.grand_total).toLocaleString()}</p>
-                    </td>
-
-                    {/* DELIVERY */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="text-[13px] text-gray-500">{deliveryZone}</p>
-                    </td>
-
-                    {/* ITEMS */}
-                    <td className="px-4 py-3">
-                      <p className="text-[13px] text-gray-500">{itemsCount}</p>
-                    </td>
-
-                    {/* STATUS */}
-                    <td className="px-4 py-3">
-                      {order.status === 'trash' ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold bg-neutral-100 text-neutral-500 border border-neutral-200">
-                          <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 shrink-0" />
-                          Trash
-                        </span>
-                      ) : (
-                        <div className="relative inline-flex items-center group/status">
-                          {/* Styled pill — acts as visual wrapper */}
-                          <span className={`inline-flex items-center gap-1.5 pl-3 pr-7 py-1.5 rounded-full text-[12px] font-semibold border select-none pointer-events-none ${statusColors[order.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDotColor}`} />
-                            {statusLabels[order.status] || order.status}
-                          </span>
-                          {/* Invisible select overlaid on top */}
-                          <select
-                            value={order.status}
-                            onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                            className="absolute inset-0 opacity-0 cursor-pointer w-full rounded-full"
-                          >
-                            {Object.keys(statusLabels)
-                              .filter(key => key !== 'trash')
-                              .map(key => (
-                                <option key={key} value={key}>{statusLabels[key]}</option>
-                              ))}
-                          </select>
-                          {/* Caret icon */}
-                          <span className="absolute right-2.5 pointer-events-none">
-                            <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </span>
-                        </div>
-                      )}
-                    </td>
-
-                    {/* WAIT */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {order.status === 'pending' && responseTime ? (
-                        <span className={`text-[13px] font-semibold tabular-nums ${diffMins > 30 ? 'text-rose-500' : 'text-amber-500'}`}>
-                          {responseTime}
-                        </span>
-                      ) : (
-                        <span className="text-[13px] text-gray-300">—</span>
-                      )}
-                    </td>
-
-                    {/* ACTIONS — hidden until row hover */}
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedOrder(order)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600 cursor-pointer transition-colors"
-                          title="View details"
-                        >
-                          <Eye size={13} />
-                        </button>
-                        {order.status === 'incomplete' && (
-                          <a
-                            href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                              `হ্যালো ${order.customer_name}! আপনি অরিজিন হাট (Origin Haat) থেকে চমৎকার কিছু গ্যাজেট নেওয়ার সিদ্ধান্ত নিয়েছিলেন, কিন্তু আপনার অর্ডারটি শেষ করা হয়নি। আমরা কি অর্ডারটি সম্পন্ন করতে কোনো সহযোগিতা করতে পারি?`
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 cursor-pointer transition-colors"
-                            title="WhatsApp Follow-up (রিকভারি)"
-                          >
-                            <MessageCircle size={13} />
-                          </a>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setTimeout(() => {
-                              const items = order.oh_order_items?.map(item => ({
-                                id: item.id || Math.random().toString(),
-                                product_id: item.product_id,
-                                product_slug: item.product_slug || '',
-                                product_name: item.product_name,
-                                product_image: item.product_image || null,
-                                price: item.price,
-                                quantity: item.quantity,
-                                subtotal: item.price * item.quantity
-                              })) || [];
-                              setEditForm({
-                                customer_name: order.customer_name || '',
-                                phone: order.phone || '',
-                                address: order.address || '',
-                                district: order.district || '',
-                                note: order.note || '',
-                                delivery_charge: order.delivery_charge || 0,
-                                discount_amount: order.discount_amount || 0,
-                                subtotal: order.subtotal || 0,
-                                grand_total: order.grand_total || 0,
-                                items
-                              });
-                              setIsEditing(true);
-                              fetchProductsCatalog();
-                            }, 50);
-                          }}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer transition-colors"
-                          title="Edit"
-                        >
-                          <Edit size={13} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handlePrintOrders([order])}
-                          className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer transition-colors"
-                          title="Print"
-                        >
-                          <Printer size={13} />
-                        </button>
+                      {/* STATUS */}
+                      <td className="px-4 py-3">
                         {order.status === 'trash' ? (
-                          <>
+                          <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => handleRestoreFromTrash(order.id)}
@@ -1830,29 +1684,130 @@ function OrdersPageContent() {
                               <button
                                 type="button"
                                 onClick={() => handlePermanentDelete(order.id)}
-                                className="p-1 hover:bg-rose-50 rounded-lg text-rose-600 cursor-pointer"
+                                className="p-1.5 hover:bg-rose-50 rounded-lg text-rose-600 cursor-pointer"
                                 title="Delete Permanently"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={13} />
                               </button>
                             )}
-                          </>
+                          </div>
                         ) : (
-                          <>
-                            {canDelete && (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <div className="relative inline-flex items-center group/status">
+                              <span className={`inline-flex items-center gap-1.5 pl-3 pr-7 py-1.5 rounded-full text-[12px] font-semibold border select-none pointer-events-none ${statusColors[order.status] || 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDotColor}`} />
+                                {statusLabels[order.status] || order.status}
+                              </span>
+                              <select
+                                value={order.status}
+                                onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
+                                className="absolute inset-0 opacity-0 cursor-pointer w-full rounded-full"
+                              >
+                                {Object.keys(statusLabels)
+                                  .filter(key => key !== 'trash')
+                                  .map(key => (
+                                    <option key={key} value={key}>{statusLabels[key]}</option>
+                                  ))}
+                              </select>
+                              <span className="absolute right-2.5 pointer-events-none">
+                                <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </span>
+                            </div>
+                            {order.status === 'pending' && responseTime && (
+                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-lg border ${diffMins > 30 ? 'bg-red-50 text-red-600 border-red-100 animate-pulse' : 'bg-amber-50 text-amber-700 border-amber-100'}`}>
+                                Wait: {responseTime}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      {/* TOTAL & ACTIONS */}
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex flex-col items-end gap-1.5 relative min-h-[40px] justify-center">
+                          <p className="text-[14px] font-black text-gray-900 leading-none group-hover:opacity-0 transition-opacity">৳{Number(order.grand_total).toLocaleString()}</p>
+                          
+                          <div className="absolute right-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/95 backdrop-blur-xs pl-2 py-1">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedOrder(order)}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-blue-600 cursor-pointer transition-colors"
+                              title="View details"
+                            >
+                              <Eye size={13} />
+                            </button>
+                            {order.status === 'incomplete' && (
+                              <a
+                                href={`https://wa.me/${order.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                                  `হ্যালো ${order.customer_name}! আপনি অরিজিন হাট (Origin Haat) থেকে চমৎকার কিছু গ্যাজেট নেওয়ার সিদ্ধান্ত নিয়েছিলেন, কিন্তু আপনার অর্ডারটি শেষ করা হয়নি। আমরা কি অর্ডারটি সম্পন্ন করতে কোনো সহযোগিতা করতে পারি?`
+                                )}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-500 hover:text-emerald-700 cursor-pointer transition-colors"
+                                title="WhatsApp Follow-up (রিকভারি)"
+                              >
+                                <MessageCircle size={13} />
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setTimeout(() => {
+                                  const items = order.oh_order_items?.map(item => ({
+                                    id: item.id || Math.random().toString(),
+                                    product_id: item.product_id,
+                                    product_slug: item.product_slug || '',
+                                    product_name: item.product_name,
+                                    product_image: item.product_image || null,
+                                    price: item.price,
+                                    quantity: item.quantity,
+                                    subtotal: item.price * item.quantity
+                                  })) || [];
+                                  setEditForm({
+                                    customer_name: order.customer_name || '',
+                                    phone: order.phone || '',
+                                    address: order.address || '',
+                                    district: order.district || '',
+                                    note: order.note || '',
+                                    delivery_charge: order.delivery_charge || 0,
+                                    discount_amount: order.discount_amount || 0,
+                                    subtotal: order.subtotal || 0,
+                                    grand_total: order.grand_total || 0,
+                                    items
+                                  });
+                                  setIsEditing(true);
+                                  fetchProductsCatalog();
+                                }, 50);
+                              }}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer transition-colors"
+                              title="Edit"
+                            >
+                              <Edit size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handlePrintOrders([order])}
+                              className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 cursor-pointer transition-colors"
+                              title="Print"
+                            >
+                              <Printer size={13} />
+                            </button>
+                            {order.status !== 'trash' && canDelete && (
                               <button
                                 type="button"
                                 onClick={() => handleMoveToTrash(order.id)}
-                                className="p-1 hover:bg-rose-50 rounded-lg text-gray-400 hover:text-rose-600 cursor-pointer"
+                                className="p-1.5 rounded-lg hover:bg-rose-50 text-gray-400 hover:text-rose-600 cursor-pointer transition-colors"
                                 title="Move to Trash"
                               >
-                                <Trash2 size={14} />
+                                <Trash2 size={13} />
                               </button>
                             )}
-                          </>
-                        )}
-                      </div>
-                    </td>
+                          </div>
+                        </div>
+                      </td>
                   </tr>
                 );
                 })
