@@ -136,10 +136,16 @@ export function Footer() {
       <div className="border-t border-gray-100 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
           <p>© ২০২৬ Origin Haat. সর্বস্বত্ব সংরক্ষিত।</p>
-          <div className="flex items-center gap-4">
-            <span>🔒 SSL সুরক্ষিত</span>
-            <span>✅ ১০০% অরিজিনাল</span>
-            <span>🚚 দ্রুত ডেলিভারি</span>
+          <div className="flex items-center gap-1">
+            <span>Build by</span>
+            <a
+              href="https://shakhwatrasel.vercel.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#ff6b35] hover:underline font-bold transition-all"
+            >
+              Shakhwat Hossain Rasel
+            </a>
           </div>
         </div>
       </div>
