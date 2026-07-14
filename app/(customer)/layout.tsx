@@ -23,7 +23,7 @@ export default async function CustomerLayout({
           --badge-color: ${badgeColor};
         }
       `}} />
-      <Header />
+      <Header initialSettings={settings || undefined} />
       <main className="min-h-screen bg-slate-50/50">{children}</main>
       <Footer />
 

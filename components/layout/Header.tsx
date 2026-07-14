@@ -12,7 +12,15 @@ import { categories } from '@/data/products';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
 
-export function Header() {
+interface HeaderProps {
+  initialSettings?: {
+    announcement_text?: string;
+    is_announcement_active?: boolean;
+    whatsapp_number?: string;
+  };
+}
+
+export function Header({ initialSettings }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { isInstallable, installApp } = usePWAInstallable();
@@ -182,11 +190,12 @@ export function Header() {
     setMounted(true);
   }, []);
 
-  const [announcementText, setAnnouncementText] = useState('🚚 ৳৯৯৯+ অর্ডারে ফ্রি ডেলিভারি | ঢাকায় ২৪ ঘণ্টা | সারাদেশে ২-৩ দিন');
-  const [announcementActive, setAnnouncementActive] = useState(true);
-  const [phone, setPhone] = useState('01XXXXXXXXX');
+  const [announcementText, setAnnouncementText] = useState(initialSettings?.announcement_text || '');
+  const [announcementActive, setAnnouncementActive] = useState(!!initialSettings?.is_announcement_active);
+  const [phone, setPhone] = useState(initialSettings?.whatsapp_number || '01XXXXXXXXX');
 
   useEffect(() => {
+    if (initialSettings) return;
     const fetchHeaderSettings = async () => {
       try {
         const res = await fetch('/api/settings');
@@ -203,7 +212,7 @@ export function Header() {
       }
     };
     fetchHeaderSettings();
-  }, []);
+  }, [initialSettings]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 10);

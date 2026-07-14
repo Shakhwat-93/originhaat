@@ -14,12 +14,30 @@ export default function PWAManager() {
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
-    // 1. Register Service Worker
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/sw.js')
-        .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
-        .catch((err) => console.error('PWA Service Worker registration failed:', err));
+    // 1. Service Worker Handling
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' ||
+       window.location.hostname === '127.0.0.1' ||
+       window.location.hostname.startsWith('192.168.'));
+
+    if (isLocalhost) {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (let registration of registrations) {
+            registration.unregister().then((success) => {
+              if (success) console.log('Localhost Service Worker successfully unregistered for faster dev reloads.');
+            });
+          }
+        });
+      }
+    } else {
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then((reg) => console.log('PWA Service Worker registered:', reg.scope))
+          .catch((err) => console.error('PWA Service Worker registration failed:', err));
+      }
     }
 
     // 2. Listen for beforeinstallprompt
