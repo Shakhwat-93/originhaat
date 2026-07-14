@@ -241,7 +241,7 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         if (result.error === 'ORDER_LIMIT_REACHED' || res.status === 429) {
-          setWarningMessage(result.message || 'আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে অনুগ্রহ করে আরও কিছুক্ষণ অপেক্ষা করুন।');
+          setWarningMessage(result.message || 'আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে হোয়াটসঅ্যাপে যোগাযোগ করুন।');
           return;
         }
         throw new Error(result.message || result.error || 'Order failed');
@@ -624,13 +624,24 @@ export default function CheckoutPage() {
                 {warningMessage}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setWarningMessage(null)}
-              className="w-full py-3 bg-[#ff6b35] hover:bg-[#e55520] text-white text-sm font-bold rounded-xl transition-colors cursor-pointer"
-            >
-              ঠিক আছে
-            </button>
+            <div className="flex flex-col gap-2.5 pt-1">
+              <a
+                href={`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent('হ্যালো! আমি অর্ডার লিমিট সতর্কবার্তা পেয়েছি, নতুন অর্ডার করতে সরাসরি হোয়াটসঅ্যাপে যোগাযোগ করছি।')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-3 bg-[#25D366] hover:bg-[#20ba5a] text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
+              >
+                <MessageCircle size={16} />
+                হোয়াটসঅ্যাপে যোগাযোগ করুন
+              </a>
+              <button
+                type="button"
+                onClick={() => setWarningMessage(null)}
+                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                ঠিক আছে
+              </button>
+            </div>
           </div>
         </div>
       )}

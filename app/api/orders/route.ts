@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         if (recentOrders && recentOrders.length > 0) {
           return NextResponse.json({
             error: 'ORDER_LIMIT_REACHED',
-            message: `আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে অনুগ্রহ করে আরও কিছুক্ষণ অপেক্ষা করুন।`
+            message: `আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে হোয়াটসঅ্যাপে যোগাযোগ করুন।`
           }, { status: 429 });
         }
       }
