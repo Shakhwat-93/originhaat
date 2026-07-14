@@ -4,9 +4,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { ShoppingCart, Phone, Menu, X, Search, ChevronDown, Route } from 'lucide-react';
+import { ShoppingCart, Phone, Menu, X, Search, ChevronDown, Route, Smartphone } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
+import { usePWAInstallable } from '@/hooks/usePWAInstallable';
 import { categories } from '@/data/products';
 import { supabase } from '@/lib/supabase';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
+  const { isInstallable, installApp } = usePWAInstallable();
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -264,7 +266,17 @@ export function Header() {
             </div>
 
             {/* Right: Cart */}
-            <div className="flex items-center justify-end w-28">
+            <div className="flex items-center justify-end w-28 gap-2">
+              {isInstallable && (
+                <button
+                  onClick={installApp}
+                  className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#fff3ef] border border-[#ff6b35]/20 text-[#ff6b35] transition-colors cursor-pointer shadow-xs"
+                  aria-label="অ্যাপ ইনস্টল করুন"
+                  title="Install App"
+                >
+                  <Smartphone size={20} />
+                </button>
+              )}
               <Link
                 href="/cart"
                 className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"
@@ -324,6 +336,16 @@ export function Header() {
               </a>
 
               {/* Cart */}
+              {isInstallable && (
+                <button
+                  onClick={installApp}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-[#fff3ef] border border-[#ff6b35]/20 hover:bg-[#ffe6dc] text-[#ff6b35] text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs"
+                  title="Install App"
+                >
+                  <Smartphone size={14} />
+                  <span>অ্যাপ ডাউনলোড</span>
+                </button>
+              )}
               <Link
                 href="/cart"
                 className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#f8f9fa] hover:bg-[#fff3ef] transition-colors text-[#374151] hover:text-[#ff6b35]"

@@ -3,6 +3,7 @@ import { Anek_Bangla, Tiro_Bangla } from 'next/font/google';
 import './globals.css';
 import { ToastNotification } from '@/components/shared/ToastNotification';
 import { TrackingScripts } from '@/components/shared/TrackingScripts';
+import PWAManager from '@/components/shared/PWAManager';
 import { getSettings } from '@/lib/db';
 
 const anekBangla = Anek_Bangla({
@@ -158,6 +159,7 @@ export default async function RootLayout({
         {children}
         <TrackingScripts settings={settings as any} />
         <ToastNotification />
+        <PWAManager />
       </body>
     </html>
   );

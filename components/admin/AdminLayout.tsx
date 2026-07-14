@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { usePWAInstallable } from '@/hooks/usePWAInstallable';
 import { 
   LayoutDashboard, 
   Package, 
@@ -34,7 +35,8 @@ import {
   FileText,
   ShieldAlert,
   Truck,
-  TrendingUp
+  TrendingUp,
+  Smartphone
 } from 'lucide-react';
 
 // ─── Menu Navigation Type Definition ──────────────────────────────────────────
@@ -167,6 +169,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router   = useRouter();
+  const { isInstallable, installApp } = usePWAInstallable();
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -513,6 +516,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Profile Card Bottom */}
         <div className={`p-4 border-t space-y-3 ${theme === 'dark' ? 'border-[#18181b]' : 'border-gray-100'}`}>
+          {isInstallable && (
+            <button
+              onClick={installApp}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#ff6b35] hover:bg-[#ff6b35]/10 border border-[#ff6b35]/25 transition-colors cursor-pointer`}
+              title="Install App"
+            >
+              <span className="flex items-center gap-2"><Smartphone size={14} /> {!isCollapsed && 'Install Console'}</span>
+            </button>
+          )}
+
           <button
             onClick={handleLogout}
             className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-red-500 transition-colors cursor-pointer ${
