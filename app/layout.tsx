@@ -1,15 +1,23 @@
 import type { Metadata } from 'next';
-import { Hind_Siliguri } from 'next/font/google';
+import { Anek_Bangla, Tiro_Bangla } from 'next/font/google';
 import './globals.css';
 import { ToastNotification } from '@/components/shared/ToastNotification';
 import { TrackingScripts } from '@/components/shared/TrackingScripts';
 import { getSettings } from '@/lib/db';
 
-const hindSiliguri = Hind_Siliguri({
+const anekBangla = Anek_Bangla({
   subsets: ['bengali', 'latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['100', '200', '300', '400', '500', '600', '700', '800'],
   display: 'swap',
-  variable: '--font-hind',
+  variable: '--font-anek',
+});
+
+const tiroBangla = Tiro_Bangla({
+  subsets: ['bengali', 'latin'],
+  weight: ['400'],
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-tiro',
 });
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -136,8 +144,8 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang="bn" className={hindSiliguri.variable}>
-      <body className={`${hindSiliguri.className} antialiased bg-surface`}>
+    <html lang="bn" className={`${anekBangla.variable} ${tiroBangla.variable}`}>
+      <body className={`${anekBangla.className} antialiased bg-surface`}>
         {/* JSON-LD Structured Data */}
         <script
           type="application/ld+json"

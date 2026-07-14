@@ -10,14 +10,24 @@ export default async function CustomerLayout({
 }) {
   const settings = await getSettings();
   const whatsappNumber = settings?.whatsapp_number || '8801700000000';
+  const hotlineNumber = settings?.hotline_number || '01700000000';
+
+  const priceColor = settings?.price_color || '#12b76a';
+  const badgeColor = settings?.badge_color || '#ff6b35';
 
   return (
     <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        :root {
+          --price-color: ${priceColor};
+          --badge-color: ${badgeColor};
+        }
+      `}} />
       <Header />
       <main className="min-h-screen bg-slate-50/50">{children}</main>
       <Footer />
 
-      <ClientWidgets whatsappNumber={whatsappNumber} />
+      <ClientWidgets whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} />
     </>
   );
 }

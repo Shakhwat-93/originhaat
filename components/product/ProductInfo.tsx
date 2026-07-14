@@ -17,7 +17,8 @@ interface ProductInfoProps {
 export function ProductInfo({ product }: ProductInfoProps) {
   const router = useRouter();
   const [quantity, setQuantity] = useState(1);
-  const [phone, setPhone] = useState('8801700000000');
+  const [whatsappPhone, setWhatsappPhone] = useState('8801700000000');
+  const [hotlinePhone, setHotlinePhone] = useState('01700000000');
   
   const addItem = useCartStore((s) => s.addItem);
   const showToast = useUIStore((s) => s.showToast);
@@ -32,10 +33,12 @@ export function ProductInfo({ product }: ProductInfoProps) {
     fetch('/api/settings')
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => {
-        if (data?.whatsapp_number) setPhone(data.whatsapp_number);
+        if (data?.whatsapp_number) setWhatsappPhone(data.whatsapp_number);
+        if (data?.hotline_number) setHotlinePhone(data.hotline_number);
       })
       .catch(() => {
-        setPhone('8801700000000');
+        setWhatsappPhone('8801700000000');
+        setHotlinePhone('01700000000');
       });
   }, []);
 
@@ -60,7 +63,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
     return clean;
   };
 
-  const displayPhone = formatPhoneNumber(phone);
+  const displayPhone = formatPhoneNumber(hotlinePhone);
 
   return (
     <div className="space-y-6">
@@ -117,7 +120,10 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Pricing Section */}
       <div className="flex items-center gap-3 flex-wrap">
-        <span className="text-3xl font-extrabold text-[#12b76a]">
+        <span 
+          style={{ color: 'var(--price-color)' }}
+          className="text-3xl font-extrabold"
+        >
           {formatBDTNumeric(product.price)}
         </span>
         {discount > 0 && (
@@ -125,7 +131,10 @@ export function ProductInfo({ product }: ProductInfoProps) {
             <span className="text-lg text-[#9ca3af] line-through">
               {formatBDTNumeric(product.original_price)}
             </span>
-            <span className="bg-[#e11d48] text-white text-xs font-extrabold px-3 py-1 rounded-full">
+            <span 
+              style={{ backgroundColor: 'var(--badge-color)' }}
+              className="text-white text-xs font-extrabold px-3 py-1 rounded-full animate-pulse-badge"
+            >
               Save {discount}%
             </span>
           </>
@@ -196,7 +205,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <div className="flex flex-col gap-2.5">
           {/* WhatsApp Order Button */}
           <a
-            href={`https://wa.me/${phone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${product.name_bn}\nমূল্য: ${formatBDTNumeric(product.price)}`)}`}
+            href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${product.name_bn}\nমূল্য: ${formatBDTNumeric(product.price)}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full max-w-[240px] flex items-center justify-center gap-2 bg-[#12b76a] hover:bg-[#0f9f59] text-white font-extrabold py-3 px-6 rounded-full transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md cursor-pointer text-sm"
@@ -210,7 +219,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
           {/* Hotline Call Button */}
           <a
-            href={`tel:${phone}`}
+            href={`tel:${hotlinePhone}`}
             className="w-full max-w-[240px] flex items-center justify-center gap-2 border-2 border-[#12b76a] bg-[#f0fdf4] hover:bg-[#dcfce7] text-[#12b76a] font-extrabold py-2.5 px-6 rounded-full transition-all duration-200 active:scale-95 cursor-pointer text-sm"
           >
             <Phone size={16} />

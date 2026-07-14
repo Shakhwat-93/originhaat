@@ -16,7 +16,7 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { incompleteOrderId, customer_name, phone, address, district, note, items, subtotal, delivery_charge, grand_total } = body;
+    const { incompleteOrderId, customer_name, phone, address, district, note, items, subtotal, delivery_charge, grand_total, discount_amount, coupon_code } = body;
 
     if (!customer_name || !phone || !address || !district || !items?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -43,8 +43,10 @@ export async function POST(request: NextRequest) {
           note: note || null,
           subtotal,
           delivery_charge,
+          discount_amount: discount_amount || 0,
+          coupon_code: coupon_code || null,
           grand_total,
-          status: 'pending',
+          status: 'processing',
           ip_address,
           updated_at: new Date().toISOString()
         })
@@ -62,7 +64,22 @@ export async function POST(request: NextRequest) {
       // Create new order
       const { data, error } = await supabase
         .from('oh_orders')
-        .insert({ order_number, customer_name, phone, address, district, note: note || null, subtotal, delivery_charge, grand_total, status: 'pending', payment_method: 'cod', ip_address })
+        .insert({
+          order_number,
+          customer_name,
+          phone,
+          address,
+          district,
+          note: note || null,
+          subtotal,
+          delivery_charge,
+          discount_amount: discount_amount || 0,
+          coupon_code: coupon_code || null,
+          grand_total,
+          status: 'processing',
+          payment_method: 'cod',
+          ip_address
+        })
         .select()
         .single();
       order = data;
@@ -89,7 +106,20 @@ export async function POST(request: NextRequest) {
     }));
 
     const { error: itemsError } = await supabase.from('oh_order_items').insert(orderItems);
-    if (itemsError) console.error('Order items insert error:', itemsError);
+    if (itemsError) {
+      console.error('Order items insert error:', itemsError);
+    } else if (orderItems.length > 0) {
+      // Record sale in inventory logs (automatically decrements product stocks via database trigger)
+      const inventoryTransactions = orderItems.map((item: any) => ({
+        product_id: item.product_id,
+        quantity: -Number(item.quantity),
+        transaction_type: 'sale',
+        reference: `Order #${order.order_number}`,
+        created_by: 'system'
+      }));
+      const { error: invError } = await supabase.from('oh_inventory_transactions').insert(inventoryTransactions);
+      if (invError) console.error('Inventory log insert error:', invError);
+    }
 
     // Fetch settings dynamically to get CAPI keys
     const settings = await getSettings();
@@ -135,6 +165,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Run automatic trash cleanup asynchronously in the database background
+  const cleanupSql = `
+    DELETE FROM oh_orders 
+    WHERE status = 'trash' 
+    AND updated_at < now() - (COALESCE((SELECT trash_auto_delete_days FROM oh_settings LIMIT 1), 30) || ' days')::interval;
+  `;
+  supabase.rpc('exec_sql', { query_text: cleanupSql }).then((res: any) => {
+    if (res?.error) console.error('Failed to run trash auto-cleanup:', res.error);
+  });
+
   const { data, error } = await supabase
     .from('oh_orders')
     .select('*, oh_order_items (*)')
@@ -158,22 +198,203 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const { orderId, status } = await request.json();
-    if (!orderId || !status) {
-      return NextResponse.json({ error: 'Missing orderId or status' }, { status: 400 });
+    const body = await request.json();
+    const {
+      orderId,
+      status,
+      customer_name,
+      phone,
+      address,
+      district,
+      note,
+      delivery_charge,
+      discount_amount,
+      subtotal,
+      grand_total,
+      items
+    } = body;
+
+    if (!orderId) {
+      return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
     }
+
+    // Fetch existing order details first to get status and order number
+    const { data: existingOrder, error: fetchOrderError } = await supabase
+      .from('oh_orders')
+      .select('order_number, status')
+      .eq('id', orderId)
+      .single();
+
+    if (fetchOrderError || !existingOrder) {
+      console.error('Failed to fetch existing order:', fetchOrderError);
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
+    const updateFields: any = {};
+    if (status !== undefined) updateFields.status = status;
+    if (customer_name !== undefined) updateFields.customer_name = customer_name;
+    if (phone !== undefined) updateFields.phone = phone;
+    if (address !== undefined) updateFields.address = address;
+    if (district !== undefined) updateFields.district = district;
+    if (note !== undefined) updateFields.note = note;
+    if (delivery_charge !== undefined) updateFields.delivery_charge = Number(delivery_charge);
+    if (discount_amount !== undefined) updateFields.discount_amount = Number(discount_amount);
+    if (subtotal !== undefined) updateFields.subtotal = Number(subtotal);
+    if (grand_total !== undefined) updateFields.grand_total = Number(grand_total);
+    updateFields.updated_at = new Date().toISOString();
 
     const { error } = await supabase
       .from('oh_orders')
-      .update({ status })
+      .update(updateFields)
       .eq('id', orderId);
 
     if (error) {
-      return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
+      console.error('Order update error:', error);
+      return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
+    }
+
+    // Handle status change inventory sync
+    if (status !== undefined && status !== existingOrder.status) {
+      if (status === 'cancelled') {
+        // Return products to stock (record positive transaction)
+        const { data: currentItems } = await supabase
+          .from('oh_order_items')
+          .select('product_id, quantity')
+          .eq('order_id', orderId);
+        
+        if (currentItems && currentItems.length > 0) {
+          const returnLogs = currentItems.map(item => ({
+            product_id: item.product_id,
+            quantity: Number(item.quantity),
+            transaction_type: 'return',
+            reference: `Cancelled Order #${existingOrder.order_number}`,
+            created_by: 'system'
+          }));
+          await supabase.from('oh_inventory_transactions').insert(returnLogs);
+        }
+      } else if (existingOrder.status === 'cancelled') {
+        // Restore order: deduct products from stock (record negative transaction)
+        const { data: currentItems } = await supabase
+          .from('oh_order_items')
+          .select('product_id, quantity')
+          .eq('order_id', orderId);
+        
+        if (currentItems && currentItems.length > 0) {
+          const saleLogs = currentItems.map(item => ({
+            product_id: item.product_id,
+            quantity: -Number(item.quantity),
+            transaction_type: 'sale',
+            reference: `Restored Order #${existingOrder.order_number}`,
+            created_by: 'system'
+          }));
+          await supabase.from('oh_inventory_transactions').insert(saleLogs);
+        }
+      }
+    }
+
+    // If items are provided, replace them in the database
+    if (items && Array.isArray(items)) {
+      // Delete old items
+      const { error: deleteError } = await supabase
+        .from('oh_order_items')
+        .delete()
+        .eq('order_id', orderId);
+
+      if (deleteError) {
+        console.error('Failed to delete old items:', deleteError);
+        return NextResponse.json({ error: 'Failed to update order items' }, { status: 500 });
+      }
+
+      if (items.length > 0) {
+        const orderItems = items.map((item: any) => ({
+          order_id: orderId,
+          product_id: item.product_id,
+          product_slug: item.product_slug,
+          product_name: item.product_name,
+          product_image: item.product_image || null,
+          price: Number(item.price),
+          quantity: Number(item.quantity),
+          subtotal: Number(item.price) * Number(item.quantity),
+        }));
+
+        const { error: insertError } = await supabase
+          .from('oh_order_items')
+          .insert(orderItems);
+
+        if (insertError) {
+          console.error('Failed to insert new items:', insertError);
+          return NextResponse.json({ error: 'Failed to insert new order items' }, { status: 500 });
+        }
+
+        // Adjust inventory transactions if order is active (not cancelled)
+        const activeStatus = status !== undefined ? status : existingOrder.status;
+        if (activeStatus !== 'cancelled') {
+          // Delete old sale transactions for this order
+          await supabase
+            .from('oh_inventory_transactions')
+            .delete()
+            .in('reference', [`Order #${existingOrder.order_number}`, `Restored Order #${existingOrder.order_number}`])
+            .eq('transaction_type', 'sale');
+
+          // Insert new sale transactions
+          const saleLogs = items.map((item: any) => ({
+            product_id: item.product_id,
+            quantity: -Number(item.quantity),
+            transaction_type: 'sale',
+            reference: `Order #${existingOrder.order_number}`,
+            created_by: 'system'
+          }));
+          await supabase.from('oh_inventory_transactions').insert(saleLogs);
+        }
+      }
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err: any) {
+    console.error('PATCH API error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// ──────────────────────────────────────────
+// DELETE /api/orders  →  permanently delete order or empty trash
+// ──────────────────────────────────────────
+export async function DELETE(request: NextRequest) {
+  const authHeader = request.headers.get('x-admin-key');
+  if (authHeader !== process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const empty = searchParams.get('empty') === 'true';
+
+    if (empty) {
+      // Empty all trash
+      const { error } = await supabase
+        .from('oh_orders')
+        .delete()
+        .eq('status', 'trash');
+
+      if (error) throw error;
+      return NextResponse.json({ success: true });
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 });
+    }
+
+    // Delete order permanently
+    const { error } = await supabase
+      .from('oh_orders')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error('DELETE Order error:', err);
+    return NextResponse.json({ error: 'Failed to delete order permanently' }, { status: 500 });
   }
 }

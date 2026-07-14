@@ -30,6 +30,9 @@ export async function GET(request: NextRequest) {
     ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS chat_ai_active boolean DEFAULT false;
     ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS chat_ai_instructions text DEFAULT 'You are an AI assistant for Origin Haat (originhaat.com). Answer customer queries politely in Bengali. Delivery charges: Inside Dhaka 60 TK, Outside Dhaka 120 TK. Free delivery on orders over 999 TK. Dhaka delivery within 24 hours, outside Dhaka 2-3 days.';
     ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS chat_ai_api_key text;
+
+    -- Add invoice_template column to oh_settings
+    ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS invoice_template text;
   `;
 
   // We will try to connect to the internal database container

@@ -12,6 +12,7 @@ import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 
 interface ChatWidgetProps {
   whatsappNumber: string;
+  hotlineNumber?: string;
 }
 
 interface BotMessage {
@@ -66,7 +67,7 @@ function BubbleDots() {
   );
 }
 
-export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
+export function ChatWidget({ whatsappNumber, hotlineNumber }: ChatWidgetProps) {
   const [isOpen, setIsOpen]         = useState(false);
   const [showSpeedDial, setShowSpeedDial] = useState(false);
   const [activeScreen, setActiveScreen] = useState<'welcome' | 'menu' | 'live-onboard' | 'live-thread' | 'ai-bot' | 'end-session' | 'feedback-done'>('welcome');
@@ -831,7 +832,7 @@ export function ChatWidget({ whatsappNumber }: ChatWidgetProps) {
               {lang === 'bn' ? 'হটলাইন কল' : 'Hotline Call'}
             </span>
             <a
-              href={`tel:${whatsappNumber}`}
+              href={`tel:${hotlineNumber || whatsappNumber}`}
               className="w-12 h-12 rounded-full bg-[#007aff] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
               title="Call Hotline"
             >

@@ -19,14 +19,15 @@ const ChatWidget = dynamic(
 
 interface ClientWidgetsProps {
   whatsappNumber: string;
+  hotlineNumber: string;
 }
 
-export function ClientWidgets({ whatsappNumber }: ClientWidgetsProps) {
+export function ClientWidgets({ whatsappNumber, hotlineNumber }: ClientWidgetsProps) {
   return (
     <>
       <MobileBottomNav />
       <FloatingCartWidget />
-      <ChatWidget whatsappNumber={whatsappNumber} />
+      <ChatWidget whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} />
     </>
   );
 }

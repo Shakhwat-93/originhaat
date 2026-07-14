@@ -55,7 +55,10 @@ export function ProductCard({ product }: ProductCardProps) {
           />
           {/* Discount Badge */}
           {discount > 0 && (
-            <div className="absolute top-2 left-2 bg-[#ff6b35] text-white text-xs font-bold px-2 py-1 rounded-lg animate-pulse-badge">
+            <div 
+              style={{ backgroundColor: 'var(--badge-color)' }}
+              className="absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded-lg animate-pulse-badge"
+            >
               {discount}% ছাড়
             </div>
           )}
@@ -103,7 +106,10 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Price */}
           <div className="flex items-center gap-2">
-            <span className="text-base font-bold text-[#111827]">
+            <span 
+              style={{ color: 'var(--price-color)' }}
+              className="text-base font-bold"
+            >
               {formatBDTNumeric(product.price)}
             </span>
             {discount > 0 && (

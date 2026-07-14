@@ -31,7 +31,9 @@ import {
   Info,
   Download,
   Plus,
-  FileText
+  FileText,
+  ShieldAlert,
+  Truck
 } from 'lucide-react';
 
 // ─── Menu Navigation Type Definition ──────────────────────────────────────────
@@ -75,6 +77,7 @@ const NAV_ITEMS: NavItem[] = [
     icon: Package,
     children: [
       { href: '/admin/products', label: 'Products List', badgeType: 'products' },
+      { href: '/admin/inventory', label: 'Inventory Stock' },
       { href: '/admin/categories', label: 'Categories' },
       { href: '/admin/banners', label: 'Banners' },
     ]
@@ -92,7 +95,14 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/admin/orders?status=cancelled', label: 'Cancelled', dotColor: '#f87171' },
       { href: '/admin/orders?status=fake', label: 'Fake Order', dotColor: '#92400e' },
       { href: '/admin/orders?status=incomplete', label: 'Incomplete', dotColor: '#9ca3af' },
+      { href: '/admin/orders?status=trash', label: 'Trash (ট্র্যাশ)', dotColor: '#6b7280' },
     ]
+  },
+  { 
+    type: 'flat', 
+    href: '/admin/courier', 
+    label: 'Courier', 
+    icon: Truck 
   },
   { 
     type: 'flat', 
@@ -118,19 +128,28 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Pages', 
     icon: FileText 
   },
+  { 
+    type: 'flat', 
+    href: '/admin/users', 
+    label: 'Admin Users', 
+    icon: ShieldCheck 
+  },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
   '/admin/dashboard':  'Dashboard',
   '/admin/products':   'Product Management',
+  '/admin/inventory':  'Inventory Stock Management',
   '/admin/categories': 'Category Management',
   '/admin/banners':    'Banner Management',
   '/admin/orders':     'Order Management',
+  '/admin/courier':    'Courier Shipments',
   '/admin/reviews':    'Review Management',
   '/admin/coupons':    'Coupon Management',
   '/admin/settings':   'Site Settings',
   '/admin/inbox':      'Inbox & Live Chat',
   '/admin/pages':      'Dynamic Pages Manager',
+  '/admin/users':      'Admin Users Management',
 };
 
 interface AdminLayoutProps {
@@ -143,6 +162,56 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Permission & Role Authorization States
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [userRole, setUserRole] = useState<string>('');
+  const [userName, setUserName] = useState<string>('');
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('admin_user');
+      if (userStr) {
+        try {
+          const parsed = JSON.parse(userStr);
+          setPermissions(parsed.permissions || []);
+          setUserRole(parsed.role || '');
+          setUserName(parsed.username || '');
+        } catch (e) {
+          console.error('Failed to parse admin_user metadata:', e);
+        }
+      }
+      setHasCheckedAuth(true);
+    }
+  }, []);
+
+  const PERMISSION_MAP: Record<string, string> = {
+    '/admin/dashboard': 'dashboard',
+    '/admin/products': 'products',
+    '/admin/categories': 'categories',
+    '/admin/banners': 'banners',
+    '/admin/orders': 'orders',
+    '/admin/reviews': 'reviews',
+    '/admin/settings': 'settings',
+    '/admin/pages': 'pages',
+    '/admin/inventory': 'inventory',
+    '/admin/users': 'manage_users',
+  };
+
+  const checkIsAuthorized = () => {
+    if (!hasCheckedAuth) return true;
+    if (userRole === 'admin') return true; // Master admin bypasses all checks
+    
+    const matchedKey = Object.keys(PERMISSION_MAP).find(key => pathname.startsWith(key));
+    if (matchedKey) {
+      const reqPerm = PERMISSION_MAP[matchedKey];
+      return permissions.includes(reqPerm);
+    }
+    return true; // Unmapped paths are publicly allowed within admin
+  };
+
+  const isAuthorized = checkIsAuthorized();
 
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
@@ -221,6 +290,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleLogout = () => {
     localStorage.removeItem('admin_authenticated');
+    localStorage.removeItem('admin_user');
     router.push('/admin');
   };
 
@@ -317,7 +387,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </p>
             )}
             <ul className="space-y-1">
-              {NAV_ITEMS.map((item) => {
+              {NAV_ITEMS.map((rawItem) => {
+                let item = rawItem;
+                if (userRole !== 'admin') {
+                  if (item.type === 'flat') {
+                    const reqPerm = PERMISSION_MAP[item.href];
+                    if (reqPerm && !permissions.includes(reqPerm)) return null;
+                  }
+                  if (item.type === 'group') {
+                    const allowedChildren = item.children.filter(child => {
+                      const cleanHref = child.href.split('?')[0];
+                      const reqPerm = PERMISSION_MAP[cleanHref];
+                      return !reqPerm || permissions.includes(reqPerm);
+                    });
+                    if (allowedChildren.length === 0) return null;
+                    item = { ...item, children: allowedChildren };
+                  }
+                }
                 if (item.type === 'flat') {
                   const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
                   const Icon = item.icon;
@@ -413,15 +499,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <span className="flex items-center gap-2"><LogOut size={14} /> Logout</span>
           </button>
           
-          <div className="flex items-center gap-3 px-2">
+          <div className="flex items-center gap-3 px-2 text-black">
             {/* Avatar matching Canvas style */}
-            <div className="w-9 h-9 rounded-full bg-[#ff6b35] flex items-center justify-center shrink-0 text-white font-extrabold text-xs shadow-sm animate-pulse">
-              SH
+            <div className="w-9 h-9 rounded-full bg-[#ff6b35] flex items-center justify-center shrink-0 text-white font-extrabold text-xs shadow-sm capitalize">
+              {(userName || 'AD').substring(0, 2)}
             </div>
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className={`text-xs font-black truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Shakhwat</p>
-                <p className="text-[10px] text-gray-400 font-semibold truncate">Admin</p>
+                <p className={`text-xs font-black truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{userName || 'Administrator'}</p>
+                <p className="text-[10px] text-gray-400 font-semibold truncate capitalize">{userRole || 'Admin'}</p>
               </div>
             )}
           </div>
@@ -517,8 +603,24 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
           </div>
 
-          <main className="p-6 pt-2">
-            {children}
+          <main className="p-6 pt-2 text-black">
+            {isAuthorized ? (
+              children
+            ) : (
+              <div className="flex flex-col items-center justify-center min-h-[50vh] text-center p-8 bg-white border border-gray-200 rounded-3xl shadow-sm max-w-lg mx-auto mt-10">
+                <ShieldAlert size={60} className="text-[#ff6b35] mb-4 animate-bounce" />
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Access Denied / প্রবেশাধিকার সংরক্ষিত</h2>
+                <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                  আপনার এই পেজটি দেখার জন্য প্রয়োজনীয় অনুমতি (Permission) নেই। অনুগ্রহ করে মূল এডমিনের সাথে যোগাযোগ করুন।
+                </p>
+                <button
+                  onClick={() => router.push('/admin/dashboard')}
+                  className="px-5 py-2.5 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95 cursor-pointer"
+                >
+                  Back to Dashboard / ড্যাশবোর্ডে ফিরে যান
+                </button>
+              </div>
+            )}
           </main>
         </div>
       </div>

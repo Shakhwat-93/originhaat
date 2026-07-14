@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 import type { ChangeEvent } from 'react';
 
 interface Settings {
   site_name: string;
   whatsapp_number: string;
+  hotline_number?: string;
+  trash_auto_delete_days?: number;
   delivery_charge_inside: number;
   delivery_charge_outside: number;
   free_delivery_min_order: number;
@@ -43,6 +45,11 @@ interface Settings {
   chat_ai_active?: boolean;
   chat_ai_instructions?: string;
   chat_ai_api_key?: string | null;
+  // Custom Invoice template field
+  invoice_template?: string | null;
+  // Customer facing shop colors config
+  price_color?: string | null;
+  badge_color?: string | null;
 }
 
 interface PathaoStore {
@@ -56,6 +63,8 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>({
     site_name: 'Origin Haat',
     whatsapp_number: '8801700000000',
+    hotline_number: '01700000000',
+    trash_auto_delete_days: 30,
     delivery_charge_inside: 60,
     delivery_charge_outside: 120,
     free_delivery_min_order: 2000,
@@ -86,6 +95,9 @@ export default function AdminSettingsPage() {
     chat_ai_active: false,
     chat_ai_instructions: '',
     chat_ai_api_key: '',
+    invoice_template: '',
+    price_color: '',
+    badge_color: '',
   });
 
   // Pathao-specific state
@@ -300,9 +312,9 @@ export default function AdminSettingsPage() {
               <Globe size={18} className="text-[#ff6b35]" />
               <h2 className="font-bold text-gray-900">General Info & Branding</h2>
             </div>
-            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number']} />
+            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number', 'hotline_number', 'trash_auto_delete_days', 'price_color', 'badge_color']} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Site Name</label>
               <input
@@ -315,7 +327,7 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">WhatsApp Number (with Country Code)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">WhatsApp (with Country Code)</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                   <Phone size={16} />
@@ -329,6 +341,86 @@ export default function AdminSettingsPage() {
                   className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
                   required
                 />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hotline (for Calls)</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <Phone size={16} />
+                </span>
+                <input
+                  type="text"
+                  name="hotline_number"
+                  value={settings.hotline_number || ''}
+                  onChange={handleChange}
+                  placeholder="017XXXXXXXX"
+                  className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Trash Auto-Delete (Days)</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <Trash2 size={16} />
+                </span>
+                <input
+                  type="number"
+                  name="trash_auto_delete_days"
+                  value={settings.trash_auto_delete_days || 30}
+                  onChange={handleChange}
+                  placeholder="30"
+                  className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4 mt-2">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Website Styling & Theme Colors</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Price Text Color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    name="price_color"
+                    value={settings.price_color || '#12b76a'}
+                    onChange={handleChange}
+                    className="w-10 h-10 border border-gray-200 rounded-xl cursor-pointer p-1 bg-white"
+                  />
+                  <input
+                    type="text"
+                    name="price_color"
+                    value={settings.price_color || '#12b76a'}
+                    onChange={handleChange}
+                    placeholder="#12b76a"
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Badge Color (Discount/New/Highlights)</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    name="badge_color"
+                    value={settings.badge_color || '#ff6b35'}
+                    onChange={handleChange}
+                    className="w-10 h-10 border border-gray-200 rounded-xl cursor-pointer p-1 bg-white"
+                  />
+                  <input
+                    type="text"
+                    name="badge_color"
+                    value={settings.badge_color || '#ff6b35'}
+                    onChange={handleChange}
+                    placeholder="#ff6b35"
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-mono text-black"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -928,6 +1020,65 @@ export default function AdminSettingsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Invoice Customization Template */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-6">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Package size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Printed Invoice Template</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Select a pre-designed layout for your order receipts</p>
+              </div>
+            </div>
+            <SectionSaveBtn id="invoice" fields={['invoice_template']} />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { id: 'classic_orange', name: 'Classic Orange', desc: 'Default brand layout, warm orange accents.', color: 'bg-[#ff6b35]' },
+              { id: 'modern_indigo', name: 'Modern Indigo', desc: 'Stripe style layout, clean blue & indigo details.', color: 'bg-[#5c59f6]' },
+              { id: 'minimal_emerald', name: 'Minimal Emerald', desc: 'Fresh mint aesthetic, clean dashed dividers.', color: 'bg-[#10b981]' },
+              { id: 'premium_charcoal', name: 'Premium Charcoal', desc: 'Luxury contrast theme with dark headers.', color: 'bg-[#111827]' },
+              { id: 'elegant_rose', name: 'Elegant Rose', desc: 'Chic pink accents with delicate borders.', color: 'bg-[#db2777]' },
+            ].map(tpl => {
+              const isSelected = (settings.invoice_template || 'classic_orange') === tpl.id;
+              return (
+                <button
+                  key={tpl.id}
+                  type="button"
+                  onClick={() => setSettings(prev => ({ ...prev, invoice_template: tpl.id }))}
+                  className={`flex flex-col text-left p-4.5 rounded-2xl border transition-all cursor-pointer relative group ${
+                    isSelected
+                      ? 'border-[#ff6b35] bg-[#fffbf9] ring-2 ring-[#ff6b35]/15'
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-3.5 h-3.5 rounded-full ${tpl.color} border border-black/10`} />
+                      <span className="text-sm font-bold text-gray-900">{tpl.name}</span>
+                    </div>
+                    {isSelected && (
+                      <span className="w-5 h-5 rounded-full bg-[#ff6b35] text-white flex items-center justify-center text-[10px] font-black shadow-3xs">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[12px] text-gray-400 font-medium leading-relaxed mt-auto">
+                    {tpl.desc}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pt-2 border-t border-gray-50 flex items-center justify-between">
+            <p className="text-[11px] text-gray-400 font-medium">
+              Note: Company logo, hotline, website, and support contact details are dynamically populated from the general branding section.
+            </p>
+          </div>
         </div>
 
         {/* SEO Metadata */}

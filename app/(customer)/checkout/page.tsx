@@ -9,7 +9,6 @@ import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { checkoutSchema, type CheckoutFormData } from '@/lib/validations';
 import { formatBDTNumeric, generateWhatsAppURL, generateOrderWhatsAppMessage } from '@/lib/utils';
-import { bangladeshDistricts } from '@/data/products';
 import { Loader2, CheckCircle, ArrowLeft, MessageCircle, Tag, Check, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -54,6 +53,7 @@ export default function CheckoutPage() {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
@@ -269,7 +269,7 @@ export default function CheckoutPage() {
         total: grandTotal,
         deliveryCharge,
         discountAmount,
-        status: 'pending',
+        status: 'processing',
         created_at: new Date().toISOString(),
         whatsappMessage: msg,
       };
@@ -353,26 +353,40 @@ export default function CheckoutPage() {
                   )}
                 </div>
 
-                {/* District */}
+                {/* District (Inside/Outside Dhaka Area Selector) */}
                 <div>
-                  <label className="block text-sm font-semibold text-[#374151] mb-1.5" htmlFor="district">
-                    জেলা <span className="text-[#ef4444]">*</span>
+                  <label className="block text-sm font-semibold text-[#374151] mb-2">
+                    ডেলিভারি এলাকা (Delivery Area) <span className="text-[#ef4444]">*</span>
                   </label>
-                  <select
-                    id="district"
-                    className={cn(
-                      'w-full px-4 py-3 border-2 rounded-xl text-[#111827] focus:outline-none transition-colors text-sm bg-white text-black cursor-pointer',
-                      errors.district
-                        ? 'border-[#ef4444] focus:border-[#ef4444]'
-                        : 'border-[#e5e7eb] focus:border-[#ff6b35]'
-                    )}
-                    {...register('district')}
-                  >
-                    <option value="">জেলা বেছে নিন</option>
-                    {bangladeshDistricts.map((d) => (
-                      <option key={d} value={d}>{d}</option>
-                    ))}
-                  </select>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setValue('district', 'Dhaka')}
+                      className={cn(
+                        "py-3.5 px-4 text-center rounded-xl border-2 font-bold transition-all text-xs cursor-pointer flex flex-col items-center justify-center gap-1 bg-white animate-none",
+                        watchedValues.district === 'Dhaka'
+                          ? "border-[#ff6b35] bg-[#ff6b35]/5 text-[#ff6b35]"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      )}
+                    >
+                      <span className="text-sm">ঢাকার ভিতরে</span>
+                      <span className="text-[10px] font-medium opacity-80">চার্জ: ৳{settings.delivery_charge_inside}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('district', 'Outside Dhaka')}
+                      className={cn(
+                        "py-3.5 px-4 text-center rounded-xl border-2 font-bold transition-all text-xs cursor-pointer flex flex-col items-center justify-center gap-1 bg-white animate-none",
+                        watchedValues.district === 'Outside Dhaka'
+                          ? "border-[#ff6b35] bg-[#ff6b35]/5 text-[#ff6b35]"
+                          : "border-gray-200 text-gray-600 hover:border-gray-300"
+                      )}
+                    >
+                      <span className="text-sm">ঢাকার বাইরে</span>
+                      <span className="text-[10px] font-medium opacity-80">চার্জ: ৳{settings.delivery_charge_outside}</span>
+                    </button>
+                  </div>
+                  <input type="hidden" {...register('district')} />
                   {errors.district && (
                     <p className="text-[#ef4444] text-xs mt-1">⚠️ {errors.district.message}</p>
                   )}
