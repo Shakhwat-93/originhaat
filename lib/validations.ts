@@ -7,8 +7,8 @@ export const checkoutSchema = z.object({
     .max(100, { message: 'নাম সর্বোচ্চ ১০০ অক্ষর হতে পারে' }),
   phone: z
     .string()
-    .regex(/^(?:\+88)?01[3-9]\d{8}$/, {
-      message: 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন (যেমন: 01XXXXXXXXX)',
+    .regex(/^01[3-9]\d{8}$/, {
+      message: 'সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (যেমন: 017XXXXXXXX)',
     }),
   address: z
     .string()

@@ -346,7 +346,13 @@ export default function CheckoutPage() {
                         ? 'border-[#ef4444] focus:border-[#ef4444] bg-[#fef2f2]'
                         : 'border-[#e5e7eb] focus:border-[#ff6b35]'
                     )}
-                    {...register('phone')}
+                    {...register('phone', {
+                      onChange: (e) => {
+                        const cleanVal = e.target.value.replace(/[^0-9]/g, '');
+                        setValue('phone', cleanVal.slice(0, 11));
+                      }
+                    })}
+                    maxLength={11}
                   />
                   {errors.phone && (
                     <p className="text-[#ef4444] text-xs mt-1">⚠️ {errors.phone.message}</p>
