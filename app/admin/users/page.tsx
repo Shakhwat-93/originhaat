@@ -274,7 +274,6 @@ export default function AdminUsersPage() {
                   <th className="px-6 py-4">Username</th>
                   <th className="px-6 py-4">Security Role</th>
                   <th className="px-6 py-4">Allowed Permissions</th>
-                  <th className="px-6 py-4">Password</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -327,10 +326,7 @@ export default function AdminUsersPage() {
                         )}
                       </td>
 
-                      {/* Password (Admin Only Preview) */}
-                      <td className="px-6 py-4 font-mono text-gray-400">
-                        {currentUser?.role === 'admin' ? user.password : '••••••••'}
-                      </td>
+
 
                       {/* Action buttons */}
                       <td className="px-6 py-4 text-right">
