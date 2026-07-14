@@ -50,8 +50,8 @@ export default async function HomePage() {
     <>
       <h1 className="sr-only">Origin Haat — বাংলাদেশের সেরা অনলাইন শপিং | ক্যাশ অন ডেলিভারি</h1>
       <HeroSection banners={banners} />
-      <Categories categories={categories} />
       <TrustBar />
+      <Categories categories={categories} />
       <BestSellers products={featuredProducts} />
       <CTABanner />
       <ReviewsSection reviews={reviews} />
