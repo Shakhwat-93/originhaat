@@ -27,6 +27,32 @@ export async function POST(request: NextRequest) {
                        request.headers.get('x-real-ip') ||
                        'unknown';
 
+    // Anti-spam order rate limit check by IP address
+    try {
+      const settings = await getSettings();
+      const limitMinutes = settings?.order_limit_time ?? 10;
+
+      if (limitMinutes > 0 && ip_address && ip_address !== 'unknown') {
+        const cutOffTime = new Date(Date.now() - limitMinutes * 60000).toISOString();
+        const { data: recentOrders } = await supabase
+          .from('oh_orders')
+          .select('id, created_at')
+          .eq('ip_address', ip_address)
+          .gte('created_at', cutOffTime)
+          .neq('status', 'trash')
+          .limit(1);
+
+        if (recentOrders && recentOrders.length > 0) {
+          return NextResponse.json({
+            error: 'ORDER_LIMIT_REACHED',
+            message: `আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে অনুগ্রহ করে আরও কিছুক্ষণ অপেক্ষা করুন।`
+          }, { status: 429 });
+        }
+      }
+    } catch (err) {
+      console.error('Rate limit check error:', err);
+    }
+
     let order = null;
     let orderError = null;
 

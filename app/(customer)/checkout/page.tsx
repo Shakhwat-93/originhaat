@@ -239,7 +239,7 @@ export default function CheckoutPage() {
       const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result.error || 'Order failed');
+        throw new Error(result.message || result.error || 'Order failed');
       }
 
       // Clear incomplete order tracking on success

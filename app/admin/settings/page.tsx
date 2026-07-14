@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2 } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2, Clock } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 import type { ChangeEvent } from 'react';
 
@@ -50,6 +50,8 @@ interface Settings {
   // Customer facing shop colors config
   price_color?: string | null;
   badge_color?: string | null;
+  // Order limit rate control
+  order_limit_time?: number;
 }
 
 interface PathaoStore {
@@ -98,6 +100,7 @@ export default function AdminSettingsPage() {
     invoice_template: '',
     price_color: '',
     badge_color: '',
+    order_limit_time: 10,
   });
 
   // Pathao-specific state
@@ -312,9 +315,9 @@ export default function AdminSettingsPage() {
               <Globe size={18} className="text-[#ff6b35]" />
               <h2 className="font-bold text-gray-900">General Info & Branding</h2>
             </div>
-            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number', 'hotline_number', 'trash_auto_delete_days', 'price_color', 'badge_color']} />
+            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number', 'hotline_number', 'trash_auto_delete_days', 'price_color', 'badge_color', 'order_limit_time']} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Site Name</label>
               <input
@@ -372,6 +375,23 @@ export default function AdminSettingsPage() {
                   value={settings.trash_auto_delete_days || 30}
                   onChange={handleChange}
                   placeholder="30"
+                  className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  required
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Order Limit (Mins)</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
+                  <Clock size={16} />
+                </span>
+                <input
+                  type="number"
+                  name="order_limit_time"
+                  value={settings.order_limit_time || 10}
+                  onChange={handleChange}
+                  placeholder="10"
                   className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
                   required
                 />
