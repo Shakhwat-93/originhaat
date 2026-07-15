@@ -36,7 +36,8 @@ import {
   ShieldAlert,
   Truck,
   TrendingUp,
-  Smartphone
+  Smartphone,
+  Layers
 } from 'lucide-react';
 
 // ─── Menu Navigation Type Definition ──────────────────────────────────────────
@@ -133,6 +134,12 @@ const NAV_ITEMS: NavItem[] = [
   },
   { 
     type: 'flat', 
+    href: '/admin/landing', 
+    label: 'Landing Pages', 
+    icon: Layers 
+  },
+  { 
+    type: 'flat', 
     href: '/admin/pages', 
     label: 'Pages', 
     icon: FileText 
@@ -160,6 +167,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/inbox':      'Inbox & Live Chat',
   '/admin/pages':      'Dynamic Pages Manager',
   '/admin/users':      'Admin Users Management',
+  '/admin/landing':    'Single Product Landing Pages',
 };
 
 interface AdminLayoutProps {

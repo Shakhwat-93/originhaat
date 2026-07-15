@@ -20,6 +20,32 @@ export async function proxy(request: NextRequest) {
 
   console.log(`[PROXY DEBUG] Host: ${host} | Local: ${isLocalHost} | Proto: ${proto}`);
 
+  // ─── SUBDOMAIN ROUTING ────────────────────────────────────────────────────
+  const mainDomain = 'originhaat.com';
+  const hostname = host.split(':')[0]; // Remove port
+  
+  let subdomain = '';
+  if (hostname.endsWith(`.${mainDomain}`)) {
+    subdomain = hostname.replace(`.${mainDomain}`, '');
+  } else if (hostname.endsWith('.localhost')) {
+    subdomain = hostname.replace('.localhost', '');
+  }
+
+  if (subdomain && subdomain !== 'www' && subdomain !== 'localhost' && subdomain !== 'admin') {
+    const isSystemPath = 
+      pathname.startsWith('/_next') || 
+      pathname.startsWith('/api') || 
+      pathname.startsWith('/static') ||
+      pathname.includes('.');
+
+    if (!isSystemPath) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/landing/${subdomain}${pathname === '/' ? '' : pathname}`;
+      console.log(`[SUBDOMAIN REWRITE] Rewrite ${hostname}${pathname} to ${url.pathname}`);
+      return NextResponse.rewrite(url);
+    }
+  }
+
   // Only redirect to HTTPS in production environments and for non-local domains
   if (!isLocalHost && proto === 'http') {
     // Reconstruct the HTTPS URL using the forwarded host and path/query.
