@@ -1272,7 +1272,7 @@ function OrdersPageContent() {
   ];
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-8 text-black font-sans">
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto space-y-8 text-black font-sans">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -1898,43 +1898,37 @@ function OrdersPageContent() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-between pt-1">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColors[order.status]}`}>
-                {statusLabels[order.status]}
-              </span>
-              <div className="flex items-center gap-2">
+            <div className="pt-3 border-t border-gray-100 space-y-3">
+              {/* Row 1: Status Badge & View Details */}
+              <div className="flex items-center justify-between">
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColors[order.status]}`}>
+                  {statusLabels[order.status]}
+                </span>
                 <button
                   onClick={() => setSelectedOrder(order)}
                   className="px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl text-xs font-semibold hover:bg-blue-100 transition-colors inline-flex items-center gap-1 cursor-pointer border border-blue-100"
                 >
                   <Eye size={13} />
-                  <span>View</span>
+                  <span>View Details</span>
                 </button>
-                {order.status === 'trash' ? (
-                  <>
+              </div>
+
+              {/* Row 2: Status Selector & Trash/Delete Button */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  {order.status === 'trash' ? (
                     <button
                       onClick={() => handleRestoreFromTrash(order.id)}
-                      className="p-2 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all cursor-pointer"
-                      title="Restore Order"
+                      className="w-full py-1.5 border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 rounded-xl transition-all cursor-pointer text-xs font-semibold flex items-center justify-center gap-1.5"
                     >
-                      <RefreshCw size={14} />
+                      <RefreshCw size={13} />
+                      <span>Restore Order</span>
                     </button>
-                    {canDelete && (
-                      <button
-                        onClick={() => handlePermanentDelete(order.id)}
-                        className="p-2 border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl transition-all cursor-pointer"
-                        title="Delete Permanently"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </>
-                ) : (
-                  <>
+                  ) : (
                     <select
                       value={order.status}
                       onChange={(e) => handleUpdateStatus(order.id, e.target.value)}
-                      className="text-xs px-2.5 py-1.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black cursor-pointer bg-white animate-none"
+                      className="w-full text-xs px-2.5 py-1.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black cursor-pointer bg-white"
                     >
                       {Object.keys(statusLabels)
                         .filter(key => key !== 'trash') // Exclude trash
@@ -1942,16 +1936,26 @@ function OrdersPageContent() {
                           <option key={key} value={key}>{statusLabels[key]}</option>
                         ))}
                     </select>
-                    {canDelete && (
-                      <button
-                        onClick={() => handleMoveToTrash(order.id)}
-                        className="p-2 border border-rose-100 bg-rose-50/30 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer"
-                        title="Move to Trash"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </>
+                  )}
+                </div>
+                {canDelete && (
+                  order.status === 'trash' ? (
+                    <button
+                      onClick={() => handlePermanentDelete(order.id)}
+                      className="p-2 border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl transition-all cursor-pointer shrink-0"
+                      title="Delete Permanently"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleMoveToTrash(order.id)}
+                      className="p-2 border border-rose-100 bg-rose-50/30 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer shrink-0"
+                      title="Move to Trash"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )
                 )}
               </div>
             </div>
