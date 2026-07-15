@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ShoppingCart, CheckCircle, HelpCircle, Star, Shield, Truck, Award, AlertCircle, Phone } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, CheckCircle, HelpCircle, Star, Shield, Truck, Award, AlertCircle, Tag, Check, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
 interface LandingPageData {
@@ -17,6 +17,7 @@ interface LandingPageData {
   faq: Array<{ q: string; a: string }>;
   product: {
     id: string;
+    slug: string;
     name_bn: string;
     name_en: string;
     price: number;
@@ -44,24 +45,151 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
   const [orderConfirmed, setOrderConfirmed] = useState(false);
   const [confirmedOrderNum, setConfirmedOrderNum] = useState('');
 
+  // Settings from DB
+  const [settings, setSettings] = useState({
+    delivery_charge_inside: 60,
+    delivery_charge_outside: 120,
+    free_delivery_min_order: 999
+  });
+
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState<{ code: string; discount_amount: number } | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState('');
+
+  // Incomplete order tracking states
+  const [incompleteOrderId, setIncompleteOrderId] = useState<string | null>(null);
+
+  // Load Settings on mount
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (res.ok) {
+          const data = await res.json();
+          if (data) {
+            setSettings({
+              delivery_charge_inside: data.delivery_charge_inside ?? 60,
+              delivery_charge_outside: data.delivery_charge_outside ?? 120,
+              free_delivery_min_order: data.free_delivery_min_order ?? 999
+            });
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchSettings();
+  }, []);
+
   // Shipping Calculations
-  // STB template uses 130 BDT for outside Dhaka, 60 BDT inside Dhaka.
-  // Others use 120 / 60. We will set shipping according to template style.
-  const isStbOrLegstripe = templateStyle === 'stb' || templateStyle === 'legstripe';
-  const deliveryCharge = district === 'Dhaka' ? 60 : (isStbOrLegstripe ? 130 : 120);
-  
   const subtotal = product.price * qty;
-  const grandTotal = subtotal + (district ? deliveryCharge : 0);
+  const isFreeDelivery = subtotal >= settings.free_delivery_min_order;
+  
+  let deliveryCharge = 0;
+  if (district) {
+    if (isFreeDelivery) {
+      deliveryCharge = 0;
+    } else {
+      deliveryCharge = district === 'Dhaka' ? settings.delivery_charge_inside : settings.delivery_charge_outside;
+    }
+  }
+
+  const discountAmount = couponApplied ? couponApplied.discount_amount : 0;
+  const grandTotal = Math.max(subtotal + deliveryCharge - discountAmount, 0);
+
+  // Debounced Incomplete checkout tracking
+  useEffect(() => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length >= 11 && name.trim().length >= 2) {
+      const delayDebounceFn = setTimeout(async () => {
+        try {
+          const res = await fetch('/api/orders/incomplete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              incompleteOrderId: incompleteOrderId || undefined,
+              customer_name: name,
+              phone: cleanPhone,
+              address,
+              district: district === 'Dhaka' ? 'Inside Dhaka' : 'Outside Dhaka',
+              note: `Incomplete landing checkout: ${data.slug} (${templateStyle})`,
+              items: [
+                {
+                  product: {
+                    id: product.id,
+                    slug: product.slug,
+                    name_bn: product.name_bn || product.name_en,
+                    images: product.images || [],
+                    price: product.price
+                  },
+                  quantity: qty
+                }
+              ],
+              subtotal,
+              delivery_charge: deliveryCharge,
+              grand_total: grandTotal
+            }),
+          });
+          if (res.ok) {
+            const resData = await res.json();
+            if (resData.incompleteOrderId && !incompleteOrderId) {
+              setIncompleteOrderId(resData.incompleteOrderId);
+            }
+          }
+        } catch (err) {
+          console.error('[Incomplete Track Error]', err);
+        }
+      }, 2000); // 2s debounce
+
+      return () => clearTimeout(delayDebounceFn);
+    }
+  }, [name, phone, address, district, qty, couponApplied, subtotal, deliveryCharge, grandTotal]);
 
   const scrollToCheckout = () => {
     const el = document.getElementById('checkout-form');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const handleApplyCoupon = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!couponCode.trim()) return;
+
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const res = await fetch(`/api/coupons/validate?code=${encodeURIComponent(couponCode)}&amount=${subtotal}`);
+      const resData = await res.json();
+
+      if (res.ok && resData.valid) {
+        setCouponApplied({
+          code: resData.code,
+          discount_amount: resData.discount_amount
+        });
+        setCouponError('');
+      } else {
+        setCouponError(resData.error || 'কুপন কোডটি সঠিক নয়');
+      }
+    } catch (err) {
+      console.error(err);
+      setCouponError('কুপন ভ্যালিডেট করতে সমস্যা হয়েছে।');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setCouponApplied(null);
+    setCouponCode('');
+    setCouponError('');
+  };
+
   const handleOrderSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return Swal.fire('Error', 'আপনার নাম লিখুন', 'error');
-    if (!phone.trim() || phone.length < 11) return Swal.fire('Error', 'সঠিক মোবাইল নম্বর দিন (১১ ডিজিট)', 'error');
+    if (!phone.trim() || phone.replace(/[^0-9]/g, '').length < 11) return Swal.fire('Error', 'সঠিক মোবাইল নম্বর দিন (১১ ডিজিট)', 'error');
     if (!address.trim()) return Swal.fire('Error', 'আপনার সম্পূর্ণ ঠিকানা লিখুন', 'error');
     if (!district) return Swal.fire('Error', 'আপনার জেলা সিলেক্ট করুন', 'error');
 
@@ -70,21 +198,28 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
     try {
       const orderData = {
         customer_name: name,
-        phone: phone,
+        phone: phone.replace(/[^0-9]/g, ''),
         address: address,
         district: district === 'Dhaka' ? 'Inside Dhaka' : 'Outside Dhaka',
         note: `Order placed via Landing Page: ${data.slug} (Style: ${templateStyle})`,
         items: [
           {
-            product_id: product.id,
-            product_name: product.name_bn || product.name_en,
-            price: product.price,
+            product: {
+              id: product.id,
+              slug: product.slug,
+              name_bn: product.name_bn || product.name_en,
+              images: product.images || [],
+              price: product.price
+            },
             quantity: qty
           }
         ],
         subtotal,
         delivery_charge: deliveryCharge,
-        grand_total: grandTotal
+        discount_amount: discountAmount,
+        coupon_code: couponApplied?.code || null,
+        grand_total: grandTotal,
+        incompleteOrderId: incompleteOrderId || undefined
       };
 
       const res = await fetch('/api/orders', {
@@ -95,7 +230,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
 
       const json = await res.json();
       if (!res.ok) {
-        throw new Error(json.error || 'Failed to place order');
+        throw new Error(json.message || json.error || 'Failed to place order');
       }
 
       setConfirmedOrderNum(json.order_number || 'OH-SUCCESS');
@@ -115,7 +250,9 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
   };
 
   // Shared Checkout Form Block
-  const renderCheckoutFormCard = (cardBgClass = 'bg-white border-gray-250', textClass = 'text-gray-900', labelClass = 'text-gray-400') => {
+  const renderCheckoutFormCard = (cardBgClass = 'bg-white border-gray-200', textClass = 'text-gray-900', labelClass = 'text-gray-400') => {
+    const isDark = templateStyle === 'dark';
+    
     return (
       <div className={`rounded-3xl border shadow-xl overflow-hidden ${cardBgClass}`}>
         <div style={{ backgroundColor: primaryColor }} className="p-6 text-white text-center space-y-1.5">
@@ -126,67 +263,86 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
         <form onSubmit={handleOrderSubmit} className="p-6 space-y-5">
           {/* Name */}
           <div className="space-y-1">
-            <label className={`text-[10px] font-bold uppercase tracking-widest block ${labelClass}`}>আপনার নাম</label>
+            <label className={`text-[11px] font-bold uppercase tracking-wider block ${labelClass}`}>আপনার নাম <span className="text-red-500">*</span></label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="যেমন: শরিফুল ইসলাম"
-              className={`w-full text-xs px-3.5 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-opacity-50 bg-transparent ${textClass} border-gray-300`}
+              placeholder="আপনার নাম দিন"
+              className={`w-full text-xs px-3.5 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#ff6b35] bg-transparent ${textClass} border-gray-300`}
               required
             />
           </div>
 
           {/* Mobile */}
           <div className="space-y-1">
-            <label className={`text-[10px] font-bold uppercase tracking-widest block ${labelClass}`}>মোবাইল নম্বর (১১ ডিজিট)</label>
+            <label className={`text-[11px] font-bold uppercase tracking-wider block ${labelClass}`}>মোবাইল নম্বর <span className="text-red-500">*</span></label>
             <input
               type="tel"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="যেমন: 01712345678"
-              className={`w-full text-xs px-3.5 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-opacity-50 bg-transparent ${textClass} border-gray-300 font-mono`}
+              onChange={(e) => {
+                const cleanVal = e.target.value.replace(/[^0-9]/g, '');
+                setPhone(cleanVal.slice(0, 11));
+              }}
+              placeholder="01XXXXXXXXX"
+              maxLength={11}
+              className={`w-full text-xs px-3.5 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#ff6b35] bg-transparent ${textClass} border-gray-300 font-mono`}
               required
             />
+          </div>
+
+          {/* District Buttons (Main site checkout style) */}
+          <div className="space-y-1">
+            <label className={`text-[11px] font-bold uppercase tracking-wider block ${labelClass}`}>ডেলিভারি এলাকা <span className="text-red-500">*</span></label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setDistrict('Dhaka')}
+                className={`py-3 px-4 text-center rounded-xl border-2 font-bold transition-all text-xs cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                  district === 'Dhaka'
+                    ? 'border-[#ff6b35] bg-[#ff6b35]/5 text-[#ff6b35]'
+                    : isDark ? 'border-gray-800 text-gray-400 hover:border-gray-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                } bg-transparent`}
+              >
+                <span className="text-sm">ঢাকার ভিতরে</span>
+                <span className="text-[10px] font-medium opacity-80">চার্জ: ৳{isFreeDelivery ? 0 : settings.delivery_charge_inside}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDistrict('Outside Dhaka')}
+                className={`py-3 px-4 text-center rounded-xl border-2 font-bold transition-all text-xs cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                  district === 'Outside Dhaka'
+                    ? 'border-[#ff6b35] bg-[#ff6b35]/5 text-[#ff6b35]'
+                    : isDark ? 'border-gray-800 text-gray-400 hover:border-gray-700' : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                } bg-transparent`}
+              >
+                <span className="text-sm">ঢাকার বাইরে</span>
+                <span className="text-[10px] font-medium opacity-80">চার্জ: ৳{isFreeDelivery ? 0 : settings.delivery_charge_outside}</span>
+              </button>
+            </div>
           </div>
 
           {/* Address */}
           <div className="space-y-1">
-            <label className={`text-[10px] font-bold uppercase tracking-widest block ${labelClass}`}>সম্পূর্ণ ঠিকানা</label>
+            <label className={`text-[11px] font-bold uppercase tracking-wider block ${labelClass}`}>সম্পূর্ণ ঠিকানা <span className="text-red-500">*</span></label>
             <textarea
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              placeholder="যেমন: বাসা নং ১০, রোড নং ২, ব্লক সি, মিরপুর-১০, ঢাকা"
+              placeholder="বাসা নম্বর, রাস্তা, এলাকা, উপজেলা, জেলা..."
               rows={3}
-              className={`w-full text-xs px-3.5 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-opacity-50 bg-transparent ${textClass} border-gray-300 leading-relaxed`}
+              className={`w-full text-xs px-3.5 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#ff6b35] bg-transparent ${textClass} border-gray-300 leading-relaxed`}
               required
             />
           </div>
 
-          {/* District */}
-          <div className="space-y-1">
-            <label className={`text-[10px] font-bold uppercase tracking-widest block ${labelClass}`}>জেলা সিলেক্ট করুন</label>
-            <select
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              className={`w-full text-xs px-3.5 py-3 border rounded-xl focus:outline-none focus:ring-1 focus:ring-opacity-50 bg-transparent ${textClass} border-gray-300 cursor-pointer`}
-              style={{ colorScheme: templateStyle === 'dark' ? 'dark' : 'light' }}
-              required
-            >
-              <option value="" className="text-black">সিলেক্ট করুন...</option>
-              <option value="Dhaka" className="text-black">ঢাকা সিটি (Inside Dhaka)</option>
-              <option value="Outside" className="text-black">ঢাকার বাইরে (Outside Dhaka)</option>
-            </select>
-          </div>
-
           {/* Quantity */}
           <div className="space-y-1">
-            <label className={`text-[10px] font-bold uppercase tracking-widest block ${labelClass}`}>পরিমাণ (Quantity)</label>
+            <label className={`text-[11px] font-bold uppercase tracking-wider block ${labelClass}`}>পরিমাণ (Quantity)</label>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setQty(q => Math.max(q - 1, 1))}
-                className={`w-10 h-10 border rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-100 active:scale-95 transition-all cursor-pointer ${textClass} border-gray-300`}
+                className={`w-10 h-10 border rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-150 active:scale-95 transition-all cursor-pointer ${textClass} border-gray-300 bg-transparent`}
               >
                 -
               </button>
@@ -194,15 +350,56 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
               <button
                 type="button"
                 onClick={() => setQty(q => q + 1)}
-                className={`w-10 h-10 border rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-100 active:scale-95 transition-all cursor-pointer ${textClass} border-gray-300`}
+                className={`w-10 h-10 border rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-150 active:scale-95 transition-all cursor-pointer ${textClass} border-gray-300 bg-transparent`}
               >
                 +
               </button>
             </div>
           </div>
 
+          {/* Coupon Code Section */}
+          <div className="pt-2 border-t border-dashed border-gray-200">
+            <label className={`text-[11px] font-bold uppercase tracking-wider block mb-1 ${labelClass}`}>কুপন কোড (Coupon Code)</label>
+            {couponApplied ? (
+              <div className="flex items-center justify-between bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl p-3 text-xs font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <Check size={14} className="text-emerald-600" />
+                  <span>কুপন <strong>{couponApplied.code}</strong> যুক্ত হয়েছে (-৳{couponApplied.discount_amount})</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="text-red-500 hover:text-red-700 font-extrabold text-xs cursor-pointer ml-2"
+                >
+                  মুছে ফেলুন
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  placeholder="যেমন: SAVE50"
+                  className={`flex-1 text-xs px-3.5 py-2.5 border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#ff6b35] bg-transparent ${textClass} border-gray-300 font-mono`}
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={couponLoading || !couponCode.trim()}
+                  className="px-4 py-2.5 bg-[#4b5563] text-white text-xs font-bold rounded-xl hover:bg-[#374151] cursor-pointer disabled:opacity-50"
+                >
+                  {couponLoading ? 'লোডিং...' : 'প্রয়োগ করুন'}
+                </button>
+              </div>
+            )}
+            {couponError && (
+              <p className="text-red-500 text-[10px] font-bold mt-1">⚠️ {couponError}</p>
+            )}
+          </div>
+
           {/* Invoice Breakdown */}
-          <div className={`rounded-2xl p-4 border space-y-2 text-xs ${templateStyle === 'dark' ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-150'}`}>
+          <div className={`rounded-2xl p-4 border space-y-2 text-xs ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-150'}`}>
             <div className="flex justify-between text-gray-500 font-medium">
               <span>পণ্যের মূল্য</span>
               <span className="font-mono">৳{subtotal}</span>
@@ -211,7 +408,13 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
               <span>ডেলিভারি চার্জ</span>
               <span className="font-mono">{district ? `৳${deliveryCharge}` : 'ডিস্ট্রিক্ট সিলেক্ট করুন'}</span>
             </div>
-            <div className={`flex justify-between font-extrabold pt-2 border-t text-sm ${templateStyle === 'dark' ? 'border-gray-800' : 'border-gray-250'}`}>
+            {couponApplied && (
+              <div className="flex justify-between text-emerald-600 font-bold">
+                <span>ছাড় (কুপন)</span>
+                <span className="font-mono">-৳{couponApplied.discount_amount}</span>
+              </div>
+            )}
+            <div className={`flex justify-between font-extrabold pt-2 border-t text-sm ${isDark ? 'border-gray-800' : 'border-gray-250'}`}>
               <span className={textClass}>সর্বমোট মূল্য</span>
               <span className="font-mono text-[#ff6b35] text-base">৳{district ? grandTotal : subtotal}</span>
             </div>
@@ -225,7 +428,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
             className="w-full py-4 text-white font-black text-sm rounded-2xl shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:active:scale-100"
           >
             {loading ? (
-              <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
+              <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
                 <CheckCircle size={16} />
@@ -237,57 +440,6 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
       </div>
     );
   };
-
-  // Success Confirmation Screen
-  if (orderConfirmed) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center p-4 text-black font-sans ${templateStyle === 'dark' ? 'bg-gray-950' : 'bg-gray-50'}`}>
-        <div className="bg-white rounded-3xl border border-gray-200 p-8 max-w-lg w-full text-center shadow-xl space-y-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 text-emerald-500 border border-emerald-100">
-            <CheckCircle size={36} />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-2xl font-black text-gray-900">অর্ডার সফলভাবে সম্পন্ন হয়েছে!</h1>
-            <p className="text-sm text-gray-500 font-medium">
-              আপনার অডারের জন্য ধন্যবাদ। আমাদের একজন রিপ্রেজেন্টেটিভ খুব শীঘ্রই আপনার নম্বরে কল করে অর্ডারটি কনফার্ম করবেন।
-            </p>
-          </div>
-          <div className="bg-gray-50 rounded-2xl p-5 text-left border border-gray-100 space-y-3">
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400 font-bold uppercase">Order ID</span>
-              <span className="font-extrabold text-gray-900 font-mono">#{confirmedOrderNum}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400 font-bold uppercase">Customer</span>
-              <span className="font-bold text-gray-800">{name}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-gray-400 font-bold uppercase">Phone</span>
-              <span className="font-bold text-gray-800 font-mono">{phone}</span>
-            </div>
-            <div className="flex justify-between text-xs pt-2 border-t border-gray-100">
-              <span className="text-gray-400 font-bold uppercase">Total Amount</span>
-              <span className="font-black text-[#ff6b35] text-sm">৳{grandTotal}</span>
-            </div>
-          </div>
-          <button
-            onClick={() => {
-              setOrderConfirmed(false);
-              setName('');
-              setPhone('');
-              setAddress('');
-              setDistrict('');
-              setQty(1);
-            }}
-            style={{ backgroundColor: primaryColor }}
-            className="w-full py-3.5 text-white font-extrabold text-sm rounded-2xl hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer"
-          >
-            নতুন অর্ডার করুন
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   // ──────────────────────────────────────────────────────────────────────────
   // TEMPLATE 1: MODERN MINIMAL (Apple-Style)
@@ -518,7 +670,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // TEMPLATE 3: STB-LANDING (Canvas Bag BD Exact Style)
+  // TEMPLATE 3: ORIGIN SPLIT (Canvas Bag BD Style with Parity Checkout)
   // ──────────────────────────────────────────────────────────────────────────
   const renderStbTemplate = () => {
     return (
@@ -596,7 +748,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
                 </div>
               </div>
               <div className="text-right text-xs font-bold text-gray-500">
-                <span>ডেলিভারি চার্জঃ ঢাকার মধ্যে ৬০৳ এবং বাইরে ১৩০৳</span>
+                <span>ডেলিভারি চার্জঃ ঢাকার মধ্যে {settings.delivery_charge_inside}৳ এবং বাইরে {settings.delivery_charge_outside}৳</span>
               </div>
             </div>
 
@@ -655,127 +807,9 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
           </div>
         </section>
 
-        {/* Checkout Form Split Layout */}
-        <section id="checkout-form" className="max-w-6xl mx-auto px-4 py-12 scroll-mt-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Form Left (Name, Phone, Address) */}
-            <div className="lg:col-span-7 bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-              <h3 className="text-lg font-bold text-gray-900 pb-2 border-b border-gray-150">১. ডেলিভারির ঠিকানা লিখুন</h3>
-              
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">আপনার নাম *</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="নাম লিখুন"
-                    className="w-full text-xs px-3.5 py-3 border border-gray-200 rounded focus:ring-1 focus:ring-red-600 outline-none"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">মোবাইল নম্বর *</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="01XXXXXXXXX"
-                    className="w-full text-xs px-3.5 py-3 border border-gray-200 rounded focus:ring-1 focus:ring-red-600 outline-none font-mono"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-gray-400 uppercase">সম্পূর্ণ ঠিকানা *</label>
-                  <textarea
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="যেমন: গ্রাম, ডাকঘর, থানা, জেলা"
-                    rows={3}
-                    className="w-full text-xs px-3.5 py-3 border border-gray-200 rounded focus:ring-1 focus:ring-red-600 outline-none leading-relaxed"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Invoice Right */}
-            <div className="lg:col-span-5 bg-white rounded-xl border border-gray-200 shadow-sm p-6 space-y-5">
-              <h3 className="text-lg font-bold text-gray-900 pb-2 border-b border-gray-150">২. আপনার অর্ডার</h3>
-              
-              {/* Trust Box */}
-              <div className="bg-green-50 border border-green-200 text-green-800 rounded-lg p-3 text-xs leading-relaxed font-semibold">
-                🛡️ ডেলিভারির সময় প্রোডাক্টটি চেক করে নিবেন, ব্যবহারের সময় কোন সমস্যা হলে ৭ দিনের মধ্যে ফ্রি রিপ্লেসমেন্ট করে দেওয়া হবে!
-              </div>
-
-              {/* Order breakdown */}
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100 font-bold text-gray-400 uppercase text-[10px]">
-                  <span>Product</span>
-                  <span>Subtotal</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-700 font-semibold">{product.name_bn || product.name_en} <span className="font-black text-gray-900">× {qty}</span></span>
-                  <span className="font-bold text-gray-900 font-mono">৳{subtotal}</span>
-                </div>
-                
-                <hr className="border-gray-100" />
-                
-                {/* Shipping Radio Checks */}
-                <div className="space-y-2">
-                  <label className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 rounded hover:bg-gray-50 border border-gray-100">
-                    <span className="text-gray-700 font-medium">ঢাকার ভিতরে ডেলিভারি চার্জ</span>
-                    <div className="flex items-center gap-2 font-mono">
-                      <span className="font-bold text-teal-600">৳60</span>
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={district === 'Dhaka'}
-                        onChange={() => setDistrict('Dhaka')}
-                        className="w-4 h-4 accent-red-600 cursor-pointer"
-                      />
-                    </div>
-                  </label>
-                  <label className="flex items-center justify-between cursor-pointer py-1.5 px-2.5 rounded hover:bg-gray-50 border border-gray-100">
-                    <span className="text-gray-700 font-medium">ঢাকার বাইরে ডেলিভারি চার্জ</span>
-                    <div className="flex items-center gap-2 font-mono">
-                      <span className="font-bold text-teal-600">৳130</span>
-                      <input
-                        type="radio"
-                        name="shipping"
-                        checked={district === 'Outside'}
-                        onChange={() => setDistrict('Outside')}
-                        className="w-4 h-4 accent-red-600 cursor-pointer"
-                      />
-                    </div>
-                  </label>
-                </div>
-
-                <hr className="border-gray-100" />
-
-                <div className="flex justify-between items-center text-sm pt-2">
-                  <span className="font-extrabold text-gray-900">Total</span>
-                  <span className="font-black text-xl text-red-600 font-mono">৳{district ? grandTotal : subtotal}</span>
-                </div>
-              </div>
-
-              <button
-                onClick={handleOrderSubmit}
-                disabled={loading}
-                className="w-full bg-[#cc0000] hover:bg-[#a30000] text-white py-4 font-bold rounded text-sm transition-colors cursor-pointer flex items-center justify-center gap-1"
-              >
-                {loading ? 'প্রসেসিং...' : 'অর্ডার কনফার্ম করুন'}
-              </button>
-
-              <div className="text-center text-[10px] text-gray-400 font-bold">
-                অর্ডার করতে কোনো সমস্যা হলে কল করুন: 01315-183993
-              </div>
-            </div>
-
-          </div>
+        {/* Parity Checkout Form */}
+        <section id="checkout-form" className="max-w-4xl mx-auto px-4 py-12 scroll-mt-20">
+          {renderCheckoutFormCard()}
         </section>
 
         {/* Footer */}
@@ -791,7 +825,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
   };
 
   // ──────────────────────────────────────────────────────────────────────────
-  // TEMPLATE 4: LEGSTRIPE (Yoga Stretch Band Exact Style)
+  // TEMPLATE 4: LEGSTRIPE (Yoga Stretch Band Style with Parity Checkout)
   // ──────────────────────────────────────────────────────────────────────────
   const renderLegstripeTemplate = () => {
     return (
@@ -901,111 +935,8 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
         </section>
 
         {/* Central Checkout Form */}
-        <section id="checkout-form" className="max-w-xl mx-auto px-4 py-8 scroll-mt-20">
-          <div className="bg-white border border-gray-250 rounded-3xl p-6 shadow-xl space-y-6">
-            <div className="text-center pb-4 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900">অর্ডার কনফার্ম করতে ফর্মটি পূরণ করুন</h2>
-              <p className="text-xs text-gray-400 mt-1 font-bold">নাম, সচল মোবাইল নম্বর এবং সম্পূর্ণ ঠিকানা দিন।</p>
-            </div>
-            
-            <form onSubmit={handleOrderSubmit} className="space-y-4 text-xs font-semibold">
-              <div className="space-y-1">
-                <label className="text-gray-400 uppercase text-[9px] tracking-wider block">আপনার নাম</label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="নাম লিখুন"
-                  className="w-full text-xs px-3.5 py-3 border border-gray-200 rounded-xl focus:ring-1 focus:ring-red-600 outline-none text-black"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-gray-400 uppercase text-[9px] tracking-wider block">মোবাইল নম্বর</label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="যেমন: 017XXXXXXXX"
-                  className="w-full text-xs px-3.5 py-3 border border-gray-200 rounded-xl focus:ring-1 focus:ring-red-600 outline-none text-black font-mono"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-gray-400 uppercase text-[9px] tracking-wider block">সম্পূর্ণ ঠিকানা</label>
-                <textarea
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="যেমন: বাসা নং, রোড নং, এলাকা, থানা, জেলা"
-                  rows={3}
-                  className="w-full text-xs px-3.5 py-3 border border-gray-200 rounded-xl focus:ring-1 focus:ring-red-600 outline-none text-black leading-relaxed"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-gray-400 uppercase text-[9px] tracking-wider block">জেলা সিলেক্ট করুন</label>
-                <select
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  className="w-full text-xs px-3.5 py-3 border border-gray-200 rounded-xl focus:ring-1 focus:ring-red-600 outline-none text-black cursor-pointer bg-white"
-                  required
-                >
-                  <option value="">সিলেক্ট করুন...</option>
-                  <option value="Dhaka">ঢাকা সিটি (Inside Dhaka - ৬০৳)</option>
-                  <option value="Outside">ঢাকার বাইরে (Outside Dhaka - ১৩০৳)</option>
-                </select>
-              </div>
-
-              {/* Quantity */}
-              <div className="space-y-1">
-                <label className="text-gray-400 uppercase text-[9px] tracking-wider block">পরিমাণ (Quantity)</label>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setQty(q => Math.max(q - 1, 1))}
-                    className="w-10 h-10 border border-gray-200 rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-50 active:scale-95 transition-all text-gray-700 cursor-pointer"
-                  >
-                    -
-                  </button>
-                  <span className="text-sm font-black text-gray-900 w-6 text-center font-mono">{qty}</span>
-                  <button
-                    type="button"
-                    onClick={() => setQty(q => q + 1)}
-                    className="w-10 h-10 border border-gray-200 rounded-xl flex items-center justify-center text-lg font-bold hover:bg-gray-50 active:scale-95 transition-all text-gray-700 cursor-pointer"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-
-              {/* Total calculations */}
-              <div className="bg-gray-50 rounded-2xl p-4 border border-gray-150 space-y-2">
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>পণ্যের মূল্য</span>
-                  <span className="font-mono">৳{subtotal}</span>
-                </div>
-                <div className="flex justify-between text-gray-500 font-medium">
-                  <span>ডেলিভারি চার্জ</span>
-                  <span className="font-mono">{district ? `৳${deliveryCharge}` : 'ডিস্ট্রিক্ট সিলেক্ট করুন'}</span>
-                </div>
-                <div className="flex justify-between text-gray-900 font-extrabold pt-2 border-t border-gray-200 text-sm">
-                  <span>সর্বমোট মূল্য</span>
-                  <span className="font-mono text-red-600 text-base">৳{district ? grandTotal : subtotal}</span>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black text-sm rounded-2xl shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <CheckCircle size={16} />
-                <span>অর্ডার কনফার্ম করুন (ক্যাশ অন ডেলিভারি)</span>
-              </button>
-            </form>
-          </div>
+        <section id="checkout-form" className="max-w-2xl mx-auto px-4 py-8 scroll-mt-20">
+          {renderCheckoutFormCard()}
         </section>
       </div>
     );
