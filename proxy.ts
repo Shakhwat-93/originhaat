@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { verifyToken } from './lib/jwt';
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
   const headers = request.headers;
   const proto = headers.get('x-forwarded-proto');
   const host = headers.get('x-forwarded-host') || headers.get('host') || '';
@@ -30,6 +32,44 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(httpsUrl.toString(), 301);
   }
 
+  // ─── ADMIN AUTHENTICATION SESSION CHECKS ──────────────────────────────────
+  const isAuthPage = pathname === '/admin';
+  const isAuthApi = pathname === '/api/admin/login';
+  const isLogoutApi = pathname === '/api/admin/logout';
+  
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isAdminApiRoute = pathname.startsWith('/api/admin') && !isAuthApi && !isLogoutApi;
+
+  if (isAdminRoute || isAdminApiRoute) {
+    const sessionCookie = request.cookies.get('admin_session');
+    const token = sessionCookie?.value;
+    const payload = token ? await verifyToken(token) : null;
+    const isAuthenticated = !!payload;
+
+    if (isAdminRoute) {
+      if (isAuthPage) {
+        if (isAuthenticated) {
+          // Logged-in admins are redirected to dashboard if visiting login page
+          return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+        }
+      } else {
+        if (!isAuthenticated) {
+          // Unauthenticated attempts redirected to login page
+          return NextResponse.redirect(new URL('/admin', request.url));
+        }
+      }
+    }
+
+    if (isAdminApiRoute) {
+      if (!isAuthenticated) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Unauthorized session' }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+  }
+
   const response = NextResponse.next();
 
   // Add Strict-Transport-Security (HSTS) only in production and NOT for localhost/local dev
@@ -44,17 +84,16 @@ export function proxy(request: NextRequest) {
   return response;
 }
 
-// Config to match all routes except standard static files and metadata
+// Config to match all routes except static assets, media files, and manifest/icons
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico, sitemap.xml, robots.txt (metadata files)
      * - common static files (images, css, js, fonts)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:png|svg|jpg|jpeg|gif|webp|css|js|woff|woff2)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:png|svg|jpg|jpeg|gif|webp|css|js|woff|woff2)$).*)',
   ],
 };
