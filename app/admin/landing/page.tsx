@@ -15,6 +15,10 @@ interface LandingPage {
   template_color: string;
   template_style?: string;
   is_active: boolean;
+  gtm_id?: string | null;
+  pixel_id?: string | null;
+  capi_token?: string | null;
+  capi_test_code?: string | null;
   features: Array<{ title: string; desc: string }>;
   testimonials: Array<{ name: string; comment: string }>;
   faq: Array<{ q: string; a: string }>;
@@ -43,6 +47,12 @@ export default function LandingPagesPage() {
   const [templateColor, setTemplateColor] = useState('#ff6b35');
   const [templateStyle, setTemplateStyle] = useState('minimal');
   const [isActive, setIsActive] = useState(true);
+  
+  // Custom Analytics & Tracking IDs (GTM, Meta Pixel, Conversions API)
+  const [gtmId, setGtmId] = useState('');
+  const [pixelId, setPixelId] = useState('');
+  const [capiToken, setCapiToken] = useState('');
+  const [capiTestCode, setCapiTestCode] = useState('');
   
   // JSON arrays list states
   const [features, setFeatures] = useState<Array<{ title: string; desc: string }>>([]);
@@ -95,13 +105,17 @@ export default function LandingPagesPage() {
     setTemplateColor('#ff6b35');
     setTemplateStyle('minimal');
     setIsActive(true);
+    setGtmId('');
+    setPixelId('');
+    setCapiToken('');
+    setCapiTestCode('');
     setFeatures([]);
     setTestimonials([]);
     setFaq([]);
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (page: LandingPage) => {
+  const handleOpenEditModal = (page: any) => {
     setEditingPage(page);
     setSlug(page.slug);
     setProductId(page.product_id);
@@ -111,6 +125,10 @@ export default function LandingPagesPage() {
     setTemplateColor(page.template_color || '#ff6b35');
     setTemplateStyle(page.template_style || 'minimal');
     setIsActive(page.is_active);
+    setGtmId(page.gtm_id || '');
+    setPixelId(page.pixel_id || '');
+    setCapiToken(page.capi_token || '');
+    setCapiTestCode(page.capi_test_code || '');
     setFeatures(page.features || []);
     setTestimonials(page.testimonials || []);
     setFaq(page.faq || []);
@@ -137,6 +155,10 @@ export default function LandingPagesPage() {
       features,
       testimonials,
       faq,
+      gtm_id: gtmId.trim() || null,
+      pixel_id: pixelId.trim() || null,
+      capi_token: capiToken.trim() || null,
+      capi_test_code: capiTestCode.trim() || null,
       updated_at: new Date().toISOString()
     };
 
@@ -458,6 +480,65 @@ export default function LandingPagesPage() {
                     <option value="legstripe">Problem-Solution Lead (Origin Lead)</option>
                     <option value="conversion">Checkout-First Conversion (Origin Speed)</option>
                   </select>
+                </div>
+
+                {/* Custom Tracking IDs Section */}
+                <div className="border border-gray-150 rounded-2xl p-4 bg-gray-50/50 space-y-4">
+                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider block border-b border-gray-100 pb-1.5">
+                    ⚙️ Landing Page Analytics & Tracking (Separate GTM, Pixel & CAPI)
+                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* GTM ID */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Google Tag Manager (GTM) ID</label>
+                      <input
+                        type="text"
+                        value={gtmId}
+                        onChange={(e) => setGtmId(e.target.value)}
+                        placeholder="e.g. GTM-XXXXXXX"
+                        className="w-full text-xs px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-mono"
+                      />
+                    </div>
+
+                    {/* Meta Pixel ID */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Meta Pixel ID</label>
+                      <input
+                        type="text"
+                        value={pixelId}
+                        onChange={(e) => setPixelId(e.target.value)}
+                        placeholder="e.g. 1234567890"
+                        className="w-full text-xs px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* CAPI Token */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Conversions API (CAPI) Access Token</label>
+                      <input
+                        type="text"
+                        value={capiToken}
+                        onChange={(e) => setCapiToken(e.target.value)}
+                        placeholder="EAABw..."
+                        className="w-full text-xs px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-mono"
+                      />
+                    </div>
+
+                    {/* CAPI Test Event Code */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">CAPI Test Event Code (Optional)</label>
+                      <input
+                        type="text"
+                        value={capiTestCode}
+                        onChange={(e) => setCapiTestCode(e.target.value)}
+                        placeholder="e.g. TEST12345"
+                        className="w-full text-xs px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-mono"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Active Toggle */}

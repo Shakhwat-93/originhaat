@@ -157,6 +157,29 @@ export async function POST(request: NextRequest) {
     // Fetch settings dynamically to get CAPI keys
     const settings = await getSettings();
 
+    // Check if order was placed via a landing page to fetch custom CAPI credentials
+    let lpPixelId = null;
+    let lpCapiToken = null;
+    let lpCapiTestCode = null;
+    try {
+      const match = (note || '').match(/placed via Landing Page:\s*([^\s(]+)/i);
+      const lpSlug = match ? match[1] : null;
+      if (lpSlug) {
+        const { data: lpData } = await supabase
+          .from('oh_landing_pages')
+          .select('pixel_id, capi_token, capi_test_code')
+          .eq('slug', lpSlug)
+          .single();
+        if (lpData) {
+          lpPixelId = lpData.pixel_id;
+          lpCapiToken = lpData.capi_token;
+          lpCapiTestCode = lpData.capi_test_code;
+        }
+      }
+    } catch (err) {
+      console.error('[LP Tracking Load Error]', err);
+    }
+
     // Trigger Conversions API (CAPI) events for Meta and TikTok
     try {
       const userAgent = request.headers.get('user-agent') || '';
@@ -176,7 +199,12 @@ export async function POST(request: NextRequest) {
         ipAddress: ip_address,
         userAgent,
         items: capiItems,
-        settings: settings as any
+        settings: {
+          ...settings,
+          tracking_fb_pixel_id: lpPixelId || settings?.tracking_fb_pixel_id,
+          tracking_fb_capi_token: lpCapiToken || settings?.tracking_fb_capi_token,
+          tracking_fb_capi_test_code: lpCapiTestCode || settings?.tracking_fb_capi_test_code
+        } as any
       }).catch(err => console.error('[CAPI Purchase Event Fire Error]', err));
     } catch (capiErr) {
       console.error('[CAPI Event Preparation Error]', capiErr);
