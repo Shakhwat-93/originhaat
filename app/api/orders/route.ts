@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
 }
 
 // ──────────────────────────────────────────
-// GET  /api/orders  →  list all orders (admin)
+// GET  /api/orders  →  list all orders (admin with pagination)
 // ──────────────────────────────────────────
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('x-admin-key');
@@ -202,17 +202,79 @@ export async function GET(request: NextRequest) {
     if (res?.error) console.error('Failed to run trash auto-cleanup:', res.error);
   });
 
-  const { data, error } = await supabase
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(searchParams.get('limit') || '30', 10);
+  const search = searchParams.get('search') || '';
+  const status = searchParams.get('status') || '';
+  const dateFilter = searchParams.get('dateFilter') || 'all';
+  const productFilter = searchParams.get('productFilter') || '';
+
+  let query = supabase
     .from('oh_orders')
-    .select('*, oh_order_items (*)')
+    .select('*, oh_order_items (*)', { count: 'exact' });
+
+  // 1. Product Filter (requires inner join for child items)
+  if (productFilter) {
+    query = supabase
+      .from('oh_orders')
+      .select('*, oh_order_items!inner (*)', { count: 'exact' })
+      .eq('oh_order_items.product_name', productFilter);
+  }
+
+  // 2. Status Filter
+  if (status) {
+    query = query.eq('status', status);
+  } else {
+    // Exclude trash by default when no status filter is selected
+    query = query.neq('status', 'trash');
+  }
+
+  // 3. Search Filter (customer name, phone, order number)
+  if (search) {
+    const searchTrim = search.trim();
+    query = query.or(`customer_name.ilike.%${searchTrim}%,phone.ilike.%${searchTrim}%,order_number.ilike.%${searchTrim}%`);
+  }
+
+  // 4. Date Filter
+  if (dateFilter !== 'all') {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (dateFilter === 'today') {
+      query = query.gte('created_at', today.toISOString());
+    } else if (dateFilter === 'yesterday') {
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      query = query
+        .gte('created_at', yesterday.toISOString())
+        .lt('created_at', today.toISOString());
+    } else if (dateFilter === 'week') {
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      query = query.gte('created_at', sevenDaysAgo.toISOString());
+    }
+  }
+
+  // Order and Pagination Range
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  const { data, error, count } = await query
     .order('created_at', { ascending: false })
-    .limit(500);
+    .range(from, to);
 
   if (error) {
+    console.error('Failed to fetch orders:', error);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 
-  return NextResponse.json({ orders: data });
+  return NextResponse.json({
+    orders: data,
+    totalCount: count || 0,
+    page,
+    totalPages: Math.ceil((count || 0) / limit),
+  });
 }
 
 // ──────────────────────────────────────────

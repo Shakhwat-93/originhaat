@@ -351,10 +351,34 @@ function OrdersPageContent() {
 
   // Search & Filter
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'week'>('all');
   const [selectedProductFilter, setSelectedProductFilter] = useState<string>('');
+
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const limit = 30;
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Reset page on filter/search change
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, statusFilter, dateFilter, selectedProductFilter]);
+
+  // Fetch catalog on mount for filtering
+  useEffect(() => {
+    fetchProductsCatalog();
+  }, []);
 
   // Permissions State
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -640,19 +664,28 @@ function OrdersPageContent() {
     else setRefreshing(true);
 
     try {
-      const res = await fetch('/api/orders', {
+      const params = new URLSearchParams();
+      params.set('page', String(page));
+      params.set('limit', String(limit));
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (statusFilter) params.set('status', statusFilter);
+      if (dateFilter) params.set('dateFilter', dateFilter);
+      if (selectedProductFilter) params.set('productFilter', selectedProductFilter);
+
+      const res = await fetch(`/api/orders?${params.toString()}`, {
         headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123' },
       });
       if (!res.ok) throw new Error('Failed to fetch orders');
       const json = await res.json();
       if (json.orders) setOrders(json.orders);
+      if (typeof json.totalCount === 'number') setTotalCount(json.totalCount);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [page, debouncedSearch, statusFilter, dateFilter, selectedProductFilter]);
 
   useEffect(() => {
     fetchOrders();
@@ -1209,55 +1242,12 @@ function OrdersPageContent() {
     await handlePrintOrders([order]);
   };
 
-  const filteredOrders = orders.filter((o) => {
-    const matchesSearch = o.customer_name.toLowerCase().includes(search.toLowerCase()) || 
-                          o.phone.includes(search) || 
-                          o.order_number.includes(search);
-    const matchesStatus = statusFilter === '' 
-      ? o.status !== 'trash' 
-      : o.status === statusFilter;
+  const filteredOrders = orders;
 
-    const matchesDate = (() => {
-      if (dateFilter === 'all') return true;
-      const orderDate = new Date(o.created_at);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (dateFilter === 'today') {
-        return orderDate >= today;
-      }
-      if (dateFilter === 'yesterday') {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        return orderDate >= yesterday && orderDate < today;
-      }
-      if (dateFilter === 'week') {
-        const sevenDaysAgo = new Date(today);
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        return orderDate >= sevenDaysAgo;
-      }
-      return true;
-    })();
-
-    const matchesProduct = selectedProductFilter === ''
-      ? true
-      : o.oh_order_items?.some(i => i.product_name === selectedProductFilter);
-
-    return matchesSearch && matchesStatus && matchesDate && matchesProduct;
-  });
-
-  // Get unique products inside the orders dynamically for filters
-  const uniqueProductsMap = new Map<string, { name: string; count: number }>();
-  orders.forEach(o => {
-    o.oh_order_items?.forEach(item => {
-      const key = item.product_name || 'Unknown Product';
-      const current = uniqueProductsMap.get(key) || { name: key, count: 0 };
-      current.count += item.quantity;
-      uniqueProductsMap.set(key, current);
-    });
-  });
-  
-  const uniqueProducts = Array.from(uniqueProductsMap.values()).sort((a, b) => b.count - a.count);
+  const uniqueProducts = productsList.map(p => ({
+    name: p.name_bn || p.name_en || p.slug,
+    count: p.stock
+  }));
 
   const statusTabs = [
     { label: 'All Orders', value: '' },
@@ -1968,6 +1958,107 @@ function OrdersPageContent() {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalCount > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-200 px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
+          <div className="text-xs text-gray-500 font-medium">
+            Showing <span className="font-bold text-gray-900">{(page - 1) * limit + 1}</span> to{' '}
+            <span className="font-bold text-gray-900">{Math.min(page * limit, totalCount)}</span> of{' '}
+            <span className="font-bold text-gray-900">{totalCount}</span> orders
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
+            <button
+              onClick={() => setPage(p => Math.max(p - 1, 1))}
+              disabled={page === 1}
+              className="px-3 py-1.5 border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white text-xs font-bold text-gray-700 rounded-xl transition-all cursor-pointer select-none active:scale-95 disabled:active:scale-100"
+            >
+              Previous
+            </button>
+            
+            {/* Page number buttons - smart truncation */}
+            {(() => {
+              const totalPages = Math.ceil(totalCount / limit);
+              const buttons = [];
+              const startPage = Math.max(1, page - 2);
+              const endPage = Math.min(totalPages, page + 2);
+              
+              if (startPage > 1) {
+                buttons.push(
+                  <button
+                    key={1}
+                    onClick={() => setPage(1)}
+                    className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      page === 1
+                        ? 'bg-[#5c59f6] text-white shadow-xs'
+                        : 'border border-gray-200 hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    1
+                  </button>
+                );
+                if (startPage > 2) {
+                  buttons.push(
+                    <span key="dots-start" className="px-1.5 text-gray-400 text-xs font-bold">
+                      ...
+                    </span>
+                  );
+                }
+              }
+              
+              for (let i = startPage; i <= endPage; i++) {
+                buttons.push(
+                  <button
+                    key={i}
+                    onClick={() => setPage(i)}
+                    className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      page === i
+                        ? 'bg-[#5c59f6] text-white shadow-xs'
+                        : 'border border-gray-200 hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    {i}
+                  </button>
+                );
+              }
+              
+              if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                  buttons.push(
+                    <span key="dots-end" className="px-1.5 text-gray-400 text-xs font-bold">
+                      ...
+                    </span>
+                  );
+                }
+                buttons.push(
+                  <button
+                    key={totalPages}
+                    onClick={() => setPage(totalPages)}
+                    className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      page === totalPages
+                        ? 'bg-[#5c59f6] text-white shadow-xs'
+                        : 'border border-gray-200 hover:bg-gray-50 text-gray-700'
+                    }`}
+                  >
+                    {totalPages}
+                  </button>
+                );
+              }
+              
+              return buttons;
+            })()}
+            
+            <button
+              onClick={() => setPage(p => Math.min(p + 1, Math.ceil(totalCount / limit)))}
+              disabled={page >= Math.ceil(totalCount / limit)}
+              className="px-3 py-1.5 border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:hover:bg-white text-xs font-bold text-gray-700 rounded-xl transition-all cursor-pointer select-none active:scale-95 disabled:active:scale-100"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Order Detail Modal */}
       {selectedOrder && (
