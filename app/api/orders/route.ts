@@ -17,7 +17,7 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { incompleteOrderId, customer_name, phone, address, district, note, items, subtotal, delivery_charge, grand_total, discount_amount, coupon_code } = body;
+    const { incompleteOrderId, customer_name, phone, address, district, note, items, subtotal, delivery_charge, grand_total, discount_amount, coupon_code, utm_source, utm_medium, utm_campaign } = body;
 
     if (!customer_name || !phone || !address || !district || !items?.length) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
           grand_total,
           status: 'processing',
           ip_address,
+          utm_source: utm_source || null,
+          utm_medium: utm_medium || null,
+          utm_campaign: utm_campaign || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', incompleteOrderId)
@@ -105,7 +108,10 @@ export async function POST(request: NextRequest) {
           grand_total,
           status: 'processing',
           payment_method: 'cod',
-          ip_address
+          ip_address,
+          utm_source: utm_source || null,
+          utm_medium: utm_medium || null,
+          utm_campaign: utm_campaign || null
         })
         .select()
         .single();

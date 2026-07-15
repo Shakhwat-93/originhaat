@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
       items,
       subtotal,
       delivery_charge,
-      grand_total
+      grand_total,
+      utm_source,
+      utm_medium,
+      utm_campaign
     } = body;
 
     // We only require customer_name and phone to create an incomplete order!
@@ -50,6 +53,9 @@ export async function POST(request: NextRequest) {
           delivery_charge: delivery_charge || 0,
           grand_total: grand_total || 0,
           ip_address,
+          utm_source: utm_source || null,
+          utm_medium: utm_medium || null,
+          utm_campaign: utm_campaign || null,
           updated_at: new Date().toISOString()
         })
         .eq('id', orderId)
@@ -81,7 +87,10 @@ export async function POST(request: NextRequest) {
           grand_total: grand_total || 0,
           status: 'incomplete',
           payment_method: 'cod',
-          ip_address
+          ip_address,
+          utm_source: utm_source || null,
+          utm_medium: utm_medium || null,
+          utm_campaign: utm_campaign || null
         })
         .select()
         .single();

@@ -234,6 +234,9 @@ export default function CheckoutPage() {
           grand_total: grandTotal,
           coupon_code: couponApplied?.code || null,
           incompleteOrderId: incompleteOrderId || undefined,
+          utm_source: typeof window !== 'undefined' ? sessionStorage.getItem('utm_source') || null : null,
+          utm_medium: typeof window !== 'undefined' ? sessionStorage.getItem('utm_medium') || null : null,
+          utm_campaign: typeof window !== 'undefined' ? sessionStorage.getItem('utm_campaign') || null : null
         }),
       });
 

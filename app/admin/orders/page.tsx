@@ -43,6 +43,9 @@ interface Order {
   steadfast_sent_at?: string | null;
   note?: string | null;
   subtotal?: number;
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -2455,6 +2458,28 @@ function OrdersPageContent() {
                                     return '';
                                   })()}
                                 </span>
+                              </div>
+                            )}
+                            {selectedOrder.utm_source && (
+                              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3 my-1 space-y-1.5 text-xs">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-blue-800 font-black text-[10px] uppercase tracking-wider">Campaign Source</span>
+                                  <span className="bg-blue-500 text-white font-black text-[10px] px-2.5 py-0.5 rounded-lg uppercase tracking-wider font-mono">
+                                    {selectedOrder.utm_source}
+                                  </span>
+                                </div>
+                                {selectedOrder.utm_medium && (
+                                  <div className="flex items-center justify-between text-[10px] text-gray-500">
+                                    <span className="font-bold uppercase">Medium</span>
+                                    <span className="font-extrabold text-gray-800 font-mono">{selectedOrder.utm_medium}</span>
+                                  </div>
+                                )}
+                                {selectedOrder.utm_campaign && (
+                                  <div className="flex items-center justify-between text-[10px] text-gray-500">
+                                    <span className="font-bold uppercase">Campaign</span>
+                                    <span className="font-extrabold text-gray-800 font-mono">{selectedOrder.utm_campaign}</span>
+                                  </div>
+                                )}
                               </div>
                             )}
                             <div className="flex justify-between items-baseline gap-2">

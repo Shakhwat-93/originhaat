@@ -83,6 +83,22 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
     fetchSettings();
   }, []);
 
+  // Load UTMs on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const utmSource = urlParams.get('utm_source');
+      const utmMedium = urlParams.get('utm_medium');
+      const utmCampaign = urlParams.get('utm_campaign');
+
+      if (utmSource) {
+        sessionStorage.setItem('utm_source', utmSource);
+        if (utmMedium) sessionStorage.setItem('utm_medium', utmMedium);
+        if (utmCampaign) sessionStorage.setItem('utm_campaign', utmCampaign);
+      }
+    }
+  }, [data.slug]);
+
   // Shipping Calculations
   const subtotal = product.price * qty;
   const isFreeDelivery = subtotal >= settings.free_delivery_min_order;
@@ -219,7 +235,10 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
         discount_amount: discountAmount,
         coupon_code: couponApplied?.code || null,
         grand_total: grandTotal,
-        incompleteOrderId: incompleteOrderId || undefined
+        incompleteOrderId: incompleteOrderId || undefined,
+        utm_source: typeof window !== 'undefined' ? sessionStorage.getItem('utm_source') || null : null,
+        utm_medium: typeof window !== 'undefined' ? sessionStorage.getItem('utm_medium') || null : null,
+        utm_campaign: typeof window !== 'undefined' ? sessionStorage.getItem('utm_campaign') || null : null
       };
 
       const res = await fetch('/api/orders', {

@@ -17,12 +17,29 @@ const ChatWidget = dynamic(
   { ssr: false }
 );
 
+import { useEffect } from 'react';
+
 interface ClientWidgetsProps {
   whatsappNumber: string;
   hotlineNumber: string;
 }
 
 export function ClientWidgets({ whatsappNumber, hotlineNumber }: ClientWidgetsProps) {
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const utmSource = urlParams.get('utm_source');
+      const utmMedium = urlParams.get('utm_medium');
+      const utmCampaign = urlParams.get('utm_campaign');
+
+      if (utmSource) {
+        sessionStorage.setItem('utm_source', utmSource);
+        if (utmMedium) sessionStorage.setItem('utm_medium', utmMedium);
+        if (utmCampaign) sessionStorage.setItem('utm_campaign', utmCampaign);
+      }
+    }
+  }, []);
+
   return (
     <>
       <MobileBottomNav />
