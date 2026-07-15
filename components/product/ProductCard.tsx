@@ -127,20 +127,20 @@ export function ProductCard({ product }: ProductCardProps) {
         <button
           onClick={handleAddToCart}
           disabled={product.stock === 0}
-          className="w-full flex items-center justify-center gap-1.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-xs font-semibold py-2 rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] min-[360px]:text-xs font-semibold py-2 px-1 rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ShoppingCart size={14} className="text-gray-500" />
-          <span>কার্টে যোগ করুন</span>
+          <ShoppingCart size={13} className="text-gray-500 hidden min-[360px]:inline-block shrink-0" />
+          <span className="whitespace-nowrap">কার্টে যোগ করুন</span>
         </button>
 
         {/* Order Now button (gradient) */}
         <button
           onClick={handleOrderNow}
           disabled={product.stock === 0}
-          className="w-full flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#ff804e] to-[#ff6b35] hover:from-[#ff6b35] hover:to-[#e55520] text-white text-xs font-bold py-2 rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-1 bg-gradient-to-r from-[#ff804e] to-[#ff6b35] hover:from-[#ff6b35] hover:to-[#e55520] text-white text-[10px] min-[360px]:text-xs font-bold py-2 px-1 rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Zap size={14} className="fill-white text-white" />
-          <span>এখনি অর্ডার করুন</span>
+          <Zap size={13} className="fill-white text-white hidden min-[360px]:inline-block shrink-0" />
+          <span className="whitespace-nowrap">এখনি অর্ডার করুন</span>
         </button>
       </div>
     </div>
