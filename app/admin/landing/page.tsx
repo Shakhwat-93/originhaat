@@ -448,8 +448,8 @@ export default function LandingPagesPage() {
                   >
                     <option value="minimal">Minimal Modern (Apple Style)</option>
                     <option value="dark">Dark Luxury (Tech Glow Style)</option>
-                    <option value="split">Bold Split Layout (Showcase Left)</option>
-                    <option value="pastel">Pastel Cozy E-Commerce (Cute & Soft)</option>
+                    <option value="stb">Canvas Travel Bag Style (stb-landing)</option>
+                    <option value="legstripe">Yoga Stretch Band Style (legstripe)</option>
                     <option value="conversion">High Conversion Lead (Checkout Top)</option>
                   </select>
                 </div>
