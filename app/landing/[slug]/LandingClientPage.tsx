@@ -539,8 +539,8 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
         <header className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-2xs">
           <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-red-600 text-white rounded-lg flex items-center justify-center font-black text-sm">CB</div>
-              <span className="font-black text-lg tracking-tight text-gray-900">Canvas <span className="text-red-600">Bag</span></span>
+              <div className="w-8 h-8 bg-red-600 text-white rounded-lg flex items-center justify-center font-black text-sm">OH</div>
+              <span className="font-black text-lg tracking-tight text-gray-900">Origin <span className="text-red-600">Haat</span></span>
             </div>
             <button
               onClick={scrollToCheckout}
@@ -771,7 +771,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
               </button>
 
               <div className="text-center text-[10px] text-gray-400 font-bold">
-                অর্ডার করতে কোনো সমস্যা হলে কল করুন: +8801942-212267
+                অর্ডার করতে কোনো সমস্যা হলে কল করুন: 01315-183993
               </div>
             </div>
 
@@ -781,8 +781,8 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
         {/* Footer */}
         <footer className="bg-gray-900 text-gray-400 py-10 border-t border-gray-800 text-xs">
           <div className="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
-            <span className="text-white font-extrabold text-sm">Canvas Bag BD</span>
-            <span>© {new Date().getFullYear()} Canvas Bag BD. All rights reserved.</span>
+            <span className="text-white font-extrabold text-sm">Origin Haat</span>
+            <span>© {new Date().getFullYear()} Origin Haat. All rights reserved.</span>
           </div>
         </footer>
 

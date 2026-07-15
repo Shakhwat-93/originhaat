@@ -293,7 +293,13 @@ export default function LandingPagesPage() {
                         />
                       </td>
                       <td className="px-6 py-4 font-bold text-gray-800 capitalize">
-                        {page.template_style || 'minimal'}
+                        {({
+                          minimal: 'Minimalist Elegance',
+                          dark: 'Dark Mode Glow',
+                          stb: 'Split Showcase',
+                          legstripe: 'Problem-Solution Lead',
+                          conversion: 'Checkout-First Conversion'
+                        } as any)[page.template_style || 'minimal'] || 'Minimalist Elegance'}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -446,11 +452,11 @@ export default function LandingPagesPage() {
                     className="w-full text-xs px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white"
                     required
                   >
-                    <option value="minimal">Minimal Modern (Apple Style)</option>
-                    <option value="dark">Dark Luxury (Tech Glow Style)</option>
-                    <option value="stb">Canvas Travel Bag Style (stb-landing)</option>
-                    <option value="legstripe">Yoga Stretch Band Style (legstripe)</option>
-                    <option value="conversion">High Conversion Lead (Checkout Top)</option>
+                    <option value="minimal">Minimalist Elegance (Origin Minimal)</option>
+                    <option value="dark">Dark Mode Glow (Origin Dark)</option>
+                    <option value="stb">Split Showcase (Origin Split)</option>
+                    <option value="legstripe">Problem-Solution Lead (Origin Lead)</option>
+                    <option value="conversion">Checkout-First Conversion (Origin Speed)</option>
                   </select>
                 </div>
 
