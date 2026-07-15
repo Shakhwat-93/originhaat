@@ -279,11 +279,11 @@ export function Header({ initialSettings }: HeaderProps) {
               {isInstallable && (
                 <button
                   onClick={installApp}
-                  className="relative flex items-center justify-center w-11 h-11 rounded-xl bg-[#fff3ef] border border-[#ff6b35]/20 text-[#ff6b35] transition-colors cursor-pointer shadow-xs"
+                  className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-[#fff3ef] border border-[#ff6b35]/20 text-[#ff6b35] transition-colors cursor-pointer shadow-xs shrink-0"
                   aria-label="অ্যাপ ইনস্টল করুন"
                   title="Install App"
                 >
-                  <Download size={20} />
+                  <Download size={15} />
                 </button>
               )}
               <Link
