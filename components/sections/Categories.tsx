@@ -21,7 +21,22 @@ export function Categories({ categories }: CategoriesProps) {
     : defaultCategories;
 
   return (
-    <section id="categories" className="py-10 md:py-16 bg-[#fcfdfe]">
+    <section id="categories" className="py-10 md:py-16 bg-[#fcfdfe] overflow-hidden">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes marquee-categories {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
+        }
+        .animate-marquee-categories {
+          display: flex;
+          width: max-content;
+          animation: marquee-categories 25s linear infinite;
+        }
+        .animate-marquee-categories:hover {
+          animation-play-state: paused;
+        }
+      `}} />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <div className="text-center mb-10">
@@ -35,40 +50,49 @@ export function Categories({ categories }: CategoriesProps) {
           <p className="text-[#6b7280] mt-2 text-sm md:text-base max-w-md mx-auto">পছন্দের ক্যাটাগরি বেছে নিয়ে স্টোরের সেরা ডিল ও নতুন কালেকশন এক্সপ্লোর করুন</p>
         </div>
 
-        {/* Category Mobile Horizontal Scroll (Below md) */}
-        <div className="flex md:hidden overflow-x-auto gap-4 pb-6 px-1 scrollbar-hide scroll-smooth snap-x snap-mandatory">
-          {displayCategories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/category/${cat.slug}`}
-              className="flex-shrink-0 w-[110px] snap-start flex flex-col items-center bg-white rounded-3xl p-4 border border-gray-100/80 shadow-[0_8px_24px_rgba(0,0,0,0.02)] active:border-[#ff6b35] hover:border-[#ff6b35] transition-all duration-300 text-center"
-            >
-              <div className="w-14 h-14 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
-                <span className="text-2xl">{cat.icon}</span>
-              </div>
-              <p className="text-xs font-bold text-[#111827] leading-tight truncate w-full">
-                {cat.name_bn}
-              </p>
-            </Link>
-          ))}
-        </div>
+        {/* Categories Infinite Slider */}
+        <div className="relative">
+          {/* Fading Overlays */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 md:w-16 bg-gradient-to-r from-[#fcfdfe] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 md:w-16 bg-gradient-to-l from-[#fcfdfe] to-transparent z-10 pointer-events-none" />
 
-        {/* Category Grid - Desktop (md and above) */}
-        <div className="hidden md:grid grid-cols-6 gap-6">
-          {displayCategories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={`/category/${cat.slug}`}
-              className="group flex flex-col items-center bg-white rounded-3xl p-6 border border-gray-100/80 shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:border-[#ff6b35] hover:shadow-[0_12px_32px_rgba(255,107,53,0.06)] hover:-translate-y-1.5 transition-all duration-300 text-center cursor-pointer"
-            >
-              <div className="relative w-16 h-16 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
-                <span className="text-3xl">{cat.icon}</span>
-              </div>
-              <p className="text-sm font-bold text-[#111827] leading-tight line-clamp-1 group-hover:text-[#ff6b35] transition-colors">
-                {cat.name_bn}
-              </p>
-            </Link>
-          ))}
+          <div className="overflow-hidden py-2">
+            <div className="animate-marquee-categories gap-4 md:gap-6">
+              
+              {/* Set 1 */}
+              {displayCategories.map((cat, idx) => (
+                <Link
+                  key={`cat1-${cat.id}-${idx}`}
+                  href={`/category/${cat.slug}`}
+                  className="flex-shrink-0 w-[110px] md:w-[130px] flex flex-col items-center bg-white rounded-3xl p-4 border border-gray-150 shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:border-[#ff6b35] hover:shadow-[0_12px_32px_rgba(255,107,53,0.06)] hover:-translate-y-1 transition-all duration-300 text-center cursor-pointer"
+                >
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
+                    <span className="text-2xl md:text-3xl">{cat.icon}</span>
+                  </div>
+                  <p className="text-xs md:text-sm font-bold text-[#111827] leading-tight truncate w-full">
+                    {cat.name_bn}
+                  </p>
+                </Link>
+              ))}
+
+              {/* Set 2 */}
+              {displayCategories.map((cat, idx) => (
+                <Link
+                  key={`cat2-${cat.id}-${idx}`}
+                  href={`/category/${cat.slug}`}
+                  className="flex-shrink-0 w-[110px] md:w-[130px] flex flex-col items-center bg-white rounded-3xl p-4 border border-gray-150 shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:border-[#ff6b35] hover:shadow-[0_12px_32px_rgba(255,107,53,0.06)] hover:-translate-y-1 transition-all duration-300 text-center cursor-pointer"
+                >
+                  <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
+                    <span className="text-2xl md:text-3xl">{cat.icon}</span>
+                  </div>
+                  <p className="text-xs md:text-sm font-bold text-[#111827] leading-tight truncate w-full">
+                    {cat.name_bn}
+                  </p>
+                </Link>
+              ))}
+
+            </div>
+          </div>
         </div>
       </div>
     </section>
