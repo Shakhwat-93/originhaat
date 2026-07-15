@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { hashPassword } from '@/lib/crypto';
+import { verifyToken } from '@/lib/jwt';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -45,7 +46,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const adminUsername = request.headers.get('x-admin-username') || 'admin';
+    const sessionCookie = request.cookies.get('admin_session');
+    const token = sessionCookie?.value;
+    const session = token ? await verifyToken(token) : null;
+    const adminUsername = session?.username || request.headers.get('x-admin-username') || 'admin';
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
     const { data: newUser, error } = await supabase
@@ -92,7 +96,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Missing user id' }, { status: 400 });
     }
 
-    const adminUsername = request.headers.get('x-admin-username') || 'admin';
+    const sessionCookie = request.cookies.get('admin_session');
+    const token = sessionCookie?.value;
+    const session = token ? await verifyToken(token) : null;
+    const adminUsername = session?.username || request.headers.get('x-admin-username') || 'admin';
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
     const updateFields: any = {};
@@ -142,7 +149,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing user id' }, { status: 400 });
     }
 
-    const adminUsername = request.headers.get('x-admin-username') || 'admin';
+    const sessionCookie = request.cookies.get('admin_session');
+    const token = sessionCookie?.value;
+    const session = token ? await verifyToken(token) : null;
+    const adminUsername = session?.username || request.headers.get('x-admin-username') || 'admin';
     const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
 
     // Load user to check if they are the master 'admin' account to prevent lockout

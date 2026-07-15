@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { verifyPassword, hashPassword } from '@/lib/crypto';
+import { generateToken } from '@/lib/jwt';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -43,7 +44,15 @@ export async function POST(request: NextRequest) {
         .eq('id', user.id);
     }
 
-    return NextResponse.json({
+    // Generate cryptographically signed session token
+    const token = await generateToken({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      permissions: user.permissions || []
+    });
+
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -52,6 +61,20 @@ export async function POST(request: NextRequest) {
         permissions: user.permissions,
       }
     });
+
+    // Set secure HttpOnly session cookie
+    const isProduction = process.env.NODE_ENV === 'production';
+    response.cookies.set({
+      name: 'admin_session',
+      value: token,
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 // 24 hours
+    });
+
+    return response;
   } catch (err: any) {
     console.error('Login API error:', err);
     return NextResponse.json({ error: 'অভ্যন্তরীণ ত্রুটি ঘটেছে' }, { status: 500 });

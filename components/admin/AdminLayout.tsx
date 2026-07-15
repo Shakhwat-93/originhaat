@@ -299,7 +299,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     localStorage.removeItem('admin_authenticated');
     localStorage.removeItem('admin_user');
     router.push('/admin');
