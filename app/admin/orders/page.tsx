@@ -2433,6 +2433,30 @@ function OrdersPageContent() {
                           </div>
 
                           <div className="space-y-2.5 text-xs text-gray-500">
+                            {(() => {
+                              const note = selectedOrder.note;
+                              if (!note) return null;
+                              const match = note.match(/placed via Landing Page:\s*([^\s(]+)/i);
+                              if (match) return match[1];
+                              const matchAlt = note.match(/Landing Page:\s*([^\s(]+)/i);
+                              if (matchAlt) return matchAlt[1];
+                              return null;
+                            })() && (
+                              <div className="flex items-center justify-between bg-orange-50 border border-orange-100 rounded-xl p-3 my-1">
+                                <span className="text-orange-850 font-black text-[10px] uppercase tracking-wider">Order Source</span>
+                                <span className="bg-orange-500 text-white font-black text-[10px] px-2.5 py-0.5 rounded-lg uppercase tracking-widest font-mono">
+                                  Landing: {(() => {
+                                    const note = selectedOrder.note;
+                                    if (!note) return '';
+                                    const match = note.match(/placed via Landing Page:\s*([^\s(]+)/i);
+                                    if (match) return match[1];
+                                    const matchAlt = note.match(/Landing Page:\s*([^\s(]+)/i);
+                                    if (matchAlt) return matchAlt[1];
+                                    return '';
+                                  })()}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex justify-between items-baseline gap-2">
                               <span>Name</span>
                               <span className="font-extrabold text-gray-900 text-right">{selectedOrder.customer_name}</span>
