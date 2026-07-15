@@ -13,6 +13,7 @@ interface LandingPage {
   subtitle: string;
   description: string;
   template_color: string;
+  template_style?: string;
   is_active: boolean;
   features: Array<{ title: string; desc: string }>;
   testimonials: Array<{ name: string; comment: string }>;
@@ -40,6 +41,7 @@ export default function LandingPagesPage() {
   const [subtitle, setSubtitle] = useState('');
   const [description, setDescription] = useState('');
   const [templateColor, setTemplateColor] = useState('#ff6b35');
+  const [templateStyle, setTemplateStyle] = useState('minimal');
   const [isActive, setIsActive] = useState(true);
   
   // JSON arrays list states
@@ -91,6 +93,7 @@ export default function LandingPagesPage() {
     setSubtitle('');
     setDescription('');
     setTemplateColor('#ff6b35');
+    setTemplateStyle('minimal');
     setIsActive(true);
     setFeatures([]);
     setTestimonials([]);
@@ -106,6 +109,7 @@ export default function LandingPagesPage() {
     setSubtitle(page.subtitle || '');
     setDescription(page.description || '');
     setTemplateColor(page.template_color || '#ff6b35');
+    setTemplateStyle(page.template_style || 'minimal');
     setIsActive(page.is_active);
     setFeatures(page.features || []);
     setTestimonials(page.testimonials || []);
@@ -128,6 +132,7 @@ export default function LandingPagesPage() {
       subtitle: subtitle.trim(),
       description: description.trim(),
       template_color: templateColor,
+      template_style: templateStyle,
       is_active: isActive,
       features,
       testimonials,
@@ -248,6 +253,7 @@ export default function LandingPagesPage() {
                   <th className="px-6 py-4">Linked Product</th>
                   <th className="px-6 py-4">Hero Title</th>
                   <th className="px-6 py-4">Accent</th>
+                  <th className="px-6 py-4">Design Layout</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -285,6 +291,9 @@ export default function LandingPagesPage() {
                           className="w-5 h-5 rounded-full inline-block border border-gray-200"
                           style={{ backgroundColor: page.template_color }}
                         />
+                      </td>
+                      <td className="px-6 py-4 font-bold text-gray-800 capitalize">
+                        {page.template_style || 'minimal'}
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${
@@ -426,6 +435,23 @@ export default function LandingPagesPage() {
                       className="text-xs px-3.5 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black w-28 font-mono"
                     />
                   </div>
+                </div>
+
+                {/* Template Style Selector */}
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Select Template Design Layout</label>
+                  <select
+                    value={templateStyle}
+                    onChange={(e) => setTemplateStyle(e.target.value)}
+                    className="w-full text-xs px-3.5 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white"
+                    required
+                  >
+                    <option value="minimal">Minimal Modern (Apple Style)</option>
+                    <option value="dark">Dark Luxury (Tech Glow Style)</option>
+                    <option value="split">Bold Split Layout (Showcase Left)</option>
+                    <option value="pastel">Pastel Cozy E-Commerce (Cute & Soft)</option>
+                    <option value="conversion">High Conversion Lead (Checkout Top)</option>
+                  </select>
                 </div>
 
                 {/* Active Toggle */}
