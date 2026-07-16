@@ -1,34 +1,29 @@
 import { Truck, Shield, RefreshCw, Award, Phone } from 'lucide-react';
+import { getSettings } from '@/lib/db';
 
-const trustItems = [
-  {
-    icon: <Truck size={22} className="text-[#ff6b35]" />,
-    title: 'ফ্রি ডেলিভারি',
-    desc: '৳৯৯৯+ অর্ডারে',
-  },
-  {
-    icon: <Shield size={22} className="text-[#ff6b35]" />,
-    title: 'ক্যাশ অন ডেলিভারি',
-    desc: 'পণ্য দেখে পেমেন্ট করুন',
-  },
-  {
-    icon: <RefreshCw size={22} className="text-[#ff6b35]" />,
-    title: '৭ দিন রিটার্ন',
-    desc: 'সমস্যায় ফেরত নিন',
-  },
-  {
-    icon: <Award size={22} className="text-[#ff6b35]" />,
-    title: '১০০% অরিজিনাল',
-    desc: 'নকল পণ্য নেই',
-  },
-  {
-    icon: <Phone size={22} className="text-[#ff6b35]" />,
-    title: 'সরাসরি সাপোর্ট',
-    desc: 'সকাল ৯টা — রাত ৯টা',
-  },
+const iconMap: Record<string, any> = {
+  'truck': Truck,
+  'shield': Shield,
+  'refresh-cw': RefreshCw,
+  'award': Award,
+  'phone': Phone,
+};
+
+const defaultTrustItems = [
+  { icon: 'truck', title: 'ফ্রি ডেলিভারি', desc: '৳৯৯৯+ অর্ডারে' },
+  { icon: 'shield', title: 'ক্যাশ অন ডেলিভারি', desc: 'পণ্য দেখে পেমেন্ট করুন' },
+  { icon: 'refresh-cw', title: '৭ দিন রিটার্ন', desc: 'সমস্যায় ফেরত নিন' },
+  { icon: 'award', title: '১০০% অরিজিনাল', desc: 'নকল পণ্য নেই' },
+  { icon: 'phone', title: 'সরাসরি সাপোর্ট', desc: 'সকাল ৯টা — রাত ৯টা' },
 ];
 
-export function TrustBar() {
+export async function TrustBar() {
+  const settings = await getSettings();
+  const rawItems = settings?.trust_bar_items;
+  const trustItems = Array.isArray(rawItems) && rawItems.length > 0
+    ? rawItems
+    : defaultTrustItems;
+
   return (
     <section className="bg-white border-b border-[#e5e7eb] overflow-hidden py-4">
       <style dangerouslySetInnerHTML={{ __html: `
@@ -56,36 +51,42 @@ export function TrustBar() {
           <div className="animate-marquee-infinite gap-8 md:gap-16">
             
             {/* Set 1 */}
-            {trustItems.map((item, i) => (
-              <div
-                key={`set1-${i}`}
-                className="flex items-center gap-3 flex-shrink-0"
-              >
-                <div className="w-10 h-10 bg-[#fff3ef] rounded-xl flex items-center justify-center flex-shrink-0">
-                  {item.icon}
+            {trustItems.map((item: any, i: number) => {
+              const IconComponent = iconMap[item.icon] || Truck;
+              return (
+                <div
+                  key={`set1-${i}`}
+                  className="flex items-center gap-3 flex-shrink-0"
+                >
+                  <div className="w-10 h-10 bg-[#fff3ef] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <IconComponent size={22} className="text-[#ff6b35]" />
+                  </div>
+                  <div>
+                    <p className="text-xs md:text-sm font-semibold text-[#111827] whitespace-nowrap">{item.title}</p>
+                    <p className="text-[10px] md:text-xs text-[#6b7280] whitespace-nowrap">{item.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs md:text-sm font-semibold text-[#111827] whitespace-nowrap">{item.title}</p>
-                  <p className="text-[10px] md:text-xs text-[#6b7280] whitespace-nowrap">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Set 2 */}
-            {trustItems.map((item, i) => (
-              <div
-                key={`set2-${i}`}
-                className="flex items-center gap-3 flex-shrink-0"
-              >
-                <div className="w-10 h-10 bg-[#fff3ef] rounded-xl flex items-center justify-center flex-shrink-0">
-                  {item.icon}
+            {trustItems.map((item: any, i: number) => {
+              const IconComponent = iconMap[item.icon] || Truck;
+              return (
+                <div
+                  key={`set2-${i}`}
+                  className="flex items-center gap-3 flex-shrink-0"
+                >
+                  <div className="w-10 h-10 bg-[#fff3ef] rounded-xl flex items-center justify-center flex-shrink-0">
+                    <IconComponent size={22} className="text-[#ff6b35]" />
+                  </div>
+                  <div>
+                    <p className="text-xs md:text-sm font-semibold text-[#111827] whitespace-nowrap">{item.title}</p>
+                    <p className="text-[10px] md:text-xs text-[#6b7280] whitespace-nowrap">{item.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs md:text-sm font-semibold text-[#111827] whitespace-nowrap">{item.title}</p>
-                  <p className="text-[10px] md:text-xs text-[#6b7280] whitespace-nowrap">{item.desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
 
           </div>
         </div>

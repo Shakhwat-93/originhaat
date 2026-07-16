@@ -52,6 +52,8 @@ interface Settings {
   badge_color?: string | null;
   // Order limit rate control
   order_limit_time?: number;
+  // Trust bar items configuration list
+  trust_bar_items?: Array<{ icon: string; title: string; desc: string }> | null;
 }
 
 interface PathaoStore {
@@ -101,6 +103,7 @@ export default function AdminSettingsPage() {
     price_color: '',
     badge_color: '',
     order_limit_time: 10,
+    trust_bar_items: [],
   });
 
   // Pathao-specific state
@@ -564,6 +567,117 @@ export default function AdminSettingsPage() {
               placeholder="e.g. 10% discount on all products today! Limited stock."
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
             />
+          </div>
+        </div>
+
+        {/* Dynamic Trust Bar Items Configuration */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Website Trust Bar & Auto-Slider Items</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Manage the icons and text displayed in the sliding bar under the hero banner</p>
+              </div>
+            </div>
+            <SectionSaveBtn id="trust_bar" fields={['trust_bar_items']} />
+          </div>
+
+          <div className="space-y-3.5">
+            {/* List current items */}
+            {(settings.trust_bar_items || []).map((item, idx) => (
+              <div key={idx} className="flex flex-col md:flex-row items-stretch md:items-center gap-3 p-4 border border-gray-100 bg-gray-50/30 rounded-xl">
+                {/* Icon Selector */}
+                <div className="w-full md:w-44 space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Icon</label>
+                  <select
+                    value={item.icon}
+                    onChange={(e) => {
+                      const updated = [...(settings.trust_bar_items || [])];
+                      updated[idx] = { ...updated[idx], icon: e.target.value };
+                      setSettings({ ...settings, trust_bar_items: updated });
+                    }}
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white"
+                  >
+                    <option value="truck">🚚 Truck (Delivery)</option>
+                    <option value="shield">🛡️ Shield (Security)</option>
+                    <option value="refresh-cw">🔄 Refresh (Return)</option>
+                    <option value="award">⭐ Award (Originality)</option>
+                    <option value="phone">📞 Phone (Support)</option>
+                  </select>
+                </div>
+
+                {/* Title */}
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Title (Bangla)</label>
+                  <input
+                    type="text"
+                    value={item.title}
+                    onChange={(e) => {
+                      const updated = [...(settings.trust_bar_items || [])];
+                      updated[idx] = { ...updated[idx], title: e.target.value };
+                      setSettings({ ...settings, trust_bar_items: updated });
+                    }}
+                    placeholder="যেমন: ফ্রি ডেলিভারি"
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-sans font-medium"
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Subtext / Description</label>
+                  <input
+                    type="text"
+                    value={item.desc}
+                    onChange={(e) => {
+                      const updated = [...(settings.trust_bar_items || [])];
+                      updated[idx] = { ...updated[idx], desc: e.target.value };
+                      setSettings({ ...settings, trust_bar_items: updated });
+                    }}
+                    placeholder="যেমন: ৳৯৯৯+ অর্ডারে"
+                    className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-sans font-medium"
+                    required
+                  />
+                </div>
+
+                {/* Action button */}
+                <div className="flex items-end pt-5 md:pt-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = (settings.trust_bar_items || []).filter((_, i) => i !== idx);
+                      setSettings({ ...settings, trust_bar_items: updated });
+                    }}
+                    className="p-2 text-red-500 hover:text-red-700 bg-red-50 rounded-xl transition-colors cursor-pointer self-center"
+                    title="Delete Item"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Empty state warning */}
+            {(!settings.trust_bar_items || settings.trust_bar_items.length === 0) && (
+              <div className="text-center py-6 text-gray-400 text-xs font-semibold">
+                ⚠️ কোনো ট্রাস্ট আইটেম যোগ করা হয়নি। ডিফল্ট আইটেমগুলো স্লাইডারে শো করবে।
+              </div>
+            )}
+
+            {/* Add new item button */}
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = [...(settings.trust_bar_items || []), { icon: 'truck', title: '', desc: '' }];
+                  setSettings({ ...settings, trust_bar_items: updated });
+                }}
+                className="px-4 py-2 border-2 border-dashed border-gray-200 hover:border-[#ff6b35] text-gray-500 hover:text-[#ff6b35] text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                + আইটেম যোগ করুন
+              </button>
+            </div>
           </div>
         </div>
 
