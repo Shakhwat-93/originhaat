@@ -3,6 +3,8 @@ import { Footer } from '@/components/layout/Footer';
 import { ClientWidgets } from '@/components/shared/ClientWidgets';
 import { getSettings } from '@/lib/db';
 
+export const revalidate = 30; // cache layout for 30 seconds
+
 export default async function CustomerLayout({
   children,
 }: {

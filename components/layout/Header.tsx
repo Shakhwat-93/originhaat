@@ -17,6 +17,7 @@ interface HeaderProps {
     announcement_text?: string;
     is_announcement_active?: boolean;
     whatsapp_number?: string;
+    hotline_number?: string;
   };
 }
 
@@ -193,9 +194,13 @@ export function Header({ initialSettings }: HeaderProps) {
   const [announcementText, setAnnouncementText] = useState(initialSettings?.announcement_text || '');
   const [announcementActive, setAnnouncementActive] = useState(!!initialSettings?.is_announcement_active);
   const [phone, setPhone] = useState(initialSettings?.whatsapp_number || '01XXXXXXXXX');
+  const [hotline, setHotline] = useState(initialSettings?.hotline_number || '01700000000');
 
   useEffect(() => {
-    if (initialSettings) return;
+    if (initialSettings) {
+      if (initialSettings.hotline_number) setHotline(initialSettings.hotline_number);
+      return;
+    }
     const fetchHeaderSettings = async () => {
       try {
         const res = await fetch('/api/settings');
@@ -205,6 +210,7 @@ export function Header({ initialSettings }: HeaderProps) {
             if (data.announcement_text) setAnnouncementText(data.announcement_text);
             setAnnouncementActive(data.is_announcement_active);
             if (data.whatsapp_number) setPhone(data.whatsapp_number);
+            if (data.hotline_number) setHotline(data.hotline_number);
           }
         }
       } catch (err) {
@@ -527,10 +533,10 @@ export function Header({ initialSettings }: HeaderProps) {
 
             <div className="p-4 border-t border-[#e5e7eb]">
               <a
-                href="tel:01XXXXXXXXX"
+                href={`tel:${hotline}`}
                 className="flex items-center gap-2 text-[#ff6b35] font-semibold"
               >
-                <Phone size={16} /> 01XXXXXXXXX
+                <Phone size={16} /> {hotline}
               </a>
             </div>
           </div>
