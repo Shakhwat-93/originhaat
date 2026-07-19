@@ -27,7 +27,7 @@ export default async function CustomerLayout({
       `}} />
       <Header initialSettings={settings || undefined} />
       <main className="min-h-screen bg-slate-50/50">{children}</main>
-      <Footer />
+      <Footer settings={settings || undefined} />
 
       <ClientWidgets whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} />
     </>

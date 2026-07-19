@@ -54,6 +54,11 @@ interface Settings {
   order_limit_time?: number;
   // Trust bar items configuration list
   trust_bar_items?: Array<{ icon: string; title: string; desc: string }> | null;
+  // Dynamic contact and payment details
+  contact_email?: string;
+  contact_address?: string;
+  support_time?: string;
+  payment_methods?: string;
 }
 
 interface PathaoStore {
@@ -104,6 +109,10 @@ export default function AdminSettingsPage() {
     badge_color: '',
     order_limit_time: 10,
     trust_bar_items: [],
+    contact_email: 'support@originhaat.com',
+    contact_address: 'ঢাকা, বাংলাদেশ',
+    support_time: 'সকাল ৯টা — রাত ৯টা',
+    payment_methods: '💳 bKash, 💚 Nagad, 💜 Rocket, 🏦 DBBL',
   });
 
   // Pathao-specific state
@@ -356,7 +365,7 @@ export default function AdminSettingsPage() {
               <Globe size={18} className="text-[#ff6b35]" />
               <h2 className="font-bold text-gray-900">General Info & Branding</h2>
             </div>
-            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number', 'hotline_number', 'trash_auto_delete_days', 'price_color', 'badge_color', 'order_limit_time']} />
+            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number', 'hotline_number', 'trash_auto_delete_days', 'price_color', 'badge_color', 'order_limit_time', 'contact_email', 'contact_address', 'support_time', 'payment_methods']} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
@@ -434,6 +443,60 @@ export default function AdminSettingsPage() {
                   onChange={handleChange}
                   placeholder="10"
                   className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-100 pt-4 mt-2">
+            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Website Footer Contact & Payment Info</h3>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Support Email</label>
+                <input
+                  type="email"
+                  name="contact_email"
+                  value={settings.contact_email || ''}
+                  onChange={handleChange}
+                  placeholder="support@originhaat.com"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Support Time / Hours</label>
+                <input
+                  type="text"
+                  name="support_time"
+                  value={settings.support_time || ''}
+                  onChange={handleChange}
+                  placeholder="যেমন: সকাল ৯টা — রাত ৯টা"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Office Address</label>
+                <input
+                  type="text"
+                  name="contact_address"
+                  value={settings.contact_address || ''}
+                  onChange={handleChange}
+                  placeholder="যেমন: ঢাকা, বাংলাদেশ"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Payment Badges (Comma-separated)</label>
+                <input
+                  type="text"
+                  name="payment_methods"
+                  value={settings.payment_methods || ''}
+                  onChange={handleChange}
+                  placeholder="যেমন: 💳 bKash, 💚 Nagad, 💜 Rocket, 🏦 DBBL"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
                   required
                 />
               </div>
