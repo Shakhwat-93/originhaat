@@ -6,22 +6,27 @@ import { Categories } from '@/components/sections/Categories';
 import { ReviewsSection } from '@/components/sections/ReviewsSection';
 import { WhyChooseUs } from '@/components/sections/WhyChooseUs';
 import { CTABanner } from '@/components/sections/CTABanner';
-import { getBanners, getCategories, getFeaturedProducts, supabaseServer } from '@/lib/db';
+import { getBanners, getCategories, getFeaturedProducts, getSettings, supabaseServer } from '@/lib/db';
 
 export const revalidate = 30; // cache for 30 seconds (ISR)
 
-export const metadata: Metadata = {
-  title: 'Origin Haat — বাংলাদেশের সেরা অনলাইন শপিং | ক্যাশ অন ডেলিভারি',
-  description:
-    'Origin Haat-এ কিনুন সেরা মানের পণ্য — স্কিনকেয়ার, ইলেকট্রনিক্স, লাইফস্টাইল। ক্যাশ অন ডেলিভারি। ঢাকায় ২৪ ঘণ্টায় ডেলিভারি। বাংলাদেশের সেরা অনলাইন শপ।',
-  alternates: { canonical: 'https://originhaat.com' },
-  openGraph: {
-    title: 'Origin Haat — বাংলাদেশের সেরা অনলাইন শপিং',
-    description: 'সেরা দামে সেরা পণ্য। ক্যাশ অন ডেলিভারি উপলব্ধ। বাংলাদেশ জুড়ে দ্রুত ডেলিভারি।',
-    url: 'https://originhaat.com',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings();
+  const title = settings?.seo_title || 'Origin Haat — বাংলাদেশের সেরা অনলাইন শপিং | ক্যাশ অন ডেলিভারি';
+  const description = settings?.seo_description || 'Origin Haat-এ কিনুন সেরা মানের পণ্য — স্কিনকেয়ার, ইলেকট্রনিক্স, লাইফস্টাইল। ক্যাশ অন ডেলিভারি। ঢাকায় ২৪ ঘণ্টায় ডেলিভারি। বাংলাদেশের সেরা অনলাইন শপ।';
+
+  return {
+    title,
+    description,
+    alternates: { canonical: 'https://originhaat.com' },
+    openGraph: {
+      title,
+      description,
+      url: 'https://originhaat.com',
+      images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    },
+  };
+}
 
 
 export default async function HomePage() {
