@@ -32,6 +32,7 @@ export default function AdminProductsPage() {
   // Search & Filter state
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'featured' | 'out-of-stock' | 'inactive'>('all');
 
   const fetchData = async () => {
     setLoading(true);
@@ -130,7 +131,17 @@ export default function AdminProductsPage() {
     const matchesSearch = prod.name_bn.toLowerCase().includes(search.toLowerCase()) || 
                           prod.slug.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = categoryFilter === '' || prod.category_id === categoryFilter;
-    return matchesSearch && matchesCategory;
+    
+    let matchesType = true;
+    if (typeFilter === 'featured') {
+      matchesType = prod.is_featured === true;
+    } else if (typeFilter === 'out-of-stock') {
+      matchesType = prod.stock === 0;
+    } else if (typeFilter === 'inactive') {
+      matchesType = prod.is_active === false;
+    }
+
+    return matchesSearch && matchesCategory && matchesType;
   });
 
   if (loading) {
@@ -157,6 +168,35 @@ export default function AdminProductsPage() {
           <Plus size={16} />
           Add New Product
         </Link>
+      </div>
+
+      {/* Quick Status Tabs */}
+      <div className="flex flex-wrap gap-2.5">
+        {[
+          { id: 'all', label: 'All Products', count: products.length },
+          { id: 'featured', label: '🔥 Best Sellers / Featured', count: products.filter(p => p.is_featured).length },
+          { id: 'out-of-stock', label: '📦 Out of Stock', count: products.filter(p => p.stock === 0).length },
+          { id: 'inactive', label: '🚫 Inactive', count: products.filter(p => !p.is_active).length },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setTypeFilter(tab.id as any)}
+            className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer border flex items-center gap-2 ${
+              typeFilter === tab.id
+                ? 'bg-[#ff6b35] border-[#ff6b35] text-white shadow-md shadow-[#ff6b35]/20'
+                : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <span>{tab.label}</span>
+            <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
+              typeFilter === tab.id
+                ? 'bg-white/20 text-white'
+                : 'bg-gray-100 text-gray-500'
+            }`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Filters & Search */}
