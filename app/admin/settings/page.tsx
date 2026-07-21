@@ -59,6 +59,29 @@ interface Settings {
   contact_address?: string;
   support_time?: string;
   payment_methods?: string;
+  // CTA Banner Configurations
+  cta_badge?: string;
+  cta_title?: string;
+  cta_subtitle?: string;
+  cta_desc?: string;
+  cta_btn_text?: string;
+  cta_whatsapp_text?: string;
+  // Why Choose Us Configurations
+  why_badge?: string;
+  why_title?: string;
+  why_subtitle?: string;
+  why_stat_1_number?: string;
+  why_stat_1_label?: string;
+  why_stat_2_number?: string;
+  why_stat_2_label?: string;
+  why_stat_3_number?: string;
+  why_stat_3_label?: string;
+  why_stat_4_number?: string;
+  why_stat_4_label?: string;
+  // Footer Copyright & Credits Configurations
+  copyright_text?: string;
+  credits_text?: string;
+  credits_url?: string;
 }
 
 interface PathaoStore {
@@ -113,6 +136,26 @@ export default function AdminSettingsPage() {
     contact_address: 'ঢাকা, বাংলাদেশ',
     support_time: 'সকাল ৯টা — রাত ৯টা',
     payment_methods: '💳 bKash, 💚 Nagad, 💜 Rocket, 🏦 DBBL',
+    cta_badge: '⚡ সীমিত সময়ের অফার',
+    cta_title: 'আজই অর্ডার করুন, বিশেষ ছাড় পান!',
+    cta_subtitle: 'প্রথম অর্ডারে অতিরিক্ত ছাড় + ফ্রি ডেলিভারি',
+    cta_desc: 'অফার সীমিত সময়ের জন্য — দেরি না করে এখনই কিনুন।',
+    cta_btn_text: 'এখনই কেনাকাটা করুন',
+    cta_whatsapp_text: 'WhatsApp করুন',
+    why_badge: 'WHY CHOOSE US',
+    why_title: 'Why Choose Origin Haat?',
+    why_subtitle: 'Origin Haat has earned the trust of thousands of satisfied customers with premium quality products.',
+    why_stat_1_number: '৫০,০০০+',
+    why_stat_1_label: 'সন্তুষ্ট গ্রাহক',
+    why_stat_2_number: '১,০০০+',
+    why_stat_2_label: 'পণ্যের সংগ্রহ',
+    why_stat_3_number: '৯৮%',
+    why_stat_3_label: 'ডেলিভারি সাফল্য',
+    why_stat_4_number: '৪.৯⭐',
+    why_stat_4_label: 'গড় রেটিং',
+    copyright_text: '© ২০২৬ Origin Haat. সর্বস্বত্ব সংরক্ষিত।',
+    credits_text: 'Build by Shakhwat Hossain Rasel',
+    credits_url: 'https://shakhwatrasel.vercel.app',
   });
 
   // Pathao-specific state
@@ -1346,6 +1389,279 @@ export default function AdminSettingsPage() {
                 rows={3}
                 placeholder="Origin Haat BD offers premium audio, accessories, smartwatch, and computer gadgets with high-quality and warranty."
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic CTA Banner Config */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Website CTA (Call-to-Action) Banner</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Manage text and options for the highlighted checkout section at the bottom of the page</p>
+              </div>
+            </div>
+            <SectionSaveBtn id="cta_banner" fields={['cta_badge', 'cta_title', 'cta_subtitle', 'cta_desc', 'cta_btn_text', 'cta_whatsapp_text']} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Badge Text</label>
+              <input
+                type="text"
+                name="cta_badge"
+                value={settings.cta_badge || ''}
+                onChange={handleChange}
+                placeholder="⚡ সীমিত সময়ের অফার"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Main Title (Split Highlighted with Comma)</label>
+              <input
+                type="text"
+                name="cta_title"
+                value={settings.cta_title || ''}
+                onChange={handleChange}
+                placeholder="আজই অর্ডার করুন, বিশেষ ছাড় পান!"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Subheading / Subtitle</label>
+              <input
+                type="text"
+                name="cta_subtitle"
+                value={settings.cta_subtitle || ''}
+                onChange={handleChange}
+                placeholder="প্রথম অর্ডারে অতিরিক্ত ছাড় + ফ্রি ডেলিভারি"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description Text</label>
+              <input
+                type="text"
+                name="cta_desc"
+                value={settings.cta_desc || ''}
+                onChange={handleChange}
+                placeholder="অফার সীমিত সময়ের জন্য — দেরি না করে এখনই কিনুন।"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Primary Button Label</label>
+              <input
+                type="text"
+                name="cta_btn_text"
+                value={settings.cta_btn_text || ''}
+                onChange={handleChange}
+                placeholder="এখনই কেনাকাটা করুন"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">WhatsApp Button Label</label>
+              <input
+                type="text"
+                name="cta_whatsapp_text"
+                value={settings.cta_whatsapp_text || ''}
+                onChange={handleChange}
+                placeholder="WhatsApp করুন"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Why Choose Us Config */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">"Why Choose Us" & Counters Section</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Manage heading, subheadings, and stats counters below the page</p>
+              </div>
+            </div>
+            <SectionSaveBtn id="why_choose_us" fields={[
+              'why_badge', 'why_title', 'why_subtitle',
+              'why_stat_1_number', 'why_stat_1_label',
+              'why_stat_2_number', 'why_stat_2_label',
+              'why_stat_3_number', 'why_stat_3_label',
+              'why_stat_4_number', 'why_stat_4_label'
+            ]} />
+          </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Section Badge</label>
+                <input
+                  type="text"
+                  name="why_badge"
+                  value={settings.why_badge || ''}
+                  onChange={handleChange}
+                  placeholder="WHY CHOOSE US"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Section Main Heading</label>
+                <input
+                  type="text"
+                  name="why_title"
+                  value={settings.why_title || ''}
+                  onChange={handleChange}
+                  placeholder="Why Choose Origin Haat?"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Section Subtitle / Description</label>
+                <input
+                  type="text"
+                  name="why_subtitle"
+                  value={settings.why_subtitle || ''}
+                  onChange={handleChange}
+                  placeholder="Origin Haat has earned the trust..."
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-150 pt-4 mt-2">
+              <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Stat Counters Configuration</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="p-3 border border-gray-100 bg-gray-50/30 rounded-xl space-y-2">
+                  <span className="text-[10px] font-bold text-[#ff6b35] uppercase tracking-wider block">Counter 1</span>
+                  <input
+                    type="text"
+                    name="why_stat_1_number"
+                    value={settings.why_stat_1_number || ''}
+                    onChange={handleChange}
+                    placeholder="৫০,০০০+"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black font-bold bg-white font-sans"
+                  />
+                  <input
+                    type="text"
+                    name="why_stat_1_label"
+                    value={settings.why_stat_1_label || ''}
+                    onChange={handleChange}
+                    placeholder="সন্তুষ্ট গ্রাহক"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black bg-white"
+                  />
+                </div>
+
+                <div className="p-3 border border-gray-100 bg-gray-50/30 rounded-xl space-y-2">
+                  <span className="text-[10px] font-bold text-[#ff6b35] uppercase tracking-wider block">Counter 2</span>
+                  <input
+                    type="text"
+                    name="why_stat_2_number"
+                    value={settings.why_stat_2_number || ''}
+                    onChange={handleChange}
+                    placeholder="১,০০০+"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black font-bold bg-white font-sans"
+                  />
+                  <input
+                    type="text"
+                    name="why_stat_2_label"
+                    value={settings.why_stat_2_label || ''}
+                    onChange={handleChange}
+                    placeholder="পণ্যের সংগ্রহ"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black bg-white"
+                  />
+                </div>
+
+                <div className="p-3 border border-gray-100 bg-gray-50/30 rounded-xl space-y-2">
+                  <span className="text-[10px] font-bold text-[#ff6b35] uppercase tracking-wider block">Counter 3</span>
+                  <input
+                    type="text"
+                    name="why_stat_3_number"
+                    value={settings.why_stat_3_number || ''}
+                    onChange={handleChange}
+                    placeholder="৯৮%"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black font-bold bg-white font-sans"
+                  />
+                  <input
+                    type="text"
+                    name="why_stat_3_label"
+                    value={settings.why_stat_3_label || ''}
+                    onChange={handleChange}
+                    placeholder="ডেলিভারি সাফল্য"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black bg-white"
+                  />
+                </div>
+
+                <div className="p-3 border border-gray-100 bg-gray-50/30 rounded-xl space-y-2">
+                  <span className="text-[10px] font-bold text-[#ff6b35] uppercase tracking-wider block">Counter 4</span>
+                  <input
+                    type="text"
+                    name="why_stat_4_number"
+                    value={settings.why_stat_4_number || ''}
+                    onChange={handleChange}
+                    placeholder="৪.৯⭐"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black font-bold bg-white font-sans"
+                  />
+                  <input
+                    type="text"
+                    name="why_stat_4_label"
+                    value={settings.why_stat_4_label || ''}
+                    onChange={handleChange}
+                    placeholder="গড় রেটিং"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-xs text-black bg-white"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Dynamic Footer Bottom Copyright & Credits */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Footer Copyright & Credits</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Manage copyright year and developer credits displayed at the bottom of the page</p>
+              </div>
+            </div>
+            <SectionSaveBtn id="footer_credits" fields={['copyright_text', 'credits_text', 'credits_url']} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Copyright Label Text</label>
+              <input
+                type="text"
+                name="copyright_text"
+                value={settings.copyright_text || ''}
+                onChange={handleChange}
+                placeholder="© ২০২৬ Origin Haat. সর্বস্বত্ব সংরক্ষিত।"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Credits Label Text</label>
+              <input
+                type="text"
+                name="credits_text"
+                value={settings.credits_text || ''}
+                onChange={handleChange}
+                placeholder="Build by Shakhwat Hossain Rasel"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Credits Link URL</label>
+              <input
+                type="text"
+                name="credits_url"
+                value={settings.credits_url || ''}
+                onChange={handleChange}
+                placeholder="https://shakhwatrasel.vercel.app"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans font-medium"
               />
             </div>
           </div>

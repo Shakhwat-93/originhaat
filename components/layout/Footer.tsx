@@ -10,6 +10,9 @@ interface FooterProps {
     contact_address?: string;
     support_time?: string;
     payment_methods?: string;
+    copyright_text?: string;
+    credits_text?: string;
+    credits_url?: string;
   };
 }
 
@@ -19,6 +22,9 @@ export function Footer({ settings }: FooterProps) {
   const contactAddress = settings?.contact_address || 'ঢাকা, বাংলাদেশ';
   const supportTime = settings?.support_time || 'সকাল ৯টা — রাত ৯টা';
   const paymentMethodsString = settings?.payment_methods || '💳 bKash, 💚 Nagad, 💜 Rocket, 🏦 DBBL';
+  const copyrightText = settings?.copyright_text || '© ২০২৬ Origin Haat. সর্বস্বত্ব সংরক্ষিত।';
+  const creditsText = settings?.credits_text || 'Build by Shakhwat Hossain Rasel';
+  const creditsUrl = settings?.credits_url || 'https://shakhwatrasel.vercel.app';
 
   const paymentMethods = paymentMethodsString
     .split(',')
@@ -151,16 +157,15 @@ export function Footer({ settings }: FooterProps) {
       {/* Bottom Bar */}
       <div className="border-t border-gray-100 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500">
-          <p>© ২০২৬ Origin Haat. সর্বস্বত্ব সংরক্ষিত।</p>
+          <p>{copyrightText}</p>
           <div className="flex items-center gap-1">
-            <span>Build by</span>
             <a
-              href="https://shakhwatrasel.vercel.app"
+              href={creditsUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-[#ff6b35] font-semibold hover:underline"
             >
-              Shakhwat Hossain Rasel
+              {creditsText}
             </a>
           </div>
         </div>

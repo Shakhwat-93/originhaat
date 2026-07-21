@@ -1,9 +1,42 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, MessageCircle, ArrowRight, Sparkles, Shield, Truck, CreditCard } from 'lucide-react';
 
 export function CTABanner() {
+  const [settings, setSettings] = useState<any>(null);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) setSettings(data);
+      })
+      .catch((err) => console.error('Error fetching CTA settings:', err));
+  }, []);
+
+  const badge = settings?.cta_badge || '⚡ সীমিত সময়ের অফার';
+  const title = settings?.cta_title || 'আজই অর্ডার করুন, বিশেষ ছাড় পান!';
+  const subtitle = settings?.cta_subtitle || 'প্রথম অর্ডারে অতিরিক্ত ছাড় + ফ্রি ডেলিভারি';
+  const desc = settings?.cta_desc || 'অফার সীমিত সময়ের জন্য — দেরি না করে এখনই কিনুন।';
+  const btnText = settings?.cta_btn_text || 'এখনই কেনাকাটা করুন';
+  const whatsappText = settings?.cta_whatsapp_text || 'WhatsApp করুন';
+  const whatsappPhone = settings?.whatsapp_number || '8801700000000';
+
+  // Format whatsapp URL
+  const formattedPhone = whatsappPhone.replace('+', '').replace(/\s+/g, '');
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=হ্যালো!%20আমি%20অর্ডার%20করতে%20চাই।`;
+
+  // Dynamically split heading at comma if present to apply the gradient look to the second part
+  let firstPart = title;
+  let secondPart = '';
+  const commaIdx = title.indexOf(',');
+  if (commaIdx !== -1) {
+    firstPart = title.slice(0, commaIdx + 1) + ' ';
+    secondPart = title.slice(commaIdx + 1).trim();
+  }
+
   return (
     <section
       className="relative py-20 md:py-28 overflow-hidden"
@@ -11,7 +44,7 @@ export function CTABanner() {
         background: 'linear-gradient(135deg, #fff7f3 0%, #fff1eb 40%, #fde8dc 100%)',
       }}
     >
-      {/* ── Decorative blurred circles ── */}
+      {/* Decorative blurred circles */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute -top-20 -right-20 w-96 h-96 rounded-full"
@@ -29,7 +62,7 @@ export function CTABanner() {
         }}
       />
 
-      {/* ── Subtle dot pattern ── */}
+      {/* Subtle dot pattern */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
@@ -40,8 +73,7 @@ export function CTABanner() {
       />
 
       <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8 text-center">
-
-        {/* ── Badge ── */}
+        {/* Badge */}
         <div className="inline-flex items-center gap-2 mb-7">
           <span
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase"
@@ -52,40 +84,39 @@ export function CTABanner() {
             }}
           >
             <Sparkles size={11} />
-            সীমিত সময়ের অফার
+            {badge}
           </span>
         </div>
 
-        {/* ── Headline ── */}
+        {/* Headline */}
         <h2
           className="text-3xl sm:text-4xl md:text-[2.75rem] font-extrabold leading-tight tracking-tight mb-4"
           style={{ color: '#1a1a1a' }}
         >
-          আজই অর্ডার করুন,{' '}
-          <span
-            style={{
-              background: 'linear-gradient(135deg, #ff6b35 20%, #f97316 60%, #f59e0b 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
-          >
-            বিশেষ ছাড় পান!
-          </span>
+          {firstPart}
+          {secondPart && (
+            <span
+              style={{
+                background: 'linear-gradient(135deg, #ff6b35 20%, #f97316 60%, #f59e0b 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {secondPart}
+            </span>
+          )}
         </h2>
 
-        {/* ── Sub-headline ── */}
-        <p
-          className="text-base md:text-lg font-medium mb-2"
-          style={{ color: '#4b2e1a' }}
-        >
-          প্রথম অর্ডারে অতিরিক্ত ছাড় + ফ্রি ডেলিভারি
+        {/* Sub-headline */}
+        <p className="text-base md:text-lg font-medium mb-2" style={{ color: '#4b2e1a' }}>
+          {subtitle}
         </p>
         <p className="text-sm mb-10" style={{ color: '#9a6b52' }}>
-          অফার সীমিত সময়ের জন্য — দেরি না করে এখনই কিনুন।
+          {desc}
         </p>
 
-        {/* ── CTA Buttons ── */}
+        {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
           {/* Primary */}
           <Link
@@ -95,25 +126,25 @@ export function CTABanner() {
               background: 'linear-gradient(135deg, #ff6b35, #ea580c)',
               boxShadow: '0 6px 28px rgba(255,107,53,0.38)',
             }}
-            onMouseEnter={e => {
+            onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLAnchorElement;
               el.style.boxShadow = '0 10px 36px rgba(255,107,53,0.55)';
               el.style.transform = 'translateY(-2px)';
             }}
-            onMouseLeave={e => {
+            onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLAnchorElement;
               el.style.boxShadow = '0 6px 28px rgba(255,107,53,0.38)';
               el.style.transform = 'translateY(0)';
             }}
           >
             <ShoppingBag size={18} />
-            এখনই কেনাকাটা করুন
+            {btnText}
             <ArrowRight size={16} className="transition-transform duration-300 group-hover:translate-x-1" />
           </Link>
 
           {/* Secondary */}
           <a
-            href="https://wa.me/8801XXXXXXXXX?text=হ্যালো!%20আমি%20অর্ডার%20করতে%20চাই।"
+            href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="group inline-flex items-center justify-center gap-2.5 w-full sm:w-auto px-8 py-4 rounded-2xl font-bold text-base transition-all duration-300"
@@ -123,13 +154,13 @@ export function CTABanner() {
               color: '#1a1a1a',
               boxShadow: '0 2px 12px rgba(0,0,0,0.07)',
             }}
-            onMouseEnter={e => {
+            onMouseEnter={(e) => {
               const el = e.currentTarget as HTMLAnchorElement;
               el.style.borderColor = '#ff6b35';
               el.style.boxShadow = '0 4px 20px rgba(255,107,53,0.18)';
               el.style.transform = 'translateY(-2px)';
             }}
-            onMouseLeave={e => {
+            onMouseLeave={(e) => {
               const el = e.currentTarget as HTMLAnchorElement;
               el.style.borderColor = '#e5e7eb';
               el.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
@@ -137,11 +168,11 @@ export function CTABanner() {
             }}
           >
             <MessageCircle size={18} style={{ color: '#25D366' }} />
-            WhatsApp করুন
+            {whatsappText}
           </a>
         </div>
 
-        {/* ── Trust pills ── */}
+        {/* Trust pills */}
         <div className="flex flex-wrap items-center justify-center gap-3">
           {[
             { icon: Shield, label: 'নিরাপদ কেনাকাটা' },
