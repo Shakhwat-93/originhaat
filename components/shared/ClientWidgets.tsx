@@ -46,7 +46,12 @@ export function ClientWidgets({ whatsappNumber, hotlineNumber, isLiveChatActive 
     <>
       <MobileBottomNav />
       <FloatingCartWidget />
-      {isLiveChatActive && <ChatWidget whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} whatsappDefaultMessage={whatsappDefaultMessage} />}
+      <ChatWidget
+        whatsappNumber={whatsappNumber}
+        hotlineNumber={hotlineNumber}
+        isLiveChatActive={isLiveChatActive}
+        whatsappDefaultMessage={whatsappDefaultMessage}
+      />
     </>
   );
 }

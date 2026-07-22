@@ -13,6 +13,7 @@ import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 interface ChatWidgetProps {
   whatsappNumber: string;
   hotlineNumber?: string;
+  isLiveChatActive?: boolean;
   whatsappDefaultMessage?: string;
 }
 
@@ -68,7 +69,7 @@ function BubbleDots() {
   );
 }
 
-export function ChatWidget({ whatsappNumber, hotlineNumber, whatsappDefaultMessage }: ChatWidgetProps) {
+export function ChatWidget({ whatsappNumber, hotlineNumber, isLiveChatActive = true, whatsappDefaultMessage }: ChatWidgetProps) {
   const [isOpen, setIsOpen]         = useState(false);
   const [showSpeedDial, setShowSpeedDial] = useState(false);
   const [activeScreen, setActiveScreen] = useState<'welcome' | 'menu' | 'live-onboard' | 'live-thread' | 'ai-bot' | 'end-session' | 'feedback-done'>('welcome');
@@ -118,7 +119,11 @@ export function ChatWidget({ whatsappNumber, hotlineNumber, whatsappDefaultMessa
   const messagesEndRef    = useRef<HTMLDivElement>(null);
   const botMessagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [isLiveChatEnabled, setIsLiveChatEnabled] = useState(true);
+  const [isLiveChatEnabled, setIsLiveChatEnabled] = useState(isLiveChatActive);
+
+  useEffect(() => {
+    setIsLiveChatEnabled(isLiveChatActive);
+  }, [isLiveChatActive]);
 
   const [dynamicWaMsg, setDynamicWaMsg] = useState(whatsappDefaultMessage || 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।');
 
