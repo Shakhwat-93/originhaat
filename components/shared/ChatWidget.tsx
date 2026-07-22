@@ -336,8 +336,6 @@ export function ChatWidget({ whatsappNumber, hotlineNumber, whatsappDefaultMessa
   const canGoBack = ['menu', 'live-onboard', 'ai-bot', 'end-session'].includes(activeScreen) ||
     (activeScreen === 'live-thread' && !!activeChat);
 
-  if (!isLiveChatEnabled) return null;
-
   return (
     <div className="fixed bottom-20 md:bottom-5 right-5 z-50 flex flex-col items-end select-none" style={{ fontFamily: "'Inter', 'Noto Sans Bengali', sans-serif" }}>
 
@@ -432,19 +430,21 @@ export function ChatWidget({ whatsappNumber, hotlineNumber, whatsappDefaultMessa
                 </div>
 
                 {/* Live Chat */}
-                <button
-                  onClick={() => activeChat ? setActiveScreen('live-thread') : setActiveScreen('live-onboard')}
-                  className="w-full flex items-center gap-3.5 p-3.5 bg-white hover:bg-orange-50 border border-gray-100 hover:border-[#ff6b35]/30 rounded-2xl shadow-xs transition-all cursor-pointer group active:scale-[.98] text-left"
-                >
-                  <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#ff6b35,#ff8c5a)' }}>
-                    <MessageSquare size={20} className="text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-extrabold text-gray-800 text-xs">{lang === 'bn' ? 'লাইভ কাস্টমার সাপোর্ট' : 'Live Customer Support'}</h4>
-                    <p className="text-[10px] text-gray-400 mt-0.5 truncate">{lang === 'bn' ? 'এজেন্টের সাথে সরাসরি চ্যাট করুন' : 'Chat directly with our team'}</p>
-                  </div>
-                  <ChevronRight size={15} className="text-gray-300 group-hover:text-[#ff6b35] shrink-0 transition-colors" />
-                </button>
+                {isLiveChatEnabled && (
+                  <button
+                    onClick={() => activeChat ? setActiveScreen('live-thread') : setActiveScreen('live-onboard')}
+                    className="w-full flex items-center gap-3.5 p-3.5 bg-white hover:bg-orange-50 border border-gray-100 hover:border-[#ff6b35]/30 rounded-2xl shadow-xs transition-all cursor-pointer group active:scale-[.98] text-left"
+                  >
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0" style={{ background: 'linear-gradient(135deg,#ff6b35,#ff8c5a)' }}>
+                      <MessageSquare size={20} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-extrabold text-gray-800 text-xs">{lang === 'bn' ? 'লাইভ কাস্টমার সাপোর্ট' : 'Live Customer Support'}</h4>
+                      <p className="text-[10px] text-gray-400 mt-0.5 truncate">{lang === 'bn' ? 'এজেন্টের সাথে সরাসরি চ্যাট করুন' : 'Chat directly with our team'}</p>
+                    </div>
+                    <ChevronRight size={15} className="text-gray-300 group-hover:text-[#ff6b35] shrink-0 transition-colors" />
+                  </button>
+                )}
 
                 {/* AI Bot */}
                 <button
@@ -886,22 +886,24 @@ export function ChatWidget({ whatsappNumber, hotlineNumber, whatsappDefaultMessa
           </div>
 
           {/* Live Chat */}
-          <div className="flex items-center group cursor-pointer transition-all duration-200 hover:translate-x-[-4px]">
-            <span className="bg-white text-[#374151] text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100 mr-2 select-none pointer-events-none whitespace-nowrap">
-              {lang === 'bn' ? 'লাইভ চ্যাট' : 'Live Chat'}
-            </span>
-            <button
-              onClick={() => {
-                setIsOpen(true);
-                setShowSpeedDial(false);
-                setActiveScreen(activeChat ? 'live-thread' : 'live-onboard');
-              }}
-              className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ff6b35] to-[#ff8c5a] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-              title="Start Live Chat"
-            >
-              <MessageSquare size={20} className="drop-shadow" />
-            </button>
-          </div>
+          {isLiveChatEnabled && (
+            <div className="flex items-center group cursor-pointer transition-all duration-200 hover:translate-x-[-4px]">
+              <span className="bg-white text-[#374151] text-[11px] font-extrabold px-3 py-1.5 rounded-xl shadow-md border border-gray-100 mr-2 select-none pointer-events-none whitespace-nowrap">
+                {lang === 'bn' ? 'লাইভ চ্যাট' : 'Live Chat'}
+              </span>
+              <button
+                onClick={() => {
+                  setIsOpen(true);
+                  setShowSpeedDial(false);
+                  setActiveScreen(activeChat ? 'live-thread' : 'live-onboard');
+                }}
+                className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#ff6b35] to-[#ff8c5a] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"
+                title="Start Live Chat"
+              >
+                <MessageSquare size={20} className="drop-shadow" />
+              </button>
+            </div>
+          )}
         </div>
       )}
 
