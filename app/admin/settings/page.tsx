@@ -283,12 +283,38 @@ export default function AdminSettingsPage() {
     setSavingSection(sectionId);
     try {
       const payload: Partial<Settings> = { updated_at: new Date().toISOString() } as any;
-      fields.forEach(f => { (payload as any)[f] = (settings as any)[f]; });
+      fields.forEach(f => {
+        const val = (settings as any)[f];
+        if (val !== undefined) {
+          (payload as any)[f] = val;
+        }
+      });
       const { error } = await supabase
         .from('oh_settings')
         .update(payload)
         .eq('id', 1);
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('schema cache') || error.message?.includes('Could not find')) {
+          console.warn('[Settings Save Warning] Missing DB column in schema cache:', error.message);
+          const fallbackPayload = { ...payload };
+          delete (fallbackPayload as any).is_live_chat_active;
+          delete (fallbackPayload as any).whatsapp_default_message;
+
+          const { error: fallbackErr } = await supabase
+            .from('oh_settings')
+            .update(fallbackPayload)
+            .eq('id', 1);
+
+          if (fallbackErr) throw fallbackErr;
+
+          showSuccessAlert(
+            'Saved (Basic)!',
+            'Settings updated! Note: Please run the SQL Migration in Supabase / Coolify SQL editor to activate new fields.'
+          );
+          return;
+        }
+        throw error;
+      }
       showSuccessAlert('Saved!', 'Settings updated successfully.');
     } catch (err: any) {
       showErrorAlert('Error!', err.message || 'Failed to save settings.');
@@ -400,9 +426,23 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8 text-black">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Site Settings</h1>
-        <p className="text-sm text-gray-500 mt-1">Control dynamic configurations for the entire website from here</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-100 pb-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Site Settings</h1>
+          <p className="text-sm text-gray-500 mt-1">Control dynamic configurations for the entire website from here</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            const sql = `ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS is_live_chat_active boolean DEFAULT true;\nALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS whatsapp_default_message text DEFAULT 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।';\nALTER TABLE oh_products ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;`;
+            navigator.clipboard.writeText(sql);
+            showSuccessAlert('SQL Copied!', 'Migration SQL copied to clipboard. Execute it in Supabase SQL Editor.');
+          }}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#ff6b35] to-[#ff8c5a] hover:from-[#e55520] hover:to-[#ff6b35] text-white text-xs font-extrabold rounded-xl shadow-md transition-all cursor-pointer shrink-0 self-start sm:self-auto"
+        >
+          <Sparkles size={15} />
+          Copy Migration SQL
+        </button>
       </div>
 
       <div className="space-y-6">
