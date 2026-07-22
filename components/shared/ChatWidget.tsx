@@ -132,11 +132,13 @@ export function ChatWidget({ whatsappNumber, hotlineNumber, whatsappDefaultMessa
     setVisitorId(storedId);
 
     fetch('/api/ip-info').then(r => r.json()).then(d => setVisitorMeta(d)).catch(() => {});
-    fetch('/api/settings')
+    fetch('/api/settings?t=' + Date.now())
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => {
         if (data?.facebook_url) setFacebookUrl(data.facebook_url);
-        if (data?.is_live_chat_active === false) setIsLiveChatEnabled(false);
+        if (typeof data?.is_live_chat_active === 'boolean') {
+          setIsLiveChatEnabled(data.is_live_chat_active);
+        }
         if (data?.whatsapp_default_message) setDynamicWaMsg(data.whatsapp_default_message);
       })
       .catch(() => {

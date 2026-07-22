@@ -323,6 +323,29 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleToggleLiveChat = async (active: boolean) => {
+    setSettings(prev => ({ ...prev, is_live_chat_active: active }));
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_live_chat_active: active }),
+      });
+      if (!res.ok) throw new Error('Failed to save settings');
+      showSuccessAlert(
+        active ? 'Live Chat Enabled!' : 'Live Chat Disabled!',
+        active ? 'লাইভ চ্যাট বিকল্পটি সক্রিয় করা হয়েছে।' : 'লাইভ চ্যাট বিকল্পটি নিষ্ক্রিয় করা হয়েছে।'
+      );
+    } catch (e: any) {
+      const { error } = await supabase.from('oh_settings').update({ is_live_chat_active: active }).eq('id', 1);
+      if (error) {
+        showErrorAlert('Notice', 'DB column not ready yet. Please run Migration SQL.');
+      } else {
+        showSuccessAlert('Live Chat Updated!', 'Status updated successfully.');
+      }
+    }
+  };
+
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     const val = type === 'number' ? Number(value) : value;
@@ -1309,7 +1332,7 @@ export default function AdminSettingsPage() {
                   type="checkbox"
                   name="is_live_chat_active"
                   checked={settings.is_live_chat_active ?? true}
-                  onChange={(e) => setSettings(prev => ({ ...prev, is_live_chat_active: e.target.checked }))}
+                  onChange={(e) => handleToggleLiveChat(e.target.checked)}
                   className="sr-only peer"
                 />
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff6b35]"></div>
