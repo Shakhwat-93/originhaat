@@ -36,6 +36,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [price, setPrice] = useState<number>(0);
   const [originalPrice, setOriginalPrice] = useState<number>(0);
   const [stock, setStock] = useState<number>(10);
+  const [sortOrder, setSortOrder] = useState<number>(0);
   const [categoryId, setCategoryId] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
@@ -76,6 +77,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             setPrice(prod.price || 0);
             setOriginalPrice(prod.original_price || 0);
             setStock(prod.stock || 0);
+            setSortOrder(prod.sort_order ?? 0);
             setCategoryId(prod.category_id || '');
             setIsFeatured(prod.is_featured || false);
             setIsActive(prod.is_active ?? true);
@@ -220,6 +222,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         price: Number(price),
         original_price: Number(originalPrice),
         stock: Number(stock),
+        sort_order: Number(sortOrder),
         category_id: categoryId,
         category_slug: cat?.slug || '',
         is_featured: isFeatured,
@@ -397,7 +400,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       {/* Pricing & Stock */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
         <h2 className="font-bold text-gray-900 border-b border-gray-100 pb-3">Pricing & Inventory</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Sales Price (৳)</label>
             <input
@@ -426,6 +429,17 @@ export default function ProductForm({ productId }: ProductFormProps) {
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
               required
             />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Position / Sort Order (ক্রম)</label>
+            <input
+              type="number"
+              value={sortOrder}
+              onChange={(e) => setSortOrder(Number(e.target.value))}
+              placeholder="1, 2, 3..."
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm font-bold text-black"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">১ দিলে শুরুতে এবং ছোট নম্বর আগে দেখাবে</p>
           </div>
         </div>
 

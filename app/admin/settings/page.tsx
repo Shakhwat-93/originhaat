@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2, Clock } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2, Clock, MessageSquare } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 import type { ChangeEvent } from 'react';
 
 interface Settings {
   site_name: string;
   whatsapp_number: string;
+  whatsapp_default_message?: string;
   hotline_number?: string;
   trash_auto_delete_days?: number;
   delivery_charge_inside: number;
@@ -41,6 +42,8 @@ interface Settings {
   tracking_fb_capi_test_code?: string | null;
   tracking_tiktok_pixel_id?: string | null;
   tracking_tiktok_capi_token?: string | null;
+  // Live Chat Widget ON/OFF Toggle
+  is_live_chat_active?: boolean;
   // AI Chat fields
   chat_ai_active?: boolean;
   chat_ai_instructions?: string;
@@ -95,6 +98,7 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings>({
     site_name: 'Origin Haat',
     whatsapp_number: '8801700000000',
+    whatsapp_default_message: 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।',
     hotline_number: '01700000000',
     trash_auto_delete_days: 30,
     delivery_charge_inside: 60,
@@ -102,6 +106,7 @@ export default function AdminSettingsPage() {
     free_delivery_min_order: 2000,
     announcement_text: '',
     is_announcement_active: false,
+    is_live_chat_active: true,
     facebook_url: '',
     instagram_url: '',
     youtube_url: '',
@@ -408,9 +413,9 @@ export default function AdminSettingsPage() {
               <Globe size={18} className="text-[#ff6b35]" />
               <h2 className="font-bold text-gray-900">General Info & Branding</h2>
             </div>
-            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number', 'hotline_number', 'trash_auto_delete_days', 'price_color', 'badge_color', 'order_limit_time', 'contact_email', 'contact_address', 'support_time', 'payment_methods']} />
+            <SectionSaveBtn id="general" fields={['site_name', 'whatsapp_number', 'whatsapp_default_message', 'hotline_number', 'trash_auto_delete_days', 'price_color', 'badge_color', 'order_limit_time', 'contact_email', 'contact_address', 'support_time', 'payment_methods']} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Site Name</label>
               <input
@@ -423,7 +428,7 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">WhatsApp (with Country Code)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">WhatsApp Number</label>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
                   <Phone size={16} />
@@ -438,6 +443,17 @@ export default function AdminSettingsPage() {
                   required
                 />
               </div>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-semibold text-gray-700 mb-1.5">WhatsApp Pre-filled Message (হোয়াটসঅ্যাপ বার্তা)</label>
+              <input
+                type="text"
+                name="whatsapp_default_message"
+                value={settings.whatsapp_default_message || ''}
+                onChange={handleChange}
+                placeholder="যেমন: হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black font-sans"
+              />
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1.5">Hotline (for Calls)</label>
@@ -1230,6 +1246,51 @@ export default function AdminSettingsPage() {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Chat Floating Widget Settings */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <MessageSquare size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Live Chat Floating Widget (লাইভ চ্যাট উইজেট)</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Control live chat widget visibility on customer shop pages</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <SectionSaveBtn id="live_chat" fields={['is_live_chat_active']} />
+              {/* Toggle Switch */}
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="is_live_chat_active"
+                  checked={settings.is_live_chat_active ?? true}
+                  onChange={(e) => setSettings(prev => ({ ...prev, is_live_chat_active: e.target.checked }))}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#ff6b35]"></div>
+              </label>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50/70 border border-gray-100 rounded-xl">
+            <div className="flex items-center gap-3">
+              <span className={`w-3 h-3 rounded-full ${settings.is_live_chat_active ?? true ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+              <div>
+                <p className="text-sm font-bold text-gray-800">
+                  {settings.is_live_chat_active ?? true
+                    ? '🟢 লাইভ চ্যাট সক্রিয় (Live Chat Active)'
+                    : '🔴 লাইভ চ্যাট নিষ্ক্রিয় (Live Chat Disabled)'}
+                </p>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {settings.is_live_chat_active ?? true
+                    ? 'ওয়েবসাইটে কাস্টমারদের জন্য লাইভ চ্যাট এবং সাপোর্ট উইজেট চালু রয়েছে।'
+                    : 'ওয়েবসাইট থেকে লাইভ চ্যাট এবং ভাসমান সাপোর্ট উইজেট বন্ধ (হাইড) রাখা হয়েছে।'}
+                </p>
               </div>
             </div>
           </div>

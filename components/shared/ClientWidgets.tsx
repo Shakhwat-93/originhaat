@@ -22,9 +22,11 @@ import { useEffect } from 'react';
 interface ClientWidgetsProps {
   whatsappNumber: string;
   hotlineNumber: string;
+  isLiveChatActive?: boolean;
+  whatsappDefaultMessage?: string;
 }
 
-export function ClientWidgets({ whatsappNumber, hotlineNumber }: ClientWidgetsProps) {
+export function ClientWidgets({ whatsappNumber, hotlineNumber, isLiveChatActive = true, whatsappDefaultMessage }: ClientWidgetsProps) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
@@ -44,7 +46,7 @@ export function ClientWidgets({ whatsappNumber, hotlineNumber }: ClientWidgetsPr
     <>
       <MobileBottomNav />
       <FloatingCartWidget />
-      <ChatWidget whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} />
+      {isLiveChatActive && <ChatWidget whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} whatsappDefaultMessage={whatsappDefaultMessage} />}
     </>
   );
 }

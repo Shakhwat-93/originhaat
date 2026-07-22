@@ -31,8 +31,14 @@ export async function GET(request: NextRequest) {
     ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS chat_ai_instructions text DEFAULT 'You are an AI assistant for Origin Haat (originhaat.com). Answer customer queries politely in Bengali. Delivery charges: Inside Dhaka 60 TK, Outside Dhaka 120 TK. Free delivery on orders over 999 TK. Dhaka delivery within 24 hours, outside Dhaka 2-3 days.';
     ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS chat_ai_api_key text;
 
-    -- Add invoice_template column to oh_settings
-    ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS invoice_template text;
+    -- Add live chat widget active column to oh_settings
+    ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS is_live_chat_active boolean DEFAULT true;
+
+    -- Add whatsapp_default_message column to oh_settings
+    ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS whatsapp_default_message text DEFAULT 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।';
+
+    -- Add sort_order column to oh_products for product reordering
+    ALTER TABLE oh_products ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
   `;
 
   // We will try to connect to the internal database container

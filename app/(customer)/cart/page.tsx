@@ -159,11 +159,6 @@ export default function CartPage() {
                   <span className="font-medium">{formatBDTNumeric(deliveryCharge)}</span>
                 )}
               </div>
-              {deliveryCharge > 0 && (
-                <p className="text-xs text-[#6b7280] bg-[#f8f9fa] rounded-lg px-3 py-2">
-                  💡 ৳{formatBDTNumeric(999 - totalPrice)} আরো কিনলে ফ্রি ডেলিভারি পাবেন!
-                </p>
-              )}
               <div className="border-t border-[#e5e7eb] pt-3 flex justify-between font-bold text-[#111827]">
                 <span>মোট</span>
                 <span className="text-xl text-[#ff6b35]">{formatBDTNumeric(grandTotal)}</span>

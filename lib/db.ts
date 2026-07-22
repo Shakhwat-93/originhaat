@@ -34,10 +34,14 @@ export async function getSettings() {
       free_delivery_min_amount: 2000,
       announcement_text: '',
       is_announcement_active: false,
+      is_live_chat_active: true,
+      whatsapp_default_message: 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।',
     };
   }
   return {
     ...data,
+    is_live_chat_active: data?.is_live_chat_active ?? true,
+    whatsapp_default_message: data?.whatsapp_default_message || 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।',
     free_delivery_min_amount: data.free_delivery_min_order ?? 2000,
   };
 }
@@ -76,6 +80,7 @@ export async function getFeaturedProducts() {
     .select('*')
     .eq('is_active', true)
     .eq('is_featured', true)
+    .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -90,6 +95,7 @@ export async function getAllProducts() {
     .from('oh_products')
     .select('*')
     .eq('is_active', true)
+    .order('sort_order', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
   if (error) {

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight } from 'lucide-react';
-import { showConfirmAlert } from '@/lib/alerts';
+import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Sparkles, RefreshCw } from 'lucide-react';
+import { showConfirmAlert, showSuccessAlert } from '@/lib/alerts';
 
 interface Product {
   id: string;
@@ -14,6 +14,7 @@ interface Product {
   stock: number;
   is_featured: boolean;
   is_active: boolean;
+  sort_order: number;
   images: string[];
   category_id: string;
   slug: string;
@@ -28,6 +29,7 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [savingOrder, setSavingOrder] = useState(false);
   
   // Search & Filter state
   const [search, setSearch] = useState('');
@@ -43,13 +45,20 @@ export default function AdminProductsPage() {
         .select('id, name_bn');
       if (catData) setCategories(catData);
 
-      // 2. Fetch products
+      // 2. Fetch products sorted by sort_order ASC, then created_at DESC
       const { data: prodData, error } = await supabase
         .from('oh_products')
         .select('*')
+        .order('sort_order', { ascending: true, nullsFirst: false })
         .order('created_at', { ascending: false });
       if (error) throw error;
-      if (prodData) setProducts(prodData);
+      if (prodData) {
+        const formatted = prodData.map((p, i) => ({
+          ...p,
+          sort_order: p.sort_order ?? (i + 1),
+        }));
+        setProducts(formatted);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -60,6 +69,39 @@ export default function AdminProductsPage() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handleUpdateSortOrder = async (prodId: string, newOrder: number) => {
+    setProducts(prev => prev.map(p => p.id === prodId ? { ...p, sort_order: newOrder } : p));
+    await supabase.from('oh_products').update({ sort_order: newOrder }).eq('id', prodId);
+  };
+
+  const handleMovePosition = async (index: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= filteredProducts.length) return;
+
+    setSavingOrder(true);
+    const itemA = filteredProducts[index];
+    const itemB = filteredProducts[targetIndex];
+
+    const orderA = itemA.sort_order ?? (index + 1);
+    const orderB = itemB.sort_order ?? (targetIndex + 1);
+
+    const newOrderA = orderB;
+    const newOrderB = orderA === orderB ? (direction === 'up' ? orderB - 1 : orderB + 1) : orderA;
+
+    setProducts(prev => prev.map(p => {
+      if (p.id === itemA.id) return { ...p, sort_order: newOrderA };
+      if (p.id === itemB.id) return { ...p, sort_order: newOrderB };
+      return p;
+    }));
+
+    await Promise.all([
+      supabase.from('oh_products').update({ sort_order: newOrderA }).eq('id', itemA.id),
+      supabase.from('oh_products').update({ sort_order: newOrderB }).eq('id', itemB.id),
+    ]);
+
+    setSavingOrder(false);
+  };
 
   const handleToggleActive = async (prod: Product) => {
     const newActive = !prod.is_active;
@@ -231,12 +273,34 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
+      {/* Info Tip Banner for Reordering */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/60 rounded-2xl p-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-[#ff6b35] text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <h4 className="font-bold text-gray-900 text-xs">পণ্য সাজানোর নির্দেশিকা (Product Reordering)</h4>
+            <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
+              ওয়েবসাইট হোমপেজের **বেস্ট সেলার (Hot / Featured Products)** সেকশনে কোন প্রোডাক্ট আগে দেখাবে তা এখান থেকে নিয়ন্ত্রণ করুন। <b>⬆️ / ⬇️</b> বাটনে ক্লিক করে বা সরাসরি <b>পজিশন নম্বর</b> বসিয়ে ক্রমানুসারে সাজান।
+            </p>
+          </div>
+        </div>
+        {savingOrder && (
+          <div className="flex items-center gap-2 text-xs font-bold text-[#ff6b35] shrink-0 bg-white px-3 py-1.5 rounded-xl border border-orange-100 shadow-2xs">
+            <RefreshCw size={14} className="animate-spin" />
+            <span>সেভ হচ্ছে...</span>
+          </div>
+        )}
+      </div>
+
       {/* Product List Table (Desktop) */}
       <div className="hidden md:block bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left text-black">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                <th className="px-4 py-4 text-center w-28">Order / ক্রম</th>
                 <th className="px-6 py-4">Image</th>
                 <th className="px-6 py-4">Product Name</th>
                 <th className="px-6 py-4">Sales Price</th>
@@ -248,11 +312,43 @@ export default function AdminProductsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map((prod) => {
+              {filteredProducts.map((prod, idx) => {
                 const mainImage = prod.images?.[0] || '';
                 const categoryName = categories.find(c => c.id === prod.category_id)?.name_bn || 'Uncategorized';
                 return (
                   <tr key={prod.id} className="hover:bg-gray-50/50 transition-colors">
+                    {/* Reorder Buttons & Position Input */}
+                    <td className="px-4 py-4 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            type="button"
+                            disabled={idx === 0 || savingOrder}
+                            onClick={() => handleMovePosition(idx, 'up')}
+                            className="p-1 rounded bg-gray-100 hover:bg-[#ff6b35] hover:text-white text-gray-600 disabled:opacity-30 cursor-pointer transition-colors"
+                            title="Move Up (উপরে তুলুন)"
+                          >
+                            <ArrowUp size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            disabled={idx === filteredProducts.length - 1 || savingOrder}
+                            onClick={() => handleMovePosition(idx, 'down')}
+                            className="p-1 rounded bg-gray-100 hover:bg-[#ff6b35] hover:text-white text-gray-600 disabled:opacity-30 cursor-pointer transition-colors"
+                            title="Move Down (নিচে নামান)"
+                          >
+                            <ArrowDown size={12} />
+                          </button>
+                        </div>
+                        <input
+                          type="number"
+                          value={prod.sort_order ?? (idx + 1)}
+                          onChange={(e) => handleUpdateSortOrder(prod.id, Number(e.target.value))}
+                          className="w-11 text-center py-1 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 focus:outline-none focus:border-[#ff6b35] bg-gray-50"
+                          title="Position Number"
+                        />
+                      </div>
+                    </td>
                     <td className="px-6 py-4 shrink-0">
                       <div className="relative w-12 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
                         {mainImage ? (
@@ -343,11 +439,42 @@ export default function AdminProductsPage() {
 
       {/* Product Cards (Mobile) */}
       <div className="md:hidden space-y-4">
-        {filteredProducts.map((prod) => {
+        {filteredProducts.map((prod, idx) => {
           const mainImage = prod.images?.[0] || '';
           const categoryName = categories.find(c => c.id === prod.category_id)?.name_bn || 'Uncategorized';
           return (
             <div key={prod.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
+              {/* Header with Position Control */}
+              <div className="flex items-center justify-between pb-2 border-b border-gray-50">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Position:</span>
+                  <input
+                    type="number"
+                    value={prod.sort_order ?? (idx + 1)}
+                    onChange={(e) => handleUpdateSortOrder(prod.id, Number(e.target.value))}
+                    className="w-12 text-center py-0.5 border border-gray-200 rounded-lg text-xs font-bold text-gray-800 bg-gray-50"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    disabled={idx === 0 || savingOrder}
+                    onClick={() => handleMovePosition(idx, 'up')}
+                    className="p-1.5 rounded-lg bg-gray-100 text-gray-700 disabled:opacity-30 cursor-pointer"
+                  >
+                    <ArrowUp size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={idx === filteredProducts.length - 1 || savingOrder}
+                    onClick={() => handleMovePosition(idx, 'down')}
+                    className="p-1.5 rounded-lg bg-gray-100 text-gray-700 disabled:opacity-30 cursor-pointer"
+                  >
+                    <ArrowDown size={14} />
+                  </button>
+                </div>
+              </div>
+
               {/* Header */}
               <div className="flex items-center gap-3">
                 <div className="relative w-12 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">

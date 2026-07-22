@@ -12,7 +12,9 @@ export default async function CustomerLayout({
 }) {
   const settings = await getSettings();
   const whatsappNumber = settings?.whatsapp_number || '8801700000000';
+  const whatsappDefaultMessage = settings?.whatsapp_default_message || 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।';
   const hotlineNumber = settings?.hotline_number || '01700000000';
+  const isLiveChatActive = settings?.is_live_chat_active ?? true;
 
   const priceColor = settings?.price_color || '#12b76a';
   const badgeColor = settings?.badge_color || '#ff6b35';
@@ -29,7 +31,7 @@ export default async function CustomerLayout({
       <main className="min-h-screen bg-slate-50/50">{children}</main>
       <Footer settings={settings || undefined} />
 
-      <ClientWidgets whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} />
+      <ClientWidgets whatsappNumber={whatsappNumber} hotlineNumber={hotlineNumber} isLiveChatActive={isLiveChatActive} whatsappDefaultMessage={whatsappDefaultMessage} />
     </>
   );
 }

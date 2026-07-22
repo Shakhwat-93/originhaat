@@ -13,6 +13,7 @@ import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 interface ChatWidgetProps {
   whatsappNumber: string;
   hotlineNumber?: string;
+  whatsappDefaultMessage?: string;
 }
 
 interface BotMessage {
@@ -67,7 +68,7 @@ function BubbleDots() {
   );
 }
 
-export function ChatWidget({ whatsappNumber, hotlineNumber }: ChatWidgetProps) {
+export function ChatWidget({ whatsappNumber, hotlineNumber, whatsappDefaultMessage }: ChatWidgetProps) {
   const [isOpen, setIsOpen]         = useState(false);
   const [showSpeedDial, setShowSpeedDial] = useState(false);
   const [activeScreen, setActiveScreen] = useState<'welcome' | 'menu' | 'live-onboard' | 'live-thread' | 'ai-bot' | 'end-session' | 'feedback-done'>('welcome');
@@ -117,6 +118,10 @@ export function ChatWidget({ whatsappNumber, hotlineNumber }: ChatWidgetProps) {
   const messagesEndRef    = useRef<HTMLDivElement>(null);
   const botMessagesEndRef = useRef<HTMLDivElement>(null);
 
+  const [isLiveChatEnabled, setIsLiveChatEnabled] = useState(true);
+
+  const [dynamicWaMsg, setDynamicWaMsg] = useState(whatsappDefaultMessage || 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।');
+
   // ── Init ────────────────────────────────────────────────────────────────
   useEffect(() => {
     let storedId = localStorage.getItem('oh_visitor_id');
@@ -131,6 +136,8 @@ export function ChatWidget({ whatsappNumber, hotlineNumber }: ChatWidgetProps) {
       .then(r => r.ok ? r.json() : Promise.reject())
       .then(data => {
         if (data?.facebook_url) setFacebookUrl(data.facebook_url);
+        if (data?.is_live_chat_active === false) setIsLiveChatEnabled(false);
+        if (data?.whatsapp_default_message) setDynamicWaMsg(data.whatsapp_default_message);
       })
       .catch(() => {
         setFacebookUrl('https://facebook.com/originhaat');
@@ -307,7 +314,7 @@ export function ChatWidget({ whatsappNumber, hotlineNumber }: ChatWidgetProps) {
     if (!facebookUrl) return 'https://m.me';
     try { const u = new URL(facebookUrl); return `https://m.me/${u.pathname.replace(/^\/|\/$/g, '')}`; } catch { return facebookUrl; }
   };
-  const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent('হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।')}`;
+  const waUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(dynamicWaMsg || 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।')}`;
 
   const quickReplies = [
     { bn: '🚚 ডেলিভারি চার্জ', en: '🚚 Delivery Info' },
@@ -328,6 +335,8 @@ export function ChatWidget({ whatsappNumber, hotlineNumber }: ChatWidgetProps) {
 
   const canGoBack = ['menu', 'live-onboard', 'ai-bot', 'end-session'].includes(activeScreen) ||
     (activeScreen === 'live-thread' && !!activeChat);
+
+  if (!isLiveChatEnabled) return null;
 
   return (
     <div className="fixed bottom-20 md:bottom-5 right-5 z-50 flex flex-col items-end select-none" style={{ fontFamily: "'Inter', 'Noto Sans Bengali', sans-serif" }}>
