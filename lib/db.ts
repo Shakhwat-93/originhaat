@@ -84,8 +84,15 @@ export async function getFeaturedProducts() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching featured products:', error);
-    return [];
+    // Fallback: If sort_order column is missing in remote DB, order by created_at
+    const { data: fallbackData } = await supabaseServer
+      .from('oh_products')
+      .select('*')
+      .eq('is_active', true)
+      .eq('is_featured', true)
+      .order('created_at', { ascending: false });
+
+    return fallbackData || [];
   }
   return data || [];
 }
@@ -99,8 +106,14 @@ export async function getAllProducts() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching all products:', error);
-    return [];
+    // Fallback: If sort_order column is missing in remote DB, order by created_at
+    const { data: fallbackData } = await supabaseServer
+      .from('oh_products')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    return fallbackData || [];
   }
   return data || [];
 }
