@@ -153,11 +153,7 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between text-sm text-[#374151]">
                 <span>ডেলিভারি চার্জ</span>
-                {deliveryCharge === 0 ? (
-                  <span className="text-[#10b981] font-medium">ফ্রি 🎉</span>
-                ) : (
-                  <span className="font-medium">{formatBDTNumeric(deliveryCharge)}</span>
-                )}
+                <span className="text-gray-400 text-xs">চেকআউটে নির্ধারণ করা হবে</span>
               </div>
               <div className="border-t border-[#e5e7eb] pt-3 flex justify-between font-bold text-[#111827]">
                 <span>মোট</span>

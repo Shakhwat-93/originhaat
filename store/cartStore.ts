@@ -67,8 +67,7 @@ export const useCartStore = create<CartStore>()(
         get().items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
 
       getDeliveryCharge: () => {
-        const total = get().getTotalPrice();
-        return total >= 999 ? 0 : 80;
+        return 0;
       },
 
       getGrandTotal: () => get().getTotalPrice() + get().getDeliveryCharge(),

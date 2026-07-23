@@ -9,7 +9,7 @@ import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { checkoutSchema, type CheckoutFormData } from '@/lib/validations';
 import { formatBDTNumeric, generateWhatsAppURL, generateOrderWhatsAppMessage } from '@/lib/utils';
-import { Loader2, CheckCircle, ArrowLeft, MessageCircle, Tag, Check, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle, ArrowLeft, MessageCircle, Tag, Check, AlertCircle, Minus, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
@@ -24,7 +24,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
-  const { items, getTotalPrice, clearCart } = useCartStore();
+  const { items, getTotalPrice, updateQuantity, removeItem, clearCart } = useCartStore();
   const showToast = useUIStore((s) => s.showToast);
 
   // Settings state from DB
@@ -488,8 +488,45 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#111827] line-clamp-1">{item.product.name_bn}</p>
-                      <p className="text-xs text-[#6b7280]">× {item.quantity}</p>
+                      <p className="text-xs font-semibold text-[#111827] line-clamp-1 mb-1">{item.product.name_bn}</p>
+                      
+                      <div className="flex items-center gap-2">
+                        {/* Qty Controls */}
+                        <div className="flex items-center border border-gray-200 rounded-md overflow-hidden bg-gray-50/50">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            className="px-1.5 py-0.5 hover:bg-gray-100 transition-colors cursor-pointer"
+                            aria-label="কমান"
+                          >
+                            <Minus size={10} className="text-[#374151]" />
+                          </button>
+                          <span className="px-1.5 text-[10px] font-bold text-gray-700 min-w-[1rem] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            className="px-1.5 py-0.5 hover:bg-gray-100 transition-colors cursor-pointer"
+                            aria-label="বাড়ান"
+                          >
+                            <Plus size={10} className="text-[#374151]" />
+                          </button>
+                        </div>
+
+                        {/* Remove Button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            removeItem(item.product.id);
+                            showToast(`${item.product.name_bn} সরানো হয়েছে`, 'info');
+                          }}
+                          className="text-rose-500 hover:text-rose-700 transition-colors p-0.5 cursor-pointer"
+                          aria-label="সরিয়ে দিন"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
                     </div>
                     <span className="text-xs font-bold text-[#374151] flex-shrink-0">
                       {formatBDTNumeric(item.product.price * item.quantity)}
