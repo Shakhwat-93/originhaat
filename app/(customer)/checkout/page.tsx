@@ -414,7 +414,7 @@ export default function CheckoutPage() {
                   <textarea
                     id="address"
                     rows={3}
-                    placeholder="বাসা নম্বর, রাস্তা, এলাকা, উপজেলা..."
+                    placeholder="বাসা নম্বর, রাস্তা, গ্রাম, থানা, জেলা..."
                     className={cn(
                       'w-full px-4 py-3 border-2 rounded-xl text-[#111827] placeholder-[#9ca3af] focus:outline-none transition-colors text-sm resize-none text-black bg-white',
                       errors.address
