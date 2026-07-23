@@ -490,27 +490,27 @@ export default function CheckoutPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-[#111827] line-clamp-1 mb-1">{item.product.name_bn}</p>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2.5">
                         {/* Qty Controls */}
-                        <div className="flex items-center border border-gray-200 rounded-md overflow-hidden bg-gray-50/50">
+                        <div className="flex items-center border border-gray-200/80 rounded-lg overflow-hidden bg-gray-50/70 shadow-xs">
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
-                            className="px-1.5 py-0.5 hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="px-2 py-1 hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
                             aria-label="কমান"
                           >
-                            <Minus size={10} className="text-[#374151]" />
+                            <Minus size={11} className="text-[#374151]" />
                           </button>
-                          <span className="px-1.5 text-[10px] font-bold text-gray-700 min-w-[1rem] text-center">
+                          <span className="px-2 text-xs font-bold text-gray-800 min-w-[1.2rem] text-center font-sans">
                             {item.quantity}
                           </span>
                           <button
                             type="button"
                             onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                            className="px-1.5 py-0.5 hover:bg-gray-100 transition-colors cursor-pointer"
+                            className="px-2 py-1 hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
                             aria-label="বাড়ান"
                           >
-                            <Plus size={10} className="text-[#374151]" />
+                            <Plus size={11} className="text-[#374151]" />
                           </button>
                         </div>
 
@@ -521,10 +521,10 @@ export default function CheckoutPage() {
                             removeItem(item.product.id);
                             showToast(`${item.product.name_bn} সরানো হয়েছে`, 'info');
                           }}
-                          className="text-rose-500 hover:text-rose-700 transition-colors p-0.5 cursor-pointer"
+                          className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition-all cursor-pointer flex items-center justify-center shrink-0"
                           aria-label="সরিয়ে দিন"
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
