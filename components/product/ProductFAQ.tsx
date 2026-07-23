@@ -8,16 +8,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface ProductFAQProps {
   faqs: FAQ[];
+  defaultFaqs?: FAQ[];
 }
 
-export function ProductFAQ({ faqs }: ProductFAQProps) {
+export function ProductFAQ({ faqs, defaultFaqs }: ProductFAQProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
-  const defaultFAQs: FAQ[] = [
+  const defaultFallbackFAQs: FAQ[] = [
     { question: 'ডেলিভারি চার্জ কত?', answer: '৳৯৯৯ এর বেশি অর্ডারে ফ্রি ডেলিভারি। ঢাকায় ৬০ টাকা এবং ঢাকার বাইরে ১০০ টাকা।' },
     { question: 'কিভাবে পেমেন্ট করবো?', answer: 'ক্যাশ অন ডেলিভারি — পণ্য পেয়ে পেমেন্ট করুন। bKash, Nagad, Rocket ও গ্রহণযোগ্য।' },
     { question: 'পণ্য ফেরত দেওয়া যাবে?', answer: 'হ্যাঁ, পণ্য পাওয়ার ৭ দিনের মধ্যে যেকোনো কারণে ফেরত দিতে পারবেন।' },
     { question: 'অর্ডার কিভাবে ট্র্যাক করবো?', answer: 'অর্ডার করার পরে WhatsApp-এ ট্র্যাকিং লিংক পাঠানো হবে।' },
+  ];
+
+  const displayedFAQs: FAQ[] = [
+    ...(defaultFaqs && defaultFaqs.length > 0 ? defaultFaqs : defaultFallbackFAQs),
     ...faqs,
   ];
 
@@ -25,7 +30,7 @@ export function ProductFAQ({ faqs }: ProductFAQProps) {
     <div className="bg-white rounded-2xl border border-[#e5e7eb] p-6">
       <h2 className="text-lg font-bold text-[#111827] mb-4">❓ সাধারণ প্রশ্নোত্তর</h2>
       <div className="space-y-2">
-        {defaultFAQs.map((faq, i) => (
+        {displayedFAQs.map((faq, i) => (
           <div
             key={i}
             className="border border-[#e5e7eb] rounded-xl overflow-hidden"

@@ -36,6 +36,7 @@ export async function getSettings() {
       is_announcement_active: false,
       is_live_chat_active: true,
       whatsapp_default_message: 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।',
+      default_faqs: [],
     };
   }
   return {
@@ -43,6 +44,7 @@ export async function getSettings() {
     is_live_chat_active: data?.is_live_chat_active ?? true,
     whatsapp_default_message: data?.whatsapp_default_message || 'হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।',
     free_delivery_min_amount: data.free_delivery_min_order ?? 2000,
+    default_faqs: data?.default_faqs || [],
   };
 }
 

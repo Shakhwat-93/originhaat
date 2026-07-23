@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
-import { getProductBySlug, getProductSlugs, supabaseServer } from '@/lib/db';
+import { getProductBySlug, getProductSlugs, supabaseServer, getSettings } from '@/lib/db';
 import { ProductGallery } from '@/components/product/ProductGallery';
 import { ProductInfo } from '@/components/product/ProductInfo';
 import { ProductReviews } from '@/components/product/ProductReviews';
@@ -77,6 +77,10 @@ export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) notFound();
+
+  // Load default FAQs from site settings
+  const settings = await getSettings();
+  const defaultFaqs = settings?.default_faqs || [];
 
   // Fetch related products from DB
   const { data: related } = await supabaseServer
@@ -181,7 +185,7 @@ export default async function ProductPage({ params }: Props) {
         {/* Reviews + FAQ */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
           <ProductReviews reviews={product.reviews || []} />
-          <ProductFAQ faqs={product.faqs || []} />
+          <ProductFAQ faqs={product.faqs || []} defaultFaqs={defaultFaqs} />
         </div>
 
         {/* Related Products */}

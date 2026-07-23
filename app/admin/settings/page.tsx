@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2, Clock, MessageSquare } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2, Clock, MessageSquare, HelpCircle } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 import type { ChangeEvent } from 'react';
 
@@ -85,6 +85,7 @@ interface Settings {
   copyright_text?: string;
   credits_text?: string;
   credits_url?: string;
+  default_faqs?: Array<{ question: string; answer: string }> | null;
 }
 
 interface PathaoStore {
@@ -137,6 +138,7 @@ export default function AdminSettingsPage() {
     badge_color: '',
     order_limit_time: 10,
     trust_bar_items: [],
+    default_faqs: [],
     contact_email: 'support@originhaat.com',
     contact_address: 'ঢাকা, বাংলাদেশ',
     support_time: 'সকাল ৯টা — রাত ৯টা',
@@ -265,7 +267,15 @@ export default function AdminSettingsPage() {
       if (error && error.code !== 'PGLS') {
         console.error('Error loading settings:', error);
       } else if (data) {
-        setSettings(data);
+        setSettings({
+          ...data,
+          default_faqs: data.default_faqs && data.default_faqs.length > 0 ? data.default_faqs : [
+            { question: 'ডেলিভারি চার্জ কত?', answer: '৳৯৯৯ এর বেশি অর্ডারে ফ্রি ডেলিভারি। ঢাকায় ৬০ টাকা এবং ঢাকার বাইরে ১০০ টাকা।' },
+            { question: 'কিভাবে পেমেন্ট করবো?', answer: 'ক্যাশ অন ডেলিভারি — পণ্য পেয়ে পেমেন্ট করুন। bKash, Nagad, Rocket ও গ্রহণযোগ্য।' },
+            { question: 'পণ্য ফেরত দেওয়া যাবে?', answer: 'হ্যাঁ, পণ্য পাওয়ার ৭ দিনের মধ্যে যেকোনো কারণে ফেরত দিতে পারবেন।' },
+            { question: 'অর্ডার কিভাবে ট্র্যাক করবো?', answer: 'অর্ডার করার পরে WhatsApp-এ ট্র্যাকিং লিংক পাঠানো হবে।' }
+          ]
+        });
       }
     } catch (err) {
       console.error(err);
@@ -299,6 +309,7 @@ export default function AdminSettingsPage() {
           const fallbackPayload = { ...payload };
           delete (fallbackPayload as any).is_live_chat_active;
           delete (fallbackPayload as any).whatsapp_default_message;
+          delete (fallbackPayload as any).default_faqs;
 
           const { error: fallbackErr } = await supabase
             .from('oh_settings')
@@ -861,6 +872,93 @@ export default function AdminSettingsPage() {
                 className="px-4 py-2 border-2 border-dashed border-gray-200 hover:border-[#ff6b35] text-gray-500 hover:text-[#ff6b35] text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
               >
                 + আইটেম যোগ করুন
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Default FAQs Settings */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <HelpCircle size={18} className="text-[#ff6b35]" />
+              <div>
+                <h2 className="font-bold text-gray-900">Default Product FAQs (সাধারণ প্রশ্নোত্তর)</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Manage default FAQs shown on all single product pages. Product-specific FAQs will override or append to these.</p>
+              </div>
+            </div>
+            <SectionSaveBtn id="default_faqs" fields={['default_faqs']} />
+          </div>
+
+          <div className="space-y-4">
+            {(settings.default_faqs || []).map((faq, idx) => (
+              <div key={idx} className="space-y-3 p-4 border border-gray-100 bg-gray-50/30 rounded-xl relative group">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-[#ff6b35] uppercase tracking-widest">Question #{idx + 1}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const updated = (settings.default_faqs || []).filter((_, i) => i !== idx);
+                      setSettings({ ...settings, default_faqs: updated });
+                    }}
+                    className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    title="Delete FAQ"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Question (Bangla)</label>
+                    <input
+                      type="text"
+                      value={faq.question}
+                      onChange={(e) => {
+                        const updated = [...(settings.default_faqs || [])];
+                        updated[idx] = { ...updated[idx], question: e.target.value };
+                        setSettings({ ...settings, default_faqs: updated });
+                      }}
+                      placeholder="যেমন: ডেলিভারি চার্জ কত?"
+                      className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-sans font-medium"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Answer (Bangla)</label>
+                    <textarea
+                      value={faq.answer}
+                      onChange={(e) => {
+                        const updated = [...(settings.default_faqs || [])];
+                        updated[idx] = { ...updated[idx], answer: e.target.value };
+                        setSettings({ ...settings, default_faqs: updated });
+                      }}
+                      placeholder="যেমন: ঢাকার ভিতরে ৬০ টাকা..."
+                      rows={2}
+                      className="w-full text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-[#ff6b35] text-black bg-white font-sans font-medium"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {(!settings.default_faqs || settings.default_faqs.length === 0) && (
+              <div className="text-center py-6 text-gray-400 text-xs font-semibold">
+                ⚠️ কোনো সাধারণ প্রশ্নোত্তর যোগ করা হয়নি। ডিফল্ট FAQ গুলো শো করবে।
+              </div>
+            )}
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  const updated = [...(settings.default_faqs || []), { question: '', answer: '' }];
+                  setSettings({ ...settings, default_faqs: updated });
+                }}
+                className="px-4 py-2 border-2 border-dashed border-gray-200 hover:border-[#ff6b35] text-gray-500 hover:text-[#ff6b35] text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                + FAQ যোগ করুন
               </button>
             </div>
           </div>

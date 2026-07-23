@@ -39,6 +39,9 @@ export async function GET(request: NextRequest) {
 
     -- Add sort_order column to oh_products for product reordering
     ALTER TABLE oh_products ADD COLUMN IF NOT EXISTS sort_order integer DEFAULT 0;
+
+    -- Add default_faqs column to oh_settings for editable product FAQs
+    ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS default_faqs jsonb DEFAULT '[]'::jsonb;
   `;
 
   // We will try to connect to the internal database container
