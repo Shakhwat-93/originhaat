@@ -13,6 +13,9 @@ interface FooterProps {
     copyright_text?: string;
     credits_text?: string;
     credits_url?: string;
+    facebook_url?: string;
+    instagram_url?: string;
+    youtube_url?: string;
   };
 }
 
@@ -25,6 +28,10 @@ export function Footer({ settings }: FooterProps) {
   const copyrightText = settings?.copyright_text || '© ২০২৬ Origin Haat. সর্বস্বত্ব সংরক্ষিত।';
   const creditsText = settings?.credits_text || 'Build by Shakhwat Hossain Rasel';
   const creditsUrl = settings?.credits_url || 'https://shakhwatrasel.vercel.app';
+  
+  const facebookUrl = settings?.facebook_url || 'https://facebook.com';
+  const youtubeUrl = settings?.youtube_url || 'https://youtube.com';
+  const instagramUrl = settings?.instagram_url || 'https://instagram.com';
 
   const paymentMethods = paymentMethodsString
     .split(',')
@@ -52,7 +59,7 @@ export function Footer({ settings }: FooterProps) {
             </p>
             <div className="flex gap-3">
               <a
-                href="https://facebook.com"
+                href={facebookUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 bg-[#1877F2] rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity animate-pulse-badge"
@@ -61,7 +68,7 @@ export function Footer({ settings }: FooterProps) {
                 <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" /></svg>
               </a>
               <a
-                href="https://youtube.com"
+                href={youtubeUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 bg-[#FF0000] rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity"
@@ -70,7 +77,7 @@ export function Footer({ settings }: FooterProps) {
                 <svg viewBox="0 0 24 24" className="w-4 h-4 fill-white"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.4a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" /></svg>
               </a>
               <a
-                href="https://instagram.com"
+                href={instagramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-9 h-9 bg-gradient-to-tr from-[#FFB200] via-[#FF007A] to-[#7A00FF] rounded-lg flex items-center justify-center hover:opacity-90 transition-opacity"
