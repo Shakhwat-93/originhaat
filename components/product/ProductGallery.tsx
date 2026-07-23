@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,6 +16,17 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
 
   const prev = () => setActiveIndex((i) => (i === 0 ? images.length - 1 : i - 1));
   const next = () => setActiveIndex((i) => (i === images.length - 1 ? 0 : i + 1));
+
+  // Autoplay slideshow effect
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveIndex((i) => (i === images.length - 1 ? 0 : i + 1));
+    }, 3500); // Change image every 3.5 seconds
+
+    return () => clearInterval(interval);
+  }, [images.length, activeIndex]);
 
   return (
     <div className="space-y-3">
