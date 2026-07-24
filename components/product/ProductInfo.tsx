@@ -151,6 +151,28 @@ export function ProductInfo({ product }: ProductInfoProps) {
         </div>
       )}
 
+      {/* Product Benefits */}
+      {product.benefits && product.benefits.length > 0 && (
+        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4.5 space-y-2.5">
+          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+            <span>✨</span> পণ্যটির বিশেষ সুবিধাসমূহ:
+          </h3>
+          <ul className="space-y-1.5">
+            {product.benefits.map((benefit, idx) => {
+              const hasEmoji = /^[^\p{L}\p{N}]/u.test(benefit.trim());
+              return (
+                <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed font-medium">
+                  {!hasEmoji ? (
+                    <span className="text-[#12b76a] font-bold flex-shrink-0 mt-0.5">✓</span>
+                  ) : null}
+                  <span>{benefit}</span>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
       {/* Quantity & Action Buttons */}
       <div className="space-y-4 pt-2 border-t border-gray-100">
         {/* Row 1: Quantity & Add to Bag */}
