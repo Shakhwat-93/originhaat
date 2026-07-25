@@ -1509,7 +1509,7 @@ function OrdersPageContent() {
             AUTO DISTRIBUTE ORDERS
           </button>
           <button
-            onClick={() => showWarningAlert('New Order', 'Please use the customer checkout page to place a new order.')}
+            onClick={() => { fetchProductsCatalog(); setShowCreateModal(true); }}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#5c59f6] hover:bg-[#4d4ae1] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95 animate-none"
           >
             <Plus size={14} />
