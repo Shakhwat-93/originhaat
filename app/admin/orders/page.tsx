@@ -91,6 +91,180 @@ function OrdersPageContent() {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
 
+  // Order creation states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creatingOrder, setCreatingOrder] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    customer_name: '',
+    phone: '',
+    address: '',
+    district: '',
+    note: '',
+    delivery_charge: 95,
+    discount_amount: 0,
+    subtotal: 0,
+    grand_total: 95,
+    items: [] as any[]
+  });
+
+  const handleCreateDistrictChange = (districtName: string) => {
+    const charge = districtName === 'Dhaka' ? 95 : 115;
+    setCreateForm((prev: any) => {
+      const { subtotal, grand_total } = recalculateTotals(prev.items, charge, prev.discount_amount);
+      return { ...prev, district: districtName, delivery_charge: charge, subtotal, grand_total };
+    });
+  };
+
+  const handleCreateAddItem = (productId: string) => {
+    const product = productsList.find(p => p.id === productId);
+    if (!product) return;
+
+    setCreateForm((prev: any) => {
+      const existing = prev.items.find((item: any) => item.product_id === product.id);
+      let updatedItems;
+      if (existing) {
+        updatedItems = prev.items.map((item: any) => 
+          item.product_id === product.id 
+            ? { ...item, quantity: item.quantity + 1, subtotal: item.price * (item.quantity + 1) } 
+            : item
+        );
+      } else {
+        const newItem = {
+          id: Math.random().toString(),
+          product_id: product.id,
+          product_slug: product.slug,
+          product_name: product.name_bn || product.name_en,
+          product_image: product.images?.[0] || null,
+          price: product.price,
+          quantity: 1,
+          subtotal: product.price
+        };
+        updatedItems = [...prev.items, newItem];
+      }
+      const { subtotal, grand_total } = recalculateTotals(updatedItems, prev.delivery_charge, prev.discount_amount);
+      return { ...prev, items: updatedItems, subtotal, grand_total };
+    });
+  };
+
+  const handleCreateItemQtyChange = (itemId: string, newQty: number) => {
+    const qty = Math.max(1, newQty);
+    setCreateForm((prev: any) => {
+      const updatedItems = prev.items.map((item: any) => 
+        item.id === itemId ? { ...item, quantity: qty, subtotal: item.price * qty } : item
+      );
+      const { subtotal, grand_total } = recalculateTotals(updatedItems, prev.delivery_charge, prev.discount_amount);
+      return { ...prev, items: updatedItems, subtotal, grand_total };
+    });
+  };
+
+  const handleCreateItemPriceChange = (itemId: string, newPrice: number) => {
+    const price = Math.max(0, newPrice);
+    setCreateForm((prev: any) => {
+      const updatedItems = prev.items.map((item: any) => 
+        item.id === itemId ? { ...item, price, subtotal: price * item.quantity } : item
+      );
+      const { subtotal, grand_total } = recalculateTotals(updatedItems, prev.delivery_charge, prev.discount_amount);
+      return { ...prev, items: updatedItems, subtotal, grand_total };
+    });
+  };
+
+  const handleCreateRemoveItem = (itemId: string) => {
+    setCreateForm((prev: any) => {
+      const updatedItems = prev.items.filter((item: any) => item.id !== itemId);
+      const { subtotal, grand_total } = recalculateTotals(updatedItems, prev.delivery_charge, prev.discount_amount);
+      return { ...prev, items: updatedItems, subtotal, grand_total };
+    });
+  };
+
+  const handleCreateDeliveryChargeChange = (charge: number) => {
+    setCreateForm((prev: any) => {
+      const val = Math.max(0, charge);
+      const { subtotal, grand_total } = recalculateTotals(prev.items, val, prev.discount_amount);
+      return { ...prev, delivery_charge: val, subtotal, grand_total };
+    });
+  };
+
+  const handleCreateDiscountAmountChange = (discount: number) => {
+    setCreateForm((prev: any) => {
+      const val = Math.max(0, discount);
+      const { subtotal, grand_total } = recalculateTotals(prev.items, prev.delivery_charge, val);
+      return { ...prev, discount_amount: val, subtotal, grand_total };
+    });
+  };
+
+  const handleCreateOrderSubmit = async () => {
+    if (!createForm.customer_name.trim()) {
+      showErrorAlert('ত্রুটি', 'কাস্টমারের নাম আবশ্যক');
+      return;
+    }
+    if (!createForm.phone.trim()) {
+      showErrorAlert('ত্রুটি', 'ফোন নম্বর আবশ্যক');
+      return;
+    }
+    if (!createForm.address.trim()) {
+      showErrorAlert('ত্রুটি', 'ঠিকানা আবশ্যক');
+      return;
+    }
+    if (!createForm.district.trim()) {
+      showErrorAlert('ত্রুটি', 'জেলা আবশ্যক');
+      return;
+    }
+    if (createForm.items.length === 0) {
+      showErrorAlert('ত্রুটি', 'অর্ডারে কমপক্ষে একটি প্রোডাক্ট থাকতে হবে');
+      return;
+    }
+
+    setCreatingOrder(true);
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123',
+        },
+        body: JSON.stringify({
+          customer_name: createForm.customer_name,
+          phone: createForm.phone,
+          address: createForm.address,
+          district: createForm.district,
+          note: createForm.note,
+          delivery_charge: createForm.delivery_charge,
+          discount_amount: createForm.discount_amount,
+          subtotal: createForm.subtotal,
+          grand_total: createForm.grand_total,
+          items: createForm.items,
+          status: 'processing', // starts as 'New Order' in dashboard
+        }),
+      });
+
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error || 'Failed to create order');
+      }
+
+      setCreateForm({
+        customer_name: '',
+        phone: '',
+        address: '',
+        district: '',
+        note: '',
+        delivery_charge: 95,
+        discount_amount: 0,
+        subtotal: 0,
+        grand_total: 95,
+        items: []
+      });
+      setShowCreateModal(false);
+      showSuccessAlert('সফল!', 'নতুন অর্ডার সফলভাবে তৈরি করা হয়েছে!');
+      fetchOrders(); // Refresh list
+    } catch (err: any) {
+      console.error(err);
+      showErrorAlert('ত্রুটি', err.message || 'অর্ডার তৈরি করতে ব্যর্থ হয়েছে।');
+    } finally {
+      setCreatingOrder(false);
+    }
+  };
+
   const fetchProductsCatalog = async () => {
     setLoadingProducts(true);
     try {
@@ -2861,6 +3035,246 @@ function OrdersPageContent() {
                 </>
               )}
 
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Create Order Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-4xl overflow-hidden shadow-2xl relative">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Create New Order</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Enter details to manually place a new order</p>
+              </div>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-6 text-black">
+                {/* Customer Info Box */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Customer Name *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Shakhwat Hossain"
+                      value={createForm.customer_name}
+                      onChange={(e) => setCreateForm({ ...createForm, customer_name: e.target.value })}
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] animate-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Mobile Number *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 01712345678"
+                      value={createForm.phone}
+                      onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-[#ff6b35] animate-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">District *</label>
+                    <select
+                      value={createForm.district}
+                      onChange={(e) => handleCreateDistrictChange(e.target.value)}
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] cursor-pointer animate-none"
+                    >
+                      <option value="">Select District</option>
+                      {bangladeshDistricts.map((d: string) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Delivery Address *</label>
+                    <textarea
+                      rows={2}
+                      placeholder="বাসা নম্বর, রাস্তা, গ্রাম, থানা, জেলা..."
+                      value={createForm.address}
+                      onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] animate-none"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Order Note (Optional)</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Special instructions for delivery..."
+                      value={createForm.note}
+                      onChange={(e) => setCreateForm({ ...createForm, note: e.target.value })}
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] animate-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Items List Editor */}
+                <div className="space-y-3">
+                  <h4 className="font-bold text-gray-900 text-sm border-b border-gray-50 pb-2">Ordered Products</h4>
+                  <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden bg-white">
+                    {createForm.items.map((item: any) => (
+                      <div key={item.id} className="p-3 flex items-center justify-between gap-4 hover:bg-gray-50/50">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          {/* Product Thumbnail */}
+                          <div className="w-10 h-10 rounded-lg border border-gray-150 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden">
+                            {item.product_image ? (
+                              <img 
+                                src={item.product_image} 
+                                alt={item.product_name} 
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[9px] text-gray-400 font-bold uppercase">No Img</span>
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-gray-900 text-sm truncate">{item.product_name}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden h-7">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateItemQtyChange(item.id, item.quantity - 1)}
+                                  className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs cursor-pointer animate-none"
+                                >
+                                  -
+                                </button>
+                                <span className="px-3 text-xs font-semibold text-gray-800">{item.quantity}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCreateItemQtyChange(item.id, item.quantity + 1)}
+                                  className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs cursor-pointer animate-none"
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <span className="text-xs text-gray-400">×</span>
+                              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg px-2 h-7 w-20">
+                                <span className="text-gray-400 text-xs mr-0.5">৳</span>
+                                <input
+                                  type="number"
+                                  value={item.price}
+                                  onChange={(e) => handleCreateItemPriceChange(item.id, parseInt(e.target.value) || 0)}
+                                  className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none animate-none"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="font-bold text-gray-900 text-sm">৳{item.price * item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCreateRemoveItem(item.id)}
+                            className="p-1 hover:bg-red-50 text-red-500 rounded-lg transition-colors cursor-pointer"
+                            title="Remove item"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {createForm.items.length === 0 && (
+                      <div className="p-6 text-center text-xs text-gray-400 italic">
+                        No items added to this order yet. Please select a product below.
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Add Product Dropdown */}
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-150 flex flex-col sm:flex-row gap-2 items-center">
+                  <span className="text-xs font-bold text-gray-500 uppercase shrink-0">Add Product:</span>
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleCreateAddItem(e.target.value);
+                        e.target.value = ''; // Reset select
+                      }
+                    }}
+                    className="w-full text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 bg-white text-black focus:outline-none focus:border-[#ff6b35] cursor-pointer animate-none"
+                    disabled={loadingProducts}
+                  >
+                    <option value="">{loadingProducts ? 'Loading products...' : 'Select a product to add...'}</option>
+                    {productsList.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name_bn || p.name_en} (৳{p.price})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Total Calculation */}
+                <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Subtotal</span>
+                    <span className="font-bold text-gray-900">৳{createForm.subtotal}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Delivery Charge</span>
+                    <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 h-7 w-24">
+                      <span className="text-gray-400 text-xs mr-0.5">৳</span>
+                      <input
+                        type="number"
+                        value={createForm.delivery_charge}
+                        onChange={(e) => handleCreateDeliveryChargeChange(parseInt(e.target.value) || 0)}
+                        className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0 animate-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Discount Amount</span>
+                    <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 h-7 w-24">
+                      <span className="text-gray-400 text-xs mr-0.5">৳</span>
+                      <input
+                        type="number"
+                        value={createForm.discount_amount}
+                        onChange={(e) => handleCreateDiscountAmountChange(parseInt(e.target.value) || 0)}
+                        className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0 animate-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-between font-bold text-gray-900 text-sm border-t border-gray-100 pt-2.5">
+                    <span>Grand Total</span>
+                    <span>৳{createForm.grand_total}</span>
+                  </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="flex gap-2 justify-end pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateModal(false)}
+                    className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-all cursor-pointer animate-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateOrderSubmit}
+                    disabled={creatingOrder}
+                    className="inline-flex items-center gap-2 px-5 py-2 bg-[#ff6b35] hover:bg-[#ff5517] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 animate-none"
+                  >
+                    {creatingOrder ? (
+                      <><RefreshCw size={14} className="animate-spin" /><span>Creating...</span></>
+                    ) : (
+                      <span>Place Order</span>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
 
           </div>

@@ -28,30 +28,34 @@ export async function POST(request: NextRequest) {
                        request.headers.get('x-real-ip') ||
                        'unknown';
 
+    const isAdmin = request.headers.get('x-admin-key') === (process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123');
+
     // Anti-spam order rate limit check by IP address
-    try {
-      const settings = await getSettings();
-      const limitMinutes = settings?.order_limit_time ?? 10;
+    if (!isAdmin) {
+      try {
+        const settings = await getSettings();
+        const limitMinutes = settings?.order_limit_time ?? 10;
 
-      if (limitMinutes > 0 && ip_address && ip_address !== 'unknown') {
-        const cutOffTime = new Date(Date.now() - limitMinutes * 60000).toISOString();
-        const { data: recentOrders } = await supabase
-          .from('oh_orders')
-          .select('id, created_at')
-          .eq('ip_address', ip_address)
-          .gte('created_at', cutOffTime)
-          .neq('status', 'trash')
-          .limit(1);
+        if (limitMinutes > 0 && ip_address && ip_address !== 'unknown') {
+          const cutOffTime = new Date(Date.now() - limitMinutes * 60000).toISOString();
+          const { data: recentOrders } = await supabase
+            .from('oh_orders')
+            .select('id, created_at')
+            .eq('ip_address', ip_address)
+            .gte('created_at', cutOffTime)
+            .neq('status', 'trash')
+            .limit(1);
 
-        if (recentOrders && recentOrders.length > 0) {
-          return NextResponse.json({
-            error: 'ORDER_LIMIT_REACHED',
-            message: `আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে হোয়াটসঅ্যাপে যোগাযোগ করুন।`
-          }, { status: 429 });
+          if (recentOrders && recentOrders.length > 0) {
+            return NextResponse.json({
+              error: 'ORDER_LIMIT_REACHED',
+              message: `আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে হোয়াটসঅ্যাপে যোগাযোগ করুন।`
+            }, { status: 429 });
+          }
         }
+      } catch (err) {
+        console.error('Rate limit check error:', err);
       }
-    } catch (err) {
-      console.error('Rate limit check error:', err);
     }
 
     let order = null;
@@ -73,7 +77,7 @@ export async function POST(request: NextRequest) {
           discount_amount: discount_amount || 0,
           coupon_code: coupon_code || null,
           grand_total,
-          status: 'processing',
+          status: body.status || 'processing',
           ip_address,
           utm_source: utm_source || null,
           utm_medium: utm_medium || null,
@@ -106,7 +110,7 @@ export async function POST(request: NextRequest) {
           discount_amount: discount_amount || 0,
           coupon_code: coupon_code || null,
           grand_total,
-          status: 'processing',
+          status: body.status || 'processing',
           payment_method: 'cod',
           ip_address,
           utm_source: utm_source || null,
@@ -124,19 +128,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
     }
 
-    const orderItems = items.map((item: {
-      product: { id: string; slug: string; name_bn: string; images: string[]; price: number };
-      quantity: number;
-    }) => ({
-      order_id: order.id,
-      product_id: item.product.id,
-      product_slug: item.product.slug,
-      product_name: item.product.name_bn,
-      product_image: item.product.images?.[0] || null,
-      price: item.product.price,
-      quantity: item.quantity,
-      subtotal: item.product.price * item.quantity,
-    }));
+    const orderItems = items.map((item: any) => {
+      // Admin format (has product_id directly)
+      if (item.product_id) {
+        return {
+          order_id: order.id,
+          product_id: item.product_id,
+          product_slug: item.product_slug || '',
+          product_name: item.product_name,
+          product_image: item.product_image || null,
+          price: Number(item.price),
+          quantity: Number(item.quantity),
+          subtotal: Number(item.price) * Number(item.quantity),
+        };
+      }
+      // Client format (has nested product object)
+      return {
+        order_id: order.id,
+        product_id: item.product.id,
+        product_slug: item.product.slug,
+        product_name: item.product.name_bn,
+        product_image: item.product.images?.[0] || null,
+        price: Number(item.product.price),
+        quantity: Number(item.quantity),
+        subtotal: Number(item.product.price) * Number(item.quantity),
+      };
+    });
 
     const { error: itemsError } = await supabase.from('oh_order_items').insert(orderItems);
     if (itemsError) {
