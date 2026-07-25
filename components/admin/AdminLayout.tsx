@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { usePWAInstallable } from '@/hooks/usePWAInstallable';
+import { formatBDTNumeric } from '@/lib/utils';
 import { 
   LayoutDashboard, 
   Package, 
@@ -170,6 +171,22 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/landing':    'Single Product Landing Pages',
 };
 
+interface AdminNotification {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  grand_total: number;
+  created_at: string;
+  read: boolean;
+}
+
+interface NotificationToast {
+  id: string;
+  title: string;
+  body: string;
+  type: 'order' | 'info';
+}
+
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
@@ -181,6 +198,76 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Real-time Notification States
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
+  const [toasts, setToasts] = useState<NotificationToast[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const soundEnabledRef = useRef(soundEnabled);
+
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+
+  const playNewOrderChime = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const notes = [523.25, 659.25, 783.99, 1046.5]; // C5→E5→G5→C6 arpeggio chime
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+        gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12);
+        gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + i * 0.12 + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.12);
+        osc.stop(ctx.currentTime + i * 0.12 + 0.40);
+      });
+    } catch (e) {
+      console.error('Audio chime error:', e);
+    }
+  };
+
+  const showDesktopNotification = (title: string, body: string) => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(title, { body, icon: '/favicon.ico' });
+      } catch (e) {}
+    }
+  };
+
+  const handleNewOrder = (newOrder: any) => {
+    if (soundEnabledRef.current) {
+      playNewOrderChime();
+    }
+    const notif: AdminNotification = {
+      id: newOrder.id || `notif-${Date.now()}`,
+      order_number: newOrder.order_number,
+      customer_name: newOrder.customer_name,
+      grand_total: newOrder.grand_total,
+      created_at: newOrder.created_at || new Date().toISOString(),
+      read: false,
+    };
+    setNotifications(prev => [notif, ...prev]);
+
+    const toast: NotificationToast = {
+      id: `toast-${Date.now()}`,
+      title: 'নতুন অর্ডার এসেছে! 📦',
+      body: `${newOrder.customer_name} (${newOrder.order_number}) — ৳${newOrder.grand_total}`,
+      type: 'order',
+    };
+    setToasts(prev => [toast, ...prev]);
+
+    showDesktopNotification('নতুন অর্ডার এসেছে! 📦', `${newOrder.customer_name} (${newOrder.order_number}) — ৳${newOrder.grand_total}`);
+
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toast.id));
+    }, 6000);
+  };
 
   // Permission & Role Authorization States
   const [permissions, setPermissions] = useState<string[]>([]);
@@ -290,6 +377,71 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     const interval = setInterval(fetchStats, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // ── Browser notification permission ──
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  // ── Fetch recent orders on mount ──
+  useEffect(() => {
+    const fetchRecentOrders = async () => {
+      try {
+        const { data } = await supabase
+          .from('oh_orders')
+          .select('id, order_number, customer_name, grand_total, created_at, status')
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (data) {
+          const initialNotifs = data.map((order: any) => ({
+            id: order.id,
+            order_number: order.order_number,
+            customer_name: order.customer_name,
+            grand_total: order.grand_total,
+            created_at: order.created_at,
+            read: order.status !== 'pending',
+          }));
+          setNotifications(initialNotifs);
+        }
+      } catch (e) {
+        console.error('Error loading initial notifications:', e);
+      }
+    };
+
+    fetchRecentOrders();
+  }, []);
+
+  // ── Realtime Supabase Subscription ──
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-realtime-orders')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'oh_orders' },
+        (payload) => {
+          const newOrder = payload.new;
+          if (newOrder) {
+            handleNewOrder(newOrder);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // ── Dropdown outside click handler ──
+  useEffect(() => {
+    if (!showNotifications) return;
+    const handleClose = () => setShowNotifications(false);
+    window.addEventListener('click', handleClose);
+    return () => window.removeEventListener('click', handleClose);
+  }, [showNotifications]);
 
   const toggleCollapse = () => {
     const nextVal = !isCollapsed;
@@ -604,15 +756,86 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <span>1 Online</span>
             </div>
 
-            {/* Notification Bell with 9+ badge */}
-            <button className={`relative w-8 h-8 rounded-xl border flex items-center justify-center transition-colors cursor-pointer ${
-              theme === 'dark' ? 'bg-[#161616] border-[#262626] text-gray-400 hover:bg-gray-800' : 'bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100'
-            }`}>
-              <Bell size={15} />
-              <span className="absolute -top-1 -right-1 bg-blue-500 text-white font-extrabold text-[8px] px-1 py-0.2 rounded-full border border-white">
-                9+
-              </span>
-            </button>
+            {/* Notification Bell with Badge */}
+            <div className="relative">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowNotifications(!showNotifications); }}
+                className={`relative w-8 h-8 rounded-xl border flex items-center justify-center transition-colors cursor-pointer ${
+                  theme === 'dark' ? 'bg-[#161616] border-[#262626] text-gray-400 hover:bg-gray-800' : 'bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100'
+                }`}
+              >
+                <Bell size={15} />
+                {notifications.some(n => !n.read) && (
+                  <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-full border border-white flex items-center justify-center min-w-[14px]">
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
+              </button>
+
+              {/* Premium Notification Dropdown */}
+              {showNotifications && (
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className={`absolute right-0 mt-2 w-80 rounded-2xl border shadow-xl z-50 p-4 transition-all duration-200 ${
+                    theme === 'dark' ? 'bg-[#0f0f11] border-[#262626] text-white' : 'bg-white border-gray-200 text-gray-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-2 mb-3">
+                    <h3 className="font-extrabold text-sm flex items-center gap-1.5">
+                      <Bell size={14} className="text-orange-500" /> Notifications
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => setSoundEnabled(!soundEnabled)}
+                        className="text-[10px] font-bold text-gray-400 hover:text-[#ff6b35] transition-colors"
+                        title={soundEnabled ? "Disable sound" : "Enable sound"}
+                      >
+                        {soundEnabled ? "🔊 Sound On" : "🔇 Mute"}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                        }}
+                        className="text-[10px] font-bold text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                      >
+                        Mark all read
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                    {notifications.length === 0 ? (
+                      <div className="text-center py-6">
+                        <p className="text-xs text-gray-400 font-medium">কোনো নতুন অর্ডার নেই</p>
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <div 
+                          key={notif.id}
+                          onClick={() => {
+                            setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, read: true } : n));
+                            setShowNotifications(false);
+                            router.push(`/admin/orders?search=${notif.order_number}`);
+                          }}
+                          className={`p-2.5 rounded-xl border transition-all cursor-pointer text-left ${
+                            notif.read 
+                              ? (theme === 'dark' ? 'bg-transparent border-transparent hover:bg-gray-900/50' : 'bg-transparent border-transparent hover:bg-gray-50')
+                              : (theme === 'dark' ? 'bg-orange-950/10 border-orange-900/30 hover:bg-orange-950/20' : 'bg-orange-50/50 border-orange-100 hover:bg-orange-50')
+                          }`}
+                        >
+                          <div className="flex justify-between items-start gap-1">
+                            <span className="text-xs font-black text-gray-900 dark:text-white">{notif.order_number}</span>
+                            <span className="text-[9px] text-gray-400 font-semibold">{new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 font-medium truncate">কাস্টমার: {notif.customer_name}</p>
+                          <p className="text-xs font-black text-orange-500 mt-0.5">মোট পরিশোধ: {formatBDTNumeric(notif.grand_total)}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Visit Site */}
             <Link 
@@ -705,7 +928,38 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             padding: 16px !important;
           }
         }
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+          animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
       `}</style>
+
+      {/* ── Floating Notification Toasts ── */}
+      <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className="pointer-events-auto bg-white dark:bg-[#161616] text-black dark:text-white rounded-2xl border border-gray-200 dark:border-gray-800 p-4 shadow-xl flex items-start gap-3.5 transform transition-all duration-300 animate-slide-in-right animate-none"
+          >
+            <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/30 flex items-center justify-center text-orange-500 shrink-0">
+              <ShoppingCart size={18} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white">{toast.title}</h4>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 leading-relaxed">{toast.body}</p>
+            </div>
+            <button
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-0.5 cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
