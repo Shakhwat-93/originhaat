@@ -880,7 +880,7 @@ export function ChatWidget({ whatsappNumber, hotlineNumber, isLiveChatActive = t
               {lang === 'bn' ? 'হোয়াটসঅ্যাপ' : 'WhatsApp'}
             </span>
             <a
-              href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('হ্যালো! আমি Origin Haat থেকে সাহায্য চাই।')}`}
+              href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="w-12 h-12 rounded-full bg-[#25d366] text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 cursor-pointer"

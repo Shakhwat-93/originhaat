@@ -26,7 +26,8 @@ export function CTABanner() {
 
   // Format whatsapp URL
   const formattedPhone = whatsappPhone.replace('+', '').replace(/\s+/g, '');
-  const whatsappUrl = `https://wa.me/${formattedPhone}?text=হ্যালো!%20আমি%20অর্ডার%20করতে%20চাই।`;
+  const waMessage = settings?.whatsapp_default_message || 'হ্যালো! আমি অর্ডার করতে চাই।';
+  const whatsappUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(waMessage)}`;
 
   // Dynamically split heading at comma if present to apply the gradient look to the second part
   let firstPart = title;
