@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck, Trash2, Plus, Edit, User, Package, MessageCircle } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAlert } from '@/lib/alerts';
@@ -73,6 +73,7 @@ const statusLabels: Record<string, string> = {
 function OrdersPageContent() {
   const searchParams = useSearchParams();
   const statusParam = searchParams.get('status');
+  const lastOpenedRef = useRef<string | null>(null);
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -528,6 +529,33 @@ function OrdersPageContent() {
       }
     }
   }, [statusParam]);
+
+  // Sync search with URL query param from notification click
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch) {
+      setSearch(urlSearch);
+      setDebouncedSearch(urlSearch);
+    }
+  }, [searchParams]);
+
+  // Auto-open order detail modal when query param matches
+  useEffect(() => {
+    const urlSearch = searchParams.get('search');
+    if (urlSearch && orders.length > 0) {
+      if (lastOpenedRef.current !== urlSearch) {
+        const matchedOrder = orders.find(
+          (o) => o.order_number === urlSearch || o.id === urlSearch
+        );
+        if (matchedOrder) {
+          setSelectedOrder(matchedOrder);
+          lastOpenedRef.current = urlSearch;
+        }
+      }
+    } else if (!urlSearch) {
+      lastOpenedRef.current = null;
+    }
+  }, [orders, searchParams]);
 
   const handleCheckCourierRatio = async (phone: string, orderId: string) => {
     setCheckingRatio(true);
