@@ -828,7 +828,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                             <span className="text-[9px] text-gray-400 font-semibold">{new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                           <p className="text-xs text-gray-700 dark:text-gray-300 mt-1 font-medium truncate">কাস্টমার: {notif.customer_name}</p>
-                          <p className="text-xs font-black text-orange-500 mt-0.5">মোট পরিশোধ: {formatBDTNumeric(notif.grand_total)}</p>
+                          <p className="text-xs font-black text-orange-500 mt-0.5">Total Amount: {formatBDTNumeric(notif.grand_total)}</p>
                         </div>
                       ))
                     )}
