@@ -468,14 +468,19 @@ export default function AdminCategoriesPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Icon (Emoji / Upload)</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Icon (Emoji / Upload)</label>
+                  {icon && (icon.startsWith('http') || icon.startsWith('/') || icon.includes('.')) && (
+                    <img src={icon} alt="Icon Preview" className="w-5 h-5 object-contain rounded-md bg-gray-50 border border-gray-200" />
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={icon}
                     onChange={(e) => setIcon(e.target.value)}
                     placeholder="e.g. ⌚ or upload url"
-                    className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+                    className="flex-1 w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
                   />
                   <label className="flex items-center gap-1.5 px-3 bg-gray-100 border border-gray-200 hover:bg-gray-200 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer shrink-0 transition-colors">
                     {uploadingIcon ? <RefreshCw size={13} className="animate-spin" /> : <Upload size={13} />}
