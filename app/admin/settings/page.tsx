@@ -86,6 +86,7 @@ interface Settings {
   credits_text?: string;
   credits_url?: string;
   default_faqs?: Array<{ question: string; answer: string }> | null;
+  header_nav_links?: Array<{ label: string; url: string }> | null;
 }
 
 interface PathaoStore {
@@ -163,6 +164,12 @@ export default function AdminSettingsPage() {
     copyright_text: '© ২০২৬ Origin Haat. সর্বস্বত্ব সংরক্ষিত।',
     credits_text: 'Build by Shakhwat Hossain Rasel',
     credits_url: 'https://shakhwatrasel.vercel.app',
+    header_nav_links: [
+      { label: 'হোম', url: '/' },
+      { label: 'শপ', url: '/shop' },
+      { label: 'ক্যাটেগরি', url: '/category' },
+      { label: 'কার্ট', url: '/cart' }
+    ],
   });
 
   // Pathao-specific state
@@ -274,6 +281,12 @@ export default function AdminSettingsPage() {
             { question: 'কিভাবে পেমেন্ট করবো?', answer: 'ক্যাশ অন ডেলিভারি — পণ্য পেয়ে পেমেন্ট করুন। bKash, Nagad, Rocket ও গ্রহণযোগ্য।' },
             { question: 'পণ্য ফেরত দেওয়া যাবে?', answer: 'হ্যাঁ, পণ্য পাওয়ার ৭ দিনের মধ্যে যেকোনো কারণে ফেরত দিতে পারবেন।' },
             { question: 'অর্ডার কিভাবে ট্র্যাক করবো?', answer: 'অর্ডার করার পরে WhatsApp-এ ট্র্যাকিং লিংক পাঠানো হবে।' }
+          ],
+          header_nav_links: data.header_nav_links && data.header_nav_links.length > 0 ? data.header_nav_links : [
+            { label: 'হোম', url: '/' },
+            { label: 'শপ', url: '/shop' },
+            { label: 'ক্যাটেগরি', url: '/category' },
+            { label: 'কার্ট', url: '/cart' }
           ]
         });
       }
@@ -287,6 +300,38 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  const handleAddNavLink = () => {
+    const current = settings.header_nav_links || [];
+    const updated = [...current, { label: 'নতুন লিংক', url: '/new-link' }];
+    setSettings(prev => ({ ...prev, header_nav_links: updated }));
+  };
+
+  const handleRemoveNavLink = (index: number) => {
+    const current = settings.header_nav_links || [];
+    const updated = current.filter((_, i) => i !== index);
+    setSettings(prev => ({ ...prev, header_nav_links: updated }));
+  };
+
+  const handleEditNavLink = (index: number, key: 'label' | 'url', value: string) => {
+    const current = settings.header_nav_links || [];
+    const updated = current.map((item, i) => i === index ? { ...item, [key]: value } : item);
+    setSettings(prev => ({ ...prev, header_nav_links: updated }));
+  };
+
+  const handleMoveNavLink = (index: number, direction: 'up' | 'down') => {
+    const current = [...(settings.header_nav_links || [])];
+    if (direction === 'up' && index > 0) {
+      const temp = current[index];
+      current[index] = current[index - 1];
+      current[index - 1] = temp;
+    } else if (direction === 'down' && index < current.length - 1) {
+      const temp = current[index];
+      current[index] = current[index + 1];
+      current[index + 1] = temp;
+    }
+    setSettings(prev => ({ ...prev, header_nav_links: current }));
+  };
 
   // Save only specific fields for a given section
   const handleSaveSection = async (sectionId: string, fields: (keyof Settings)[]) => {
@@ -310,6 +355,7 @@ export default function AdminSettingsPage() {
           delete (fallbackPayload as any).is_live_chat_active;
           delete (fallbackPayload as any).whatsapp_default_message;
           delete (fallbackPayload as any).default_faqs;
+          delete (fallbackPayload as any).header_nav_links;
 
           const { error: fallbackErr } = await supabase
             .from('oh_settings')
@@ -680,6 +726,99 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Header Navigation Links */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 pb-3 mb-2">
+            <div className="flex items-center gap-2">
+              <Share2 size={18} className="text-[#ff6b35]" />
+              <h2 className="font-bold text-gray-900">Header Navigation Links (হেডার নেভিগেশন লিংক)</h2>
+            </div>
+            <SectionSaveBtn id="header_nav" fields={['header_nav_links']} />
+          </div>
+          <p className="text-xs text-gray-500">
+            ওয়েবসাইটের হেডারে প্রদর্শিত নেভিগেশন লিংকগুলো এখান থেকে সাজাতে পারবেন। 
+            যদি কোনো লিংকের নাম **"ক্যাটেগরি"** অথবা পাথ **"/category"** রাখা হয়, তবে এটি স্বয়ংক্রিয়ভাবে ক্যাটেগরি ড্রপডাউন মেনু হিসেবে কাজ করবে।
+          </p>
+
+          <div className="space-y-3">
+            {(settings.header_nav_links || []).map((link, idx) => (
+              <div key={idx} className="flex flex-col sm:flex-row items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-150">
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs font-bold text-gray-400 w-6">#{idx + 1}</span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      disabled={idx === 0}
+                      onClick={() => handleMoveNavLink(idx, 'up')}
+                      className="p-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-30 cursor-pointer text-xs font-bold transition-colors"
+                      title="Move Up"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      type="button"
+                      disabled={idx === (settings.header_nav_links || []).length - 1}
+                      onClick={() => handleMoveNavLink(idx, 'down')}
+                      className="p-1.5 bg-white border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-30 cursor-pointer text-xs font-bold transition-colors"
+                      title="Move Down"
+                    >
+                      ▼
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Link Title (বাংলা/ইংরেজি)</label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: হোম, শপ, অফার..."
+                      value={link.label}
+                      onChange={(e) => handleEditNavLink(idx, 'label', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-xs text-black font-semibold bg-white"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Link URL / Path</label>
+                    <input
+                      type="text"
+                      placeholder="যেমন: /, /shop, /category, /cart..."
+                      value={link.url}
+                      onChange={(e) => handleEditNavLink(idx, 'url', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-xs text-black font-mono bg-white"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleRemoveNavLink(idx)}
+                  className="p-2 hover:bg-red-50 text-red-500 rounded-xl transition-colors cursor-pointer shrink-0"
+                  title="Remove Link"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+
+            {(settings.header_nav_links || []).length === 0 && (
+              <div className="text-center p-6 bg-gray-50 border border-dashed border-gray-200 rounded-xl text-xs text-gray-400 italic">
+                কোনো লিংক যোগ করা নেই। নিচে "+ Add New Link" এ ক্লিক করে লিংক যোগ করুন।
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleAddNavLink}
+              className="inline-flex items-center gap-1.5 px-4 py-2 border border-dashed border-gray-300 hover:border-[#ff6b35] text-[#ff6b35] hover:bg-orange-50/50 text-xs font-bold rounded-xl transition-all cursor-pointer w-full justify-center"
+            >
+              + Add New Link
+            </button>
           </div>
         </div>
 

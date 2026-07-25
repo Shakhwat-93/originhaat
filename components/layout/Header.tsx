@@ -18,6 +18,7 @@ interface HeaderProps {
     is_announcement_active?: boolean;
     whatsapp_number?: string;
     hotline_number?: string;
+    header_nav_links?: Array<{ label: string; url: string }> | null;
   };
 }
 
@@ -195,10 +196,19 @@ export function Header({ initialSettings }: HeaderProps) {
   const [announcementActive, setAnnouncementActive] = useState(!!initialSettings?.is_announcement_active);
   const [phone, setPhone] = useState(initialSettings?.whatsapp_number || '01XXXXXXXXX');
   const [hotline, setHotline] = useState(initialSettings?.hotline_number || '01700000000');
+  const [navLinks, setNavLinks] = useState<{ label: string; url: string }[]>(
+    initialSettings?.header_nav_links || [
+      { label: 'হোম', url: '/' },
+      { label: 'শপ', url: '/shop' },
+      { label: 'ক্যাটেগরি', url: '/category' },
+      { label: 'কার্ট', url: '/cart' }
+    ]
+  );
 
   useEffect(() => {
     if (initialSettings) {
       if (initialSettings.hotline_number) setHotline(initialSettings.hotline_number);
+      if (initialSettings.header_nav_links) setNavLinks(initialSettings.header_nav_links);
       return;
     }
     const fetchHeaderSettings = async () => {
@@ -211,6 +221,7 @@ export function Header({ initialSettings }: HeaderProps) {
             setAnnouncementActive(data.is_announcement_active);
             if (data.whatsapp_number) setPhone(data.whatsapp_number);
             if (data.hotline_number) setHotline(data.hotline_number);
+            if (data.header_nav_links) setNavLinks(data.header_nav_links);
           }
         }
       } catch (err) {
@@ -396,42 +407,41 @@ export function Header({ initialSettings }: HeaderProps) {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-6 pb-3 text-sm font-medium">
-            <Link href="/" onClick={handleHomeClick} className="text-[#374151] hover:text-[#ff6b35] transition-colors">
-              হোম
-            </Link>
-            <Link href="/shop" className="text-[#374151] hover:text-[#ff6b35] transition-colors">
-              শপ
-            </Link>
-
-            {/* Categories Dropdown */}
-            <div className="relative" onMouseLeave={() => setCategoryOpen(false)}>
-              <button
-                onMouseEnter={() => setCategoryOpen(true)}
-                className="flex items-center gap-1 text-[#374151] hover:text-[#ff6b35] transition-colors"
-              >
-                ক্যাটেগরি <ChevronDown size={14} />
-              </button>
-              {categoryOpen && (
-                <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-[#e5e7eb] z-50 overflow-hidden animate-fade-in-up">
-                  {categories.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      href={`/category/${cat.slug}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] transition-colors text-[#374151] hover:text-[#ff6b35]"
+            {navLinks.map((link, idx) => {
+              if (link.url === '/category' || link.label === 'ক্যাটেগরি') {
+                return (
+                  <div key={idx} className="relative" onMouseLeave={() => setCategoryOpen(false)}>
+                    <button
+                      onMouseEnter={() => setCategoryOpen(true)}
+                      className="flex items-center gap-1 text-[#374151] hover:text-[#ff6b35] transition-colors"
                     >
-                      <span className="text-lg">{cat.icon}</span>
-                      <span>{cat.name_en}</span>
-                      <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                      {link.label} <ChevronDown size={14} />
+                    </button>
+                    {categoryOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-[#e5e7eb] z-50 overflow-hidden animate-fade-in-up">
+                        {categories.map((cat) => (
+                          <Link
+                            key={cat.id}
+                            href={`/category/${cat.slug}`}
+                            className="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] transition-colors text-[#374151] hover:text-[#ff6b35]"
+                          >
+                            <span className="text-lg">{cat.icon}</span>
+                            <span>{cat.name_en}</span>
+                            <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
 
-            <Link href="/cart" className="text-[#374151] hover:text-[#ff6b35] transition-colors">
-              কার্ট
-            </Link>
-
+              return (
+                <Link key={idx} href={link.url} onClick={(e) => { if (link.url === '/') handleHomeClick(e); }} className="text-[#374151] hover:text-[#ff6b35] transition-colors">
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
         </div>
       </header>
@@ -478,50 +488,57 @@ export function Header({ initialSettings }: HeaderProps) {
             </form>
 
             <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-              <Link
-                href="/"
-                onClick={(e) => {
-                  setMobileMenuOpen(false);
-                  handleHomeClick(e);
-                }}
-                className="flex items-center px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
-              >
-                🏠 হোম
-              </Link>
-              <Link
-                href="/shop"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
-              >
-                🛍️ শপ
-              </Link>
-              <div className="py-2 px-3 text-xs text-[#6b7280] font-semibold uppercase tracking-wider">
-                ক্যাটেগরি
-              </div>
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/category/${cat.slug}`}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] transition-colors"
-                >
-                  <span>{cat.icon}</span>
-                  <span>{cat.name_en}</span>
-                  <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
-                </Link>
-              ))}
-              <Link
-                href="/cart"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
-              >
-                🛒 কার্ট
-                {totalItems > 0 && (
-                  <span className="ml-auto bg-[#ff6b35] text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {totalItems}
-                  </span>
-                )}
-              </Link>
+              {navLinks.map((link, idx) => {
+                if (link.url === '/category' || link.label === 'ক্যাটেগরি') {
+                  return (
+                    <div key={idx} className="space-y-1">
+                      <div className="py-2 px-3 text-xs text-[#6b7280] font-semibold uppercase tracking-wider mt-2">
+                        {link.label}
+                      </div>
+                      {categories.map((cat) => (
+                        <Link
+                          key={cat.id}
+                          href={`/category/${cat.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] transition-colors"
+                        >
+                          <span>{cat.icon}</span>
+                          <span>{cat.name_en}</span>
+                          <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  );
+                }
+
+                const getEmoji = (label: string) => {
+                  if (label.includes('হোম')) return '🏠 ';
+                  if (label.includes('শপ')) return '🛍️ ';
+                  if (label.includes('কার্ট')) return '🛒 ';
+                  if (label.includes('ট্র্যাক')) return '📦 ';
+                  return '🔗 ';
+                };
+
+                return (
+                  <Link
+                    key={idx}
+                    href={link.url}
+                    onClick={(e) => {
+                      setMobileMenuOpen(false);
+                      if (link.url === '/') handleHomeClick(e);
+                    }}
+                    className="flex items-center px-3 py-3 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] font-medium transition-colors"
+                  >
+                    <span>{getEmoji(link.label)}</span>
+                    <span className="ml-1">{link.label}</span>
+                    {link.url === '/cart' && totalItems > 0 && (
+                      <span className="ml-auto bg-[#ff6b35] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {totalItems}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
               <Link
                 href="/track-order"
                 onClick={() => setMobileMenuOpen(false)}
