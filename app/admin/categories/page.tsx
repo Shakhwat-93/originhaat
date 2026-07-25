@@ -22,6 +22,7 @@ export default function AdminCategoriesPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingIcon, setUploadingIcon] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   // Edit Mode State
@@ -88,6 +89,34 @@ export default function AdminCategoriesPage() {
       alert('Upload failed');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingIcon(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bucket', 'category-images');
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setIcon(data.url);
+      } else {
+        alert(data.error || 'Upload failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Upload failed');
+    } finally {
+      setUploadingIcon(false);
     }
   };
 
@@ -246,7 +275,13 @@ export default function AdminCategoriesPage() {
                 <tbody className="divide-y divide-gray-100">
                   {categories.map((cat) => (
                     <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="px-4 py-3.5 text-2xl">{cat.icon || '📁'}</td>
+                      <td className="px-4 py-3.5">
+                        {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                          <img src={cat.icon} alt={cat.name_en} className="w-8 h-8 object-contain rounded-lg bg-gray-50 border border-gray-150" />
+                        ) : (
+                          <span className="text-2xl">{cat.icon || '📁'}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3.5">
                         <div className="font-semibold text-gray-900">{cat.name_bn}</div>
                         <div className="text-xs text-gray-400 mt-0.5">{cat.name_en}</div>
@@ -297,7 +332,11 @@ export default function AdminCategoriesPage() {
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-2xl">{cat.icon || '📁'}</span>
+                      {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                        <img src={cat.icon} alt={cat.name_en} className="w-8 h-8 object-contain rounded-lg bg-gray-50 border border-gray-150" />
+                      ) : (
+                        <span className="text-2xl">{cat.icon || '📁'}</span>
+                      )}
                       <h4 className="font-bold text-gray-900 text-base">{cat.name_bn}</h4>
                     </div>
                     <span className="text-xs text-gray-400 font-mono">order: #{cat.sort_order}</span>
@@ -427,16 +466,23 @@ export default function AdminCategoriesPage() {
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Icon (Emoji)</label>
-                <input
-                  type="text"
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  placeholder="e.g. ⌚"
-                  className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
-                />
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Icon (Emoji / Upload)</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={icon}
+                    onChange={(e) => setIcon(e.target.value)}
+                    placeholder="e.g. ⌚ or upload url"
+                    className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
+                  />
+                  <label className="flex items-center gap-1.5 px-3 bg-gray-100 border border-gray-200 hover:bg-gray-200 rounded-xl text-xs font-semibold text-gray-700 cursor-pointer shrink-0 transition-colors">
+                    {uploadingIcon ? <RefreshCw size={13} className="animate-spin" /> : <Upload size={13} />}
+                    <span>{uploadingIcon ? '...' : 'Upload'}</span>
+                    <input type="file" accept="image/*" onChange={handleIconUpload} className="hidden" disabled={uploadingIcon} />
+                  </label>
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Sort Order</label>

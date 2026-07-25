@@ -67,7 +67,11 @@ export function Categories({ categories }: CategoriesProps) {
                   className="flex-shrink-0 w-[110px] md:w-[130px] flex flex-col items-center bg-white rounded-3xl p-4 border border-gray-150 shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:border-[#ff6b35] hover:shadow-[0_12px_32px_rgba(255,107,53,0.06)] hover:-translate-y-1 transition-all duration-300 text-center cursor-pointer"
                 >
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
-                    <span className="text-2xl md:text-3xl">{cat.icon}</span>
+                    {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                      <img src={cat.icon} alt={cat.name_bn} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                    ) : (
+                      <span className="text-2xl md:text-3xl">{cat.icon}</span>
+                    )}
                   </div>
                   <p className="text-xs md:text-sm font-bold text-[#111827] leading-tight truncate w-full">
                     {cat.name_bn}
@@ -83,7 +87,11 @@ export function Categories({ categories }: CategoriesProps) {
                   className="flex-shrink-0 w-[110px] md:w-[130px] flex flex-col items-center bg-white rounded-3xl p-4 border border-gray-150 shadow-[0_8px_24px_rgba(0,0,0,0.02)] hover:border-[#ff6b35] hover:shadow-[0_12px_32px_rgba(255,107,53,0.06)] hover:-translate-y-1 transition-all duration-300 text-center cursor-pointer"
                 >
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
-                    <span className="text-2xl md:text-3xl">{cat.icon}</span>
+                    {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                      <img src={cat.icon} alt={cat.name_bn} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                    ) : (
+                      <span className="text-2xl md:text-3xl">{cat.icon}</span>
+                    )}
                   </div>
                   <p className="text-xs md:text-sm font-bold text-[#111827] leading-tight truncate w-full">
                     {cat.name_bn}

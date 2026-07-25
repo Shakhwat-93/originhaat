@@ -425,7 +425,11 @@ export function Header({ initialSettings }: HeaderProps) {
                             href={`/category/${cat.slug}`}
                             className="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] transition-colors text-[#374151] hover:text-[#ff6b35]"
                           >
-                            <span className="text-lg">{cat.icon}</span>
+                            {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                              <img src={cat.icon} alt={cat.name_en} className="w-5 h-5 object-contain" />
+                            ) : (
+                              <span className="text-lg">{cat.icon || '📁'}</span>
+                            )}
                             <span>{cat.name_en}</span>
                             <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
                           </Link>
@@ -502,7 +506,11 @@ export function Header({ initialSettings }: HeaderProps) {
                           onClick={() => setMobileMenuOpen(false)}
                           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] transition-colors"
                         >
-                          <span>{cat.icon}</span>
+                          {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                            <img src={cat.icon} alt={cat.name_en} className="w-5 h-5 object-contain" />
+                          ) : (
+                            <span>{cat.icon || '📁'}</span>
+                          )}
                           <span>{cat.name_en}</span>
                           <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
                         </Link>

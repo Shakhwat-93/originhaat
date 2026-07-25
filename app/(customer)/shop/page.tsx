@@ -166,7 +166,11 @@ export default function ShopPage() {
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <span>{cat.icon}</span>
+                  {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                    <img src={cat.icon} alt={cat.name_bn} className="w-4 h-4 object-contain" />
+                  ) : (
+                    <span>{cat.icon || '📁'}</span>
+                  )}
                   <span>{cat.name_bn}</span>
                 </span>
                 {isSelected && <Check size={14} />}
