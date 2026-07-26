@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Sparkles, RefreshCw } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert } from '@/lib/alerts';
+import { formatImageUrl } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -352,7 +353,7 @@ export default function AdminProductsPage() {
                     <td className="px-6 py-4 shrink-0">
                       <div className="relative w-12 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
                         {mainImage ? (
-                          <img src={mainImage} alt={prod.name_bn} className="w-full h-full object-cover" />
+                          <img src={formatImageUrl(mainImage)} alt={prod.name_bn} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
                             <ImageIcon size={18} />
@@ -479,7 +480,7 @@ export default function AdminProductsPage() {
               <div className="flex items-center gap-3">
                 <div className="relative w-12 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">
                   {mainImage ? (
-                    <img src={mainImage} alt={prod.name_bn} className="w-full h-full object-cover" />
+                    <img src={formatImageUrl(mainImage)} alt={prod.name_bn} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
                       <ImageIcon size={18} />

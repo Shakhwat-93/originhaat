@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingCart, CheckCircle, HelpCircle, Star, Shield, Truck, Award, AlertCircle, Tag, Check, Loader2 } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { formatImageUrl } from '@/lib/utils';
 
 interface LandingPageData {
   id: string;
@@ -577,7 +578,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-start">
             <div className="space-y-4">
               <div className="bg-white rounded-3xl border border-gray-150 overflow-hidden shadow-xs relative aspect-square flex items-center justify-center p-4">
-                <img src={activeImage} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
+                <img src={formatImageUrl(activeImage)} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
               </div>
               <div className="flex gap-3 overflow-x-auto py-1">
                 {product.images?.map((img, i) => (
@@ -588,7 +589,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
                       activeImage === img ? 'border-[#ff6b35]' : 'border-gray-200'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-contain rounded-lg" />
+                    <img src={formatImageUrl(img)} alt="" className="w-full h-full object-contain rounded-lg" />
                   </button>
                 ))}
               </div>
@@ -690,7 +691,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div className="space-y-4">
               <div className="bg-[#121520] rounded-3xl border border-gray-800 overflow-hidden relative aspect-square flex items-center justify-center p-4">
-                <img src={activeImage} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
+                <img src={formatImageUrl(activeImage)} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
               </div>
               <div className="flex gap-3 overflow-x-auto py-1">
                 {product.images?.map((img, i) => (
@@ -701,7 +702,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
                       activeImage === img ? 'border-[#ff6b35]' : 'border-gray-800'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-contain rounded-lg" />
+                    <img src={formatImageUrl(img)} alt="" className="w-full h-full object-contain rounded-lg" />
                   </button>
                 ))}
               </div>
@@ -819,7 +820,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
           {/* Gallery left */}
           <div className="space-y-4">
             <div className="bg-white rounded-xl border border-gray-200 p-4 aspect-square flex items-center justify-center shadow-2xs relative">
-              <img src={activeImage} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+              <img src={formatImageUrl(activeImage)} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
               {product.original_price > product.price && (
                 <span className="absolute top-4 left-4 bg-red-600 text-white text-[10px] font-black px-2.5 py-1 rounded">
                   SPECIAL OFFER
@@ -835,7 +836,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
                     activeImage === img ? 'border-red-600' : 'border-gray-200'
                   }`}
                 >
-                  <img src={img} alt="" className="w-full h-full object-contain" />
+                  <img src={formatImageUrl(img)} alt="" className="w-full h-full object-contain" />
                 </button>
               ))}
             </div>
@@ -998,7 +999,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
           <h2 className="text-lg font-bold text-gray-900 uppercase">✅ আমাদের আধুনিক সমাধান: {product.name_bn || product.name_en}</h2>
           
           <div className="bg-white rounded-3xl border border-gray-200 p-4 max-w-md mx-auto aspect-square flex items-center justify-center">
-            <img src={activeImage} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
+            <img src={formatImageUrl(activeImage)} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
           </div>
 
           <div className="flex justify-center gap-2">
@@ -1010,7 +1011,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
                   activeImage === img ? 'border-red-600' : 'border-gray-200'
                 }`}
               >
-                <img src={img} alt="" className="w-full h-full object-contain" />
+                <img src={formatImageUrl(img)} alt="" className="w-full h-full object-contain" />
               </button>
             ))}
           </div>
@@ -1081,7 +1082,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
             {/* Left: Product Media Showcase */}
             <div className="lg:col-span-5 space-y-6">
               <div className="bg-gray-50 border border-gray-200 rounded-2xl overflow-hidden aspect-square flex items-center justify-center p-4">
-                <img src={activeImage} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
+                <img src={formatImageUrl(activeImage)} alt="" className="max-w-full max-h-full object-contain rounded-2xl" />
               </div>
               <div className="flex gap-2 justify-center">
                 {product.images?.map((img, i) => (
@@ -1092,7 +1093,7 @@ export default function LandingClientPage({ data }: { data: LandingPageData }) {
                       activeImage === img ? 'border-[#5c59f6]' : 'border-gray-200'
                     }`}
                   >
-                    <img src={img} alt="" className="w-full h-full object-contain" />
+                    <img src={formatImageUrl(img)} alt="" className="w-full h-full object-contain" />
                   </button>
                 ))}
               </div>

@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck, Trash2, Plus, Edit, User, Package, MessageCircle } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAlert } from '@/lib/alerts';
 import { bangladeshDistricts } from '@/data/products';
+import { formatImageUrl } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
 interface OrderItem {
@@ -2371,7 +2372,7 @@ function OrdersPageContent() {
                             <div className="w-10 h-10 rounded-lg border border-gray-150 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden">
                               {item.product_image || item.image_url ? (
                                 <img 
-                                  src={item.product_image || item.image_url} 
+                                  src={formatImageUrl(item.product_image || item.image_url)} 
                                   alt={item.product_name} 
                                   className="w-full h-full object-cover"
                                 />
@@ -2738,7 +2739,7 @@ function OrdersPageContent() {
                                     <div className="w-9 h-9 rounded-lg border border-gray-150 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden shadow-3xs">
                                       {imgUrl ? (
                                         <img 
-                                          src={imgUrl} 
+                                          src={formatImageUrl(imgUrl)} 
                                           alt={item.product_name} 
                                           className="w-full h-full object-cover"
                                         />
@@ -3131,7 +3132,7 @@ function OrdersPageContent() {
                           <div className="w-10 h-10 rounded-lg border border-gray-150 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden">
                             {item.product_image ? (
                               <img 
-                                src={item.product_image} 
+                                src={formatImageUrl(item.product_image)} 
                                 alt={item.product_name} 
                                 className="w-full h-full object-cover"
                               />

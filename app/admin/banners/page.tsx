@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Image as ImageIcon, Plus, Trash2, RefreshCw, Upload, Save, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
-import { cn } from '@/lib/utils';
+import { cn, formatImageUrl } from '@/lib/utils';
 
 interface Banner {
   id: string;
@@ -209,7 +209,7 @@ export default function AdminBannersPage() {
                   <div className="flex items-center gap-4">
                     <div className="relative w-24 h-14 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">
                       {banner.image_url ? (
-                        <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+                        <img src={formatImageUrl(banner.image_url)} alt={banner.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                           <ImageIcon size={20} />
@@ -256,7 +256,7 @@ export default function AdminBannersPage() {
                   <div className="flex items-center gap-3">
                     <div className="relative w-20 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">
                       {banner.image_url ? (
-                        <img src={banner.image_url} alt={banner.title} className="w-full h-full object-cover" />
+                        <img src={formatImageUrl(banner.image_url)} alt={banner.title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
                           <ImageIcon size={18} />
@@ -384,7 +384,7 @@ export default function AdminBannersPage() {
                 </div>
                 {imageUrl && (
                   <div className="relative aspect-[21/9] bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                    <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={formatImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>

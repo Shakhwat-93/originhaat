@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ArrowLeft, Save, Plus, Trash2, Upload, RefreshCw, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { formatImageUrl } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -480,7 +481,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
             {images.map((img, i) => (
               <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-gray-100 group bg-gray-50">
-                <img src={img} alt={`Product ${i}`} className="w-full h-full object-cover" />
+                <img src={formatImageUrl(img)} alt={`Product ${i}`} className="w-full h-full object-cover" />
                 <button
                   type="button"
                   onClick={() => removeImage(i)}

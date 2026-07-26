@@ -6,6 +6,7 @@ import {
   Search, Eye, Filter, RefreshCw, X, AlertTriangle, CheckCircle2, TrendingUp, History, ClipboardList, Plus, Minus, ArrowUpDown, Trash2, ArrowRightLeft, ShieldAlert, Package
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert } from '@/lib/alerts';
+import { formatImageUrl } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -469,7 +470,7 @@ export default function InventoryPage() {
                         <div className="flex items-center gap-3">
                           {prod.images?.[0] ? (
                             <img
-                              src={prod.images[0]}
+                              src={formatImageUrl(prod.images[0])}
                               alt={prod.name_en}
                               className="w-10 h-10 rounded-lg object-cover border border-gray-100 bg-gray-50 shrink-0"
                             />
@@ -623,7 +624,7 @@ export default function InventoryPage() {
                         <div className="flex items-center gap-3">
                           {tx.product?.images?.[0] ? (
                             <img
-                              src={tx.product.images[0]}
+                              src={formatImageUrl(tx.product.images[0])}
                               alt={tx.product.name_en}
                               className="w-8 h-8 rounded-lg object-cover border border-gray-100 bg-gray-50 shrink-0"
                             />
@@ -707,7 +708,7 @@ export default function InventoryPage() {
               <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
                 {selectedProduct.images?.[0] ? (
                   <img
-                    src={selectedProduct.images[0]}
+                    src={formatImageUrl(selectedProduct.images[0])}
                     alt={selectedProduct.name_en}
                     className="w-12 h-12 rounded-lg object-cover border border-gray-100 bg-white shrink-0"
                   />
