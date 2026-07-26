@@ -867,10 +867,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <h2 className={`text-lg font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{pageTitle}</h2>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <span className="text-[10px] text-gray-400 font-bold">Last updated Jun 28, 2026</span>
-                <button className="flex items-center gap-1 px-3 py-1.8 bg-[#ff6b35] hover:bg-[#e55520] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-98 cursor-pointer">
-                  <Plus size={14} />
-                  <span>New Action</span>
-                </button>
               </div>
             </div>
           </div>
