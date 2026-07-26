@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, RefreshCw, Upload, Save, X, ToggleLeft, ToggleRight } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
-import { cn } from '@/lib/utils';
+import { cn, formatImageUrl } from '@/lib/utils';
 
 interface Category {
   id: string;
@@ -277,7 +277,7 @@ export default function AdminCategoriesPage() {
                     <tr key={cat.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-4 py-3.5">
                         {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                          <img src={cat.icon} alt={cat.name_en} className="w-8 h-8 object-contain rounded-lg bg-gray-50 border border-gray-150" />
+                          <img src={formatImageUrl(cat.icon)} alt={cat.name_en} className="w-8 h-8 object-contain rounded-lg bg-gray-50 border border-gray-150" />
                         ) : (
                           <span className="text-2xl">{cat.icon || '📁'}</span>
                         )}
@@ -333,7 +333,7 @@ export default function AdminCategoriesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                        <img src={cat.icon} alt={cat.name_en} className="w-8 h-8 object-contain rounded-lg bg-gray-50 border border-gray-150" />
+                        <img src={formatImageUrl(cat.icon)} alt={cat.name_en} className="w-8 h-8 object-contain rounded-lg bg-gray-50 border border-gray-150" />
                       ) : (
                         <span className="text-2xl">{cat.icon || '📁'}</span>
                       )}
@@ -471,7 +471,7 @@ export default function AdminCategoriesPage() {
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Icon (Emoji / Upload)</label>
                   {icon && (icon.startsWith('http') || icon.startsWith('/') || icon.includes('.')) && (
-                    <img src={icon} alt="Icon Preview" className="w-5 h-5 object-contain rounded-md bg-gray-50 border border-gray-200" />
+                    <img src={formatImageUrl(icon)} alt="Icon Preview" className="w-5 h-5 object-contain rounded-md bg-gray-50 border border-gray-200" />
                   )}
                 </div>
                 <div className="flex gap-2">
@@ -519,7 +519,7 @@ export default function AdminCategoriesPage() {
                 </div>
                 {imageUrl && (
                   <div className="relative w-full aspect-video bg-gray-50 rounded-xl overflow-hidden border border-gray-100">
-                    <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                    <img src={formatImageUrl(imageUrl)} alt="Preview" className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>

@@ -88,8 +88,20 @@ export async function POST(request: NextRequest) {
         .from(bucket)
         .getPublicUrl(filename);
 
+      let finalUrl = publicUrl;
+      const targetHost = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+      if (targetHost) {
+        const rawHost = targetHost.replace(/^https?:\/\//, '');
+        if (finalUrl.includes(rawHost)) {
+          const storageIndex = finalUrl.indexOf('/storage/v1');
+          if (storageIndex !== -1) {
+            finalUrl = `/api/supabase-proxy${finalUrl.substring(storageIndex)}`;
+          }
+        }
+      }
+
       return NextResponse.json({
-        url: publicUrl,
+        url: finalUrl,
         converted: shouldConvert,
         originalSize: originalBuffer.byteLength,
         convertedSize: uploadBuffer.byteLength,

@@ -10,7 +10,7 @@ import { useUIStore } from '@/store/uiStore';
 import { usePWAInstallable } from '@/hooks/usePWAInstallable';
 import { categories } from '@/data/products';
 import { supabase } from '@/lib/supabase';
-import { cn } from '@/lib/utils';
+import { cn, formatImageUrl } from '@/lib/utils';
 
 interface HeaderProps {
   initialSettings?: {
@@ -471,7 +471,7 @@ export function Header({ initialSettings }: HeaderProps) {
                             className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f9fa] transition-colors text-[#374151] hover:text-[#ff6b35] text-xs font-medium"
                           >
                             {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                              <img src={cat.icon} alt={cat.name_en} className="w-5 h-5 object-contain" />
+                              <img src={formatImageUrl(cat.icon)} alt={cat.name_en} className="w-5 h-5 object-contain" />
                             ) : (
                               <span className="text-lg">{cat.icon || '📁'}</span>
                             )}
@@ -553,7 +553,7 @@ export function Header({ initialSettings }: HeaderProps) {
                             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] transition-colors text-xs font-medium"
                           >
                             {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                              <img src={cat.icon} alt={cat.name_en} className="w-5 h-5 object-contain" />
+                              <img src={formatImageUrl(cat.icon)} alt={cat.name_en} className="w-5 h-5 object-contain" />
                             ) : (
                               <span>{cat.icon || '📁'}</span>
                             )}

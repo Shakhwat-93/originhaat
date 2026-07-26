@@ -66,3 +66,20 @@ export function toBengaliNumber(num: number): string {
 export function getRelativeTime(dateStr: string): string {
   return dateStr;
 }
+
+export function formatImageUrl(url: string | undefined | null): string {
+  if (!url) return '';
+  const rawSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  
+  if (rawSupabaseUrl) {
+    const rawSupabaseHost = rawSupabaseUrl.replace(/^https?:\/\//, '');
+    if (url.includes(rawSupabaseHost)) {
+      const storageIndex = url.indexOf('/storage/v1');
+      if (storageIndex !== -1) {
+        return `/api/supabase-proxy${url.substring(storageIndex)}`;
+      }
+    }
+  }
+  return url;
+}
+

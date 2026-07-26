@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { categories as defaultCategories } from '@/data/products';
 import { Grid2x2 } from 'lucide-react';
+import { formatImageUrl } from '@/lib/utils';
 
 interface DBCategory {
   id: string;
@@ -68,7 +69,7 @@ export function Categories({ categories }: CategoriesProps) {
                 >
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
                     {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                      <img src={cat.icon} alt={cat.name_bn} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                      <img src={formatImageUrl(cat.icon)} alt={cat.name_bn} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
                     ) : (
                       <span className="text-2xl md:text-3xl">{cat.icon}</span>
                     )}
@@ -88,7 +89,7 @@ export function Categories({ categories }: CategoriesProps) {
                 >
                   <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-[#fff3ef] flex items-center justify-center mb-3 shadow-[inset_0_2px_4px_rgba(255,107,53,0.05)]">
                     {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                      <img src={cat.icon} alt={cat.name_bn} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
+                      <img src={formatImageUrl(cat.icon)} alt={cat.name_bn} className="w-8 h-8 md:w-10 md:h-10 object-contain" />
                     ) : (
                       <span className="text-2xl md:text-3xl">{cat.icon}</span>
                     )}
