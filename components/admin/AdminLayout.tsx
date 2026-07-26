@@ -205,6 +205,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const soundEnabledRef = useRef(soundEnabled);
+  const lastCheckedTimeRef = useRef<string | null>(null);
 
   useEffect(() => {
     soundEnabledRef.current = soundEnabled;
@@ -405,9 +406,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             read: order.status !== 'pending',
           }));
           setNotifications(initialNotifs);
+          
+          if (data.length > 0) {
+            lastCheckedTimeRef.current = data[0].created_at;
+          } else {
+            lastCheckedTimeRef.current = new Date().toISOString();
+          }
+        } else {
+          lastCheckedTimeRef.current = new Date().toISOString();
         }
       } catch (e) {
         console.error('Error loading initial notifications:', e);
+        lastCheckedTimeRef.current = new Date().toISOString();
       }
     };
 
@@ -433,6 +443,50 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return () => {
       supabase.removeChannel(channel);
     };
+  }, []);
+
+  // ── Fallback Polling for Live Server Realtime Issues ──
+  useEffect(() => {
+    const checkForNewOrders = async () => {
+      try {
+        const lastTime = lastCheckedTimeRef.current;
+        if (!lastTime) return;
+
+        // Query any orders created after our last checked time
+        const { data, error } = await supabase
+          .from('oh_orders')
+          .select('id, order_number, customer_name, grand_total, created_at, status')
+          .gt('created_at', lastTime)
+          .order('created_at', { ascending: true }); // oldest first to trigger sound chimes chronologically
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          // Update lastCheckedTime to the newest order's created_at
+          lastCheckedTimeRef.current = data[data.length - 1].created_at;
+
+          // Process each order (trigger chime, toast, desktop notif)
+          data.forEach((order: any) => {
+            // Deduplicate: check if order is already present in state to prevent double chimes if WebSockets worked
+            setNotifications((currentNotifs) => {
+              const exists = currentNotifs.some(n => n.id === order.id);
+              if (!exists) {
+                // Run on next tick
+                setTimeout(() => {
+                  handleNewOrder(order);
+                }, 0);
+              }
+              return currentNotifs;
+            });
+          });
+        }
+      } catch (err) {
+        console.error('Error polling for new orders:', err);
+      }
+    };
+
+    const pollInterval = setInterval(checkForNewOrders, 12000);
+    return () => clearInterval(pollInterval);
   }, []);
 
   // ── Dropdown outside click handler ──
