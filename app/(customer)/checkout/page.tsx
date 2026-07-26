@@ -633,7 +633,21 @@ export default function CheckoutPage() {
               <div className="mt-3 text-center">
                 <p className="text-xs text-[#6b7280] mb-2">অথবা সরাসরি অর্ডার করুন</p>
                 <a
-                  href={`https://wa.me/${settings.whatsapp_number}?text=${encodeURIComponent(`হ্যালো! আমি ${watchedValues.name || 'একটি অর্ডার'} করতে চাই।`)}`}
+                  href={generateWhatsAppURL(
+                    settings.whatsapp_number,
+                    generateOrderWhatsAppMessage(
+                      watchedValues.name || 'কাস্টমার',
+                      watchedValues.phone || 'মোবাইল নম্বর',
+                      watchedValues.address || 'ঠিকানা',
+                      watchedValues.district || 'জেলা',
+                      items.map((item) => ({
+                        name: item.product.name_bn,
+                        qty: item.quantity,
+                        price: item.product.price,
+                      })),
+                      grandTotal
+                    )
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-sm text-[#25D366] font-semibold hover:underline cursor-pointer"
