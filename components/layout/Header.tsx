@@ -204,6 +204,51 @@ export function Header({ initialSettings }: HeaderProps) {
       { label: 'কার্ট', url: '/cart' }
     ]
   );
+  const [categoriesList, setCategoriesList] = useState<any[]>(categories);
+
+  useEffect(() => {
+    const fetchHeaderCategories = async () => {
+      try {
+        const { data: cats, error: catErr } = await supabase
+          .from('oh_categories')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true });
+
+        if (catErr) throw catErr;
+
+        if (cats && cats.length > 0) {
+          const { data: countsData, error: countErr } = await supabase
+            .from('oh_products')
+            .select('category_id')
+            .eq('is_active', true);
+
+          const countsMap: Record<string, number> = {};
+          if (!countErr && countsData) {
+            countsData.forEach((p: any) => {
+              if (p.category_id) {
+                countsMap[p.category_id] = (countsMap[p.category_id] || 0) + 1;
+              }
+            });
+          }
+
+          const formattedCats = cats.map(cat => ({
+            id: cat.id,
+            name_bn: cat.name_bn,
+            name_en: cat.name_en,
+            slug: cat.slug,
+            icon: cat.icon,
+            product_count: countsMap[cat.id] || 0
+          }));
+
+          setCategoriesList(formattedCats);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dynamic categories for header:', err);
+      }
+    };
+    fetchHeaderCategories();
+  }, []);
 
   useEffect(() => {
     if (initialSettings) {
@@ -418,12 +463,12 @@ export function Header({ initialSettings }: HeaderProps) {
                       {link.label} <ChevronDown size={14} />
                     </button>
                     {categoryOpen && (
-                      <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-[#e5e7eb] z-50 overflow-hidden animate-fade-in-up">
-                        {categories.map((cat) => (
+                      <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-[#e5e7eb] z-50 overflow-y-auto max-h-80 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent animate-fade-in-up">
+                        {categoriesList.map((cat) => (
                           <Link
                             key={cat.id}
                             href={`/category/${cat.slug}`}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] transition-colors text-[#374151] hover:text-[#ff6b35]"
+                            className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f9fa] transition-colors text-[#374151] hover:text-[#ff6b35] text-xs font-medium"
                           >
                             {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
                               <img src={cat.icon} alt={cat.name_en} className="w-5 h-5 object-contain" />
@@ -499,22 +544,24 @@ export function Header({ initialSettings }: HeaderProps) {
                       <div className="py-2 px-3 text-xs text-[#6b7280] font-semibold uppercase tracking-wider mt-2">
                         {link.label}
                       </div>
-                      {categories.map((cat) => (
-                        <Link
-                          key={cat.id}
-                          href={`/category/${cat.slug}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] transition-colors"
-                        >
-                          {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                            <img src={cat.icon} alt={cat.name_en} className="w-5 h-5 object-contain" />
-                          ) : (
-                            <span>{cat.icon || '📁'}</span>
-                          )}
-                          <span>{cat.name_en}</span>
-                          <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
-                        </Link>
-                      ))}
+                      <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-1 space-y-0.5">
+                        {categoriesList.map((cat) => (
+                          <Link
+                            key={cat.id}
+                            href={`/category/${cat.slug}`}
+                            onClick={() => setMobileMenuOpen(false)}
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] transition-colors text-xs font-medium"
+                          >
+                            {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
+                              <img src={cat.icon} alt={cat.name_en} className="w-5 h-5 object-contain" />
+                            ) : (
+                              <span>{cat.icon || '📁'}</span>
+                            )}
+                            <span>{cat.name_en}</span>
+                            <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   );
                 }
