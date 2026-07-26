@@ -15,10 +15,23 @@ async function handleProxy(request: NextRequest, pathParams: string[]) {
   const searchParams = request.nextUrl.search;
   const targetUrl = `${backendBase}/${subPath}${searchParams}`;
 
-  // Clone headers and omit Host header to prevent proxy mismatch
+  // Clone headers and omit insecure/incompatible headers to prevent proxy mismatch and encoding errors
+  const allowedHeaders = [
+    'accept',
+    'accept-language',
+    'apikey',
+    'authorization',
+    'content-type',
+    'prefer',
+    'range',
+    'if-none-match',
+    'if-modified-since',
+  ];
+
   const headers = new Headers();
   request.headers.forEach((value, key) => {
-    if (key.toLowerCase() !== 'host') {
+    const lowerKey = key.toLowerCase();
+    if (allowedHeaders.includes(lowerKey) || lowerKey.startsWith('x-client-info')) {
       headers.set(key, value);
     }
   });
