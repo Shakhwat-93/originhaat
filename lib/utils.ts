@@ -55,7 +55,12 @@ export function generateOrderWhatsAppMessage(
     .map((i) => `• ${i.name} × ${i.qty} = ৳${i.price * i.qty}`)
     .join('\n');
 
-  return `🛍️ নতুন অর্ডার — Origin Haat\n\n👤 নাম: ${customerName}\n📞 মোবাইল: ${phone}\n📍 ঠিকানা: ${address}, ${district}\n\n📦 অর্ডার:\n${itemLines}\n\n💰 মোট: ৳${total}\n💳 পেমেন্ট: ক্যাশ অন ডেলিভারি`;
+  const districtLabel = district ? (district === 'Dhaka' || district === 'Outside Dhaka' ? (district === 'Dhaka' ? 'ঢাকা' : 'ঢাকার বাইরে') : district) : '';
+  const fullAddress = districtLabel 
+    ? `${address}, ${districtLabel}` 
+    : address;
+
+  return `🛍️ নতুন অর্ডার —\nOrigin Haat - সেরা পণ্য, সবার জন্য।\nঅরিজিনাল প্রোডাক্ট এর নিশ্চয়তা\n\n👤 নাম: ${customerName}\n📞 মোবাইল: ${phone}\n📍 ঠিকানা: ${fullAddress}\n\n📦 অর্ডার:\n${itemLines}\n\n💰 মোট: ৳${total}\n💳 পেমেন্ট: ক্যাশ অন ডেলিভারি`;
 }
 
 export function toBengaliNumber(num: number): string {

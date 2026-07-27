@@ -323,7 +323,7 @@ export default function CheckoutPage() {
                   <input
                     id="name"
                     type="text"
-                    placeholder="আপনার নাম দিন"
+                    placeholder="নিজের পুরো নাম লিখুন"
                     className={cn(
                       'w-full px-4 py-3 border-2 rounded-xl text-[#111827] placeholder-[#9ca3af] focus:outline-none transition-colors text-sm text-black bg-white',
                       errors.name
@@ -347,7 +347,7 @@ export default function CheckoutPage() {
                   <input
                     id="phone"
                     type="tel"
-                    placeholder="01XXXXXXXXX"
+                    placeholder="১১ ডিজিটের মোবাইল নাম্বার লিখুন"
                     className={cn(
                       'w-full px-4 py-3 border-2 rounded-xl text-[#111827] placeholder-[#9ca3af] focus:outline-none transition-colors text-sm text-black bg-white',
                       errors.phone
@@ -414,7 +414,7 @@ export default function CheckoutPage() {
                   <textarea
                     id="address"
                     rows={3}
-                    placeholder="বাসা নম্বর, রাস্তা, গ্রাম, থানা, জেলা..."
+                    placeholder="গ্রাম.... থানা.... জেলা...."
                     className={cn(
                       'w-full px-4 py-3 border-2 rounded-xl text-[#111827] placeholder-[#9ca3af] focus:outline-none transition-colors text-sm resize-none text-black bg-white',
                       errors.address
@@ -636,10 +636,10 @@ export default function CheckoutPage() {
                   href={generateWhatsAppURL(
                     settings.whatsapp_number,
                     generateOrderWhatsAppMessage(
-                      watchedValues.name || 'কাস্টমার',
-                      watchedValues.phone || 'মোবাইল নম্বর',
-                      watchedValues.address || 'ঠিকানা',
-                      watchedValues.district || 'জেলা',
+                      watchedValues.name || 'নিজের পুরো নাম লিখুন',
+                      watchedValues.phone || '১১ ডিজিটের মোবাইল নাম্বার লিখুন',
+                      watchedValues.address || 'গ্রাম.... থানা.... জেলা....',
+                      watchedValues.district || '',
                       items.map((item) => ({
                         name: item.product.name_bn,
                         qty: item.quantity,
