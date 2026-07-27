@@ -6,7 +6,7 @@ import { Product, Category } from '@/types';
 import { ProductCard } from '@/components/product/ProductCard';
 import { SlidersHorizontal, Search, RotateCcw, X, Check, ArrowUpDown, Tag } from 'lucide-react';
 import { categories as staticCategories, products as staticProducts } from '@/data/products';
-import { formatBDTNumeric, formatImageUrl } from '@/lib/utils';
+import { formatBDTNumeric, formatImageUrl, formatName } from '@/lib/utils';
 
 export default function ShopPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -167,11 +167,11 @@ export default function ShopPage() {
               >
                 <span className="flex items-center gap-2">
                   {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                    <img src={formatImageUrl(cat.icon)} alt={cat.name_bn} className="w-4 h-4 object-contain" />
+                    <img src={formatImageUrl(cat.icon)} alt={formatName(cat.name_bn, cat.name_en)} className="w-4 h-4 object-contain" />
                   ) : (
                     <span>{cat.icon || '📁'}</span>
                   )}
-                  <span>{cat.name_bn}</span>
+                  <span>{formatName(cat.name_bn, cat.name_en)}</span>
                 </span>
                 {isSelected && <Check size={14} />}
               </button>

@@ -8,7 +8,7 @@ import Image from 'next/image';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { checkoutSchema, type CheckoutFormData } from '@/lib/validations';
-import { formatBDTNumeric, generateWhatsAppURL, generateOrderWhatsAppMessage } from '@/lib/utils';
+import { formatBDTNumeric, generateWhatsAppURL, generateOrderWhatsAppMessage, formatName } from '@/lib/utils';
 import { Loader2, CheckCircle, ArrowLeft, MessageCircle, Tag, Check, AlertCircle, Minus, Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
@@ -255,7 +255,7 @@ export default function CheckoutPage() {
 
       // Build WhatsApp message
       const orderItems = items.map((item) => ({
-        name: item.product.name_bn,
+        name: formatName(item.product.name_bn, item.product.name_en),
         qty: item.quantity,
         price: item.product.price,
       }));
@@ -481,14 +481,14 @@ export default function CheckoutPage() {
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-[#f8f9fa] flex-shrink-0">
                       <Image
                         src={item.product.images[0]}
-                        alt={item.product.name_bn}
+                        alt={formatName(item.product.name_bn, item.product.name_en)}
                         fill
                         className="object-cover"
                         sizes="48px"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#111827] line-clamp-1 mb-1">{item.product.name_bn}</p>
+                      <p className="text-xs font-semibold text-[#111827] line-clamp-1 mb-1">{formatName(item.product.name_bn, item.product.name_en)}</p>
                       
                       <div className="flex items-center gap-2.5">
                         {/* Qty Controls */}
@@ -519,7 +519,7 @@ export default function CheckoutPage() {
                           type="button"
                           onClick={() => {
                             removeItem(item.product.id);
-                            showToast(`${item.product.name_bn} সরানো হয়েছে`, 'info');
+                            showToast(`${formatName(item.product.name_bn, item.product.name_en)} সরানো হয়েছে`, 'info');
                           }}
                           className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition-all cursor-pointer flex items-center justify-center shrink-0"
                           aria-label="সরিয়ে দিন"
@@ -641,7 +641,7 @@ export default function CheckoutPage() {
                       watchedValues.address || 'গ্রাম.... থানা.... জেলা....',
                       watchedValues.district || '',
                       items.map((item) => ({
-                        name: item.product.name_bn,
+                        name: formatName(item.product.name_bn, item.product.name_en),
                         qty: item.quantity,
                         price: item.product.price,
                       })),

@@ -4,6 +4,7 @@ import { supabaseServer } from '@/lib/db';
 import { ProductCard } from '@/components/product/ProductCard';
 import { ArrowLeft, Grid } from 'lucide-react';
 import Link from 'next/link';
+import { formatName } from '@/lib/utils';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -81,7 +82,7 @@ export default async function CategoryPage({ params }: Props) {
         </Link>
         <div>
           <span className="text-xs text-[#6b7280] font-semibold uppercase tracking-wider block">ক্যাটাগরি</span>
-          <h1 className="text-2xl font-bold text-gray-900">{category.name_bn}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{formatName(category.name_bn, category.name_en)}</h1>
         </div>
       </div>
 

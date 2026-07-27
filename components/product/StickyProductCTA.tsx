@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { Product } from '@/types';
-import { formatBDTNumeric } from '@/lib/utils';
+import { formatBDTNumeric, formatName } from '@/lib/utils';
 import { ShoppingCart, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -54,7 +54,7 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
           className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-[#e5e7eb] p-4 sticky-cta-safe"
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-semibold text-[#111827] truncate flex-1">{product.name_bn}</span>
+            <span className="text-sm font-semibold text-[#111827] truncate flex-1">{formatName(product.name_bn, product.name_en)}</span>
             <span className="text-sm font-bold text-[#ff6b35]">
               {formatBDTNumeric(product.price * quantity)}
             </span>

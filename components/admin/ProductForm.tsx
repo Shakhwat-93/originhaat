@@ -343,9 +343,8 @@ export default function ProductForm({ productId }: ProductFormProps) {
               type="text"
               value={nameEn}
               onChange={handleNameEnChange}
-              placeholder="e.g. Smart Watch Ultra 2"
+              placeholder="e.g. Smart Watch Ultra 2 (Optional)"
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
-              required
             />
           </div>
           <div>

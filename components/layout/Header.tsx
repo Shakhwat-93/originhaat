@@ -10,7 +10,7 @@ import { useUIStore } from '@/store/uiStore';
 import { usePWAInstallable } from '@/hooks/usePWAInstallable';
 import { categories } from '@/data/products';
 import { supabase } from '@/lib/supabase';
-import { cn, formatImageUrl } from '@/lib/utils';
+import { cn, formatImageUrl, formatName } from '@/lib/utils';
 
 interface HeaderProps {
   initialSettings?: {
@@ -147,12 +147,12 @@ export function Header({ initialSettings }: HeaderProps) {
                   <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-gray-100">
                     <img
                       src={p.images?.[0] || 'https://placeholder.co/100'}
-                      alt={p.name_bn}
+                      alt={formatName(p.name_bn, p.name_en)}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h5 className="font-bold text-xs text-gray-800 truncate">{p.name_bn}</h5>
+                    <h5 className="font-bold text-xs text-gray-800 truncate">{formatName(p.name_bn, p.name_en)}</h5>
                     <p className="text-[10px] text-gray-400 mt-0.5 truncate">{p.short_description_bn || p.name_en}</p>
                   </div>
                   <div className="text-right shrink-0">
@@ -471,11 +471,11 @@ export function Header({ initialSettings }: HeaderProps) {
                             className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f8f9fa] transition-colors text-[#374151] hover:text-[#ff6b35] text-xs font-medium"
                           >
                             {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                              <img src={formatImageUrl(cat.icon)} alt={cat.name_bn || cat.name_en} className="w-5 h-5 object-contain" />
+                              <img src={formatImageUrl(cat.icon)} alt={formatName(cat.name_bn, cat.name_en)} className="w-5 h-5 object-contain" />
                             ) : (
                               <span className="text-lg">{cat.icon || '📁'}</span>
                             )}
-                            <span>{cat.name_bn || cat.name_en}</span>
+                            <span>{formatName(cat.name_bn, cat.name_en)}</span>
                             <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
                           </Link>
                         ))}
@@ -553,11 +553,11 @@ export function Header({ initialSettings }: HeaderProps) {
                             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#374151] hover:bg-[#f8f9fa] hover:text-[#ff6b35] transition-colors text-xs font-medium"
                           >
                             {cat.icon && (cat.icon.startsWith('http') || cat.icon.startsWith('/') || cat.icon.includes('.')) ? (
-                              <img src={formatImageUrl(cat.icon)} alt={cat.name_bn || cat.name_en} className="w-5 h-5 object-contain" />
+                              <img src={formatImageUrl(cat.icon)} alt={formatName(cat.name_bn, cat.name_en)} className="w-5 h-5 object-contain" />
                             ) : (
                               <span>{cat.icon || '📁'}</span>
                             )}
-                            <span>{cat.name_bn || cat.name_en}</span>
+                            <span>{formatName(cat.name_bn, cat.name_en)}</span>
                             <span className="ml-auto text-xs text-[#6b7280]">{cat.product_count}</span>
                           </Link>
                         ))}

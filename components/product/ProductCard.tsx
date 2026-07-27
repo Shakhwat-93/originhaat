@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { calculateDiscount, formatBDTNumeric, formatImageUrl } from '@/lib/utils';
+import { calculateDiscount, formatBDTNumeric, formatImageUrl, formatName } from '@/lib/utils';
 import { Product } from '@/types';
 import { Star, ShoppingCart, Zap } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
@@ -48,7 +48,7 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="relative aspect-square overflow-hidden bg-[#f8f9fa]">
           <Image
             src={formatImageUrl(product.images[0])}
-            alt={product.name_bn}
+            alt={formatName(product.name_bn, product.name_en)}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -81,7 +81,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Info */}
         <div className="p-3">
           <p className="text-sm font-semibold text-[#111827] line-clamp-2 leading-snug mb-1">
-            {product.name_bn}
+            {formatName(product.name_bn, product.name_en)}
           </p>
 
           {/* Rating */}

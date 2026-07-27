@@ -450,9 +450,8 @@ export default function AdminCategoriesPage() {
                 type="text"
                 value={nameEn}
                 onChange={handleNameEnChange}
-                placeholder="e.g. Smart Gadgets"
+                placeholder="e.g. Smart Gadgets (Optional)"
                 className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
-                required
               />
             </div>
             <div>

@@ -83,3 +83,12 @@ export function formatImageUrl(url: string | undefined | null): string {
   return url;
 }
 
+export function formatName(bn?: string, en?: string): string {
+  const primary = bn?.trim() || '';
+  const secondary = en?.trim() || '';
+  if (primary && secondary && primary.toLowerCase() !== secondary.toLowerCase()) {
+    return `${primary} / ${secondary}`;
+  }
+  return primary || secondary || '';
+}
+

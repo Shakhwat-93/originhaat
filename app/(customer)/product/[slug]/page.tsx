@@ -7,6 +7,7 @@ import { ProductInfo } from '@/components/product/ProductInfo';
 import { ProductReviews } from '@/components/product/ProductReviews';
 import { ProductCard } from '@/components/product/ProductCard';
 import { ProductViewTracker } from '@/components/product/ProductViewTracker';
+import { formatName } from '@/lib/utils';
 
 const ProductFAQ = dynamic(
   () => import('@/components/product/ProductFAQ').then((mod) => mod.ProductFAQ)
@@ -164,13 +165,13 @@ export default async function ProductPage({ params }: Props) {
         <nav className="flex items-center gap-2 text-sm text-[#6b7280] mb-6" aria-label="Breadcrumb">
           <a href="/" className="hover:text-[#ff6b35] transition-colors">হোম</a>
           <span>/</span>
-          <span className="text-[#374151] font-medium line-clamp-1">{product.name_bn}</span>
+          <span className="text-[#374151] font-medium line-clamp-1">{formatName(product.name_bn, product.name_en)}</span>
         </nav>
 
 
         {/* Product Detail */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-10">
-          <ProductGallery images={product.images || []} productName={product.name_bn} />
+          <ProductGallery images={product.images || []} productName={formatName(product.name_bn, product.name_en)} />
           <ProductInfo product={product as any} />
         </div>
 

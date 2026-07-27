@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
 import { Product } from '@/types';
-import { calculateDiscount, formatBDTNumeric } from '@/lib/utils';
+import { calculateDiscount, formatBDTNumeric, formatName } from '@/lib/utils';
 import { Star, Minus, Plus, Lock, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { trackAddToCart } from '@/lib/tracking';
@@ -74,7 +74,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Title */}
       <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] leading-tight">
-        {product.name_bn}
+        {formatName(product.name_bn, product.name_en)}
       </h1>
 
       {/* Badges Section */}
@@ -227,7 +227,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <div className="flex flex-col gap-2.5">
           {/* WhatsApp Order Button */}
           <a
-            href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${product.name_bn}\nমূল্য: ${formatBDTNumeric(product.price)}`)}`}
+            href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${formatName(product.name_bn, product.name_en)}\nমূল্য: ${formatBDTNumeric(product.price)}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full max-w-[240px] flex items-center justify-center gap-2 bg-[#12b76a] hover:bg-[#0f9f59] text-white font-extrabold py-3 px-6 rounded-full transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md cursor-pointer text-sm"

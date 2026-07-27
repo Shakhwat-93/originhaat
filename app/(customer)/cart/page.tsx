@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
 import { useUIStore } from '@/store/uiStore';
-import { formatBDTNumeric } from '@/lib/utils';
+import { formatBDTNumeric, formatName } from '@/lib/utils';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -70,7 +70,7 @@ export default function CartPage() {
                   <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-[#f8f9fa] flex-shrink-0">
                     <Image
                       src={item.product.images[0]}
-                      alt={item.product.name_bn}
+                      alt={formatName(item.product.name_bn, item.product.name_en)}
                       fill
                       className="object-cover"
                       sizes="80px"
@@ -82,7 +82,7 @@ export default function CartPage() {
                 <div className="flex-1 min-w-0">
                   <Link href={`/product/${item.product.slug}`}>
                     <p className="font-semibold text-[#111827] text-sm line-clamp-2 mb-1 hover:text-[#ff6b35] transition-colors">
-                      {item.product.name_bn}
+                      {formatName(item.product.name_bn, item.product.name_en)}
                     </p>
                   </Link>
                   <p className="text-[#6b7280] text-xs mb-2">{item.product.category}</p>
@@ -95,7 +95,7 @@ export default function CartPage() {
                 <div className="flex flex-col items-end gap-2">
                   {/* Remove */}
                   <button
-                    onClick={() => handleRemove(item.product.id, item.product.name_bn)}
+                    onClick={() => handleRemove(item.product.id, formatName(item.product.name_bn, item.product.name_en))}
                     className="text-[#ef4444] hover:text-red-700 transition-colors p-1"
                     aria-label="সরিয়ে দিন"
                   >

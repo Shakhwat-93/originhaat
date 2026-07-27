@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { getSettings } from '@/lib/db';
 import { sendServerPurchaseEvent } from '@/lib/capi';
 import { writeAuditLog } from '@/lib/audit';
+import { formatName } from '@/lib/utils';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
         order_id: order.id,
         product_id: item.product.id,
         product_slug: item.product.slug,
-        product_name: item.product.name_bn,
+        product_name: formatName(item.product.name_bn, item.product.name_en),
         product_image: item.product.images?.[0] || null,
         price: Number(item.product.price),
         quantity: Number(item.quantity),
