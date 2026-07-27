@@ -428,10 +428,7 @@ function OrdersPageContent() {
       showErrorAlert('ত্রুটি', 'ঠিকানা আবশ্যক');
       return;
     }
-    if (!editForm.district.trim()) {
-      showErrorAlert('ত্রুটি', 'জেলা আবশ্যক');
-      return;
-    }
+
     if (editForm.items.length === 0) {
       showErrorAlert('ত্রুটি', 'অর্ডারে কমপক্ষে একটি প্রোডাক্ট থাকতে হবে');
       return;
@@ -2328,19 +2325,7 @@ function OrdersPageContent() {
                         className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-[#ff6b35] animate-none"
                       />
                     </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">District</label>
-                      <select
-                        value={editForm.district}
-                        onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
-                        className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] cursor-pointer animate-none"
-                      >
-                        <option value="">Select District</option>
-                        {bangladeshDistricts.map((d: string) => (
-                          <option key={d} value={d}>{d}</option>
-                        ))}
-                      </select>
-                    </div>
+
                     <div className="sm:col-span-2">
                       <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Delivery Address</label>
                       <textarea
