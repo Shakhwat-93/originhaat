@@ -84,11 +84,6 @@ export function formatImageUrl(url: string | undefined | null): string {
 }
 
 export function formatName(bn?: string, en?: string): string {
-  const primary = bn?.trim() || '';
-  const secondary = en?.trim() || '';
-  if (primary && secondary && primary.toLowerCase() !== secondary.toLowerCase()) {
-    return `${primary} / ${secondary}`;
-  }
-  return primary || secondary || '';
+  return bn?.trim() || en?.trim() || '';
 }
 
