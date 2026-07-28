@@ -17,6 +17,13 @@ interface FAQItem {
   answer: string;
 }
 
+interface VariantItem {
+  id: string;
+  name: string;
+  price?: number;
+  stock?: number;
+}
+
 interface ProductFormProps {
   productId?: string;
 }
@@ -46,6 +53,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState('');
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
+  const [variants, setVariants] = useState<VariantItem[]>([]);
 
   // Fetch categories and product data (if edit mode)
   useEffect(() => {
@@ -86,6 +94,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             setBenefits(prod.benefits || []);
             setTags(prod.tags || []);
             setTagInput(prod.tags?.join(', ') || '');
+            setVariants(prod.variants || []);
           }
 
           // Fetch FAQs
@@ -181,6 +190,29 @@ export default function ProductForm({ productId }: ProductFormProps) {
     setFaqs(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleAddVariant = () => {
+    setVariants(prev => [...prev, { id: Date.now().toString() + Math.random().toString(36).substring(2, 5), name: '', price: undefined, stock: undefined }]);
+  };
+
+  const handleVariantChange = (index: number, field: 'name' | 'price' | 'stock', value: any) => {
+    setVariants(prev => prev.map((v, i) => {
+      if (i === index) {
+        if (field === 'price') {
+          return { ...v, price: value === '' ? undefined : Number(value) };
+        }
+        if (field === 'stock') {
+          return { ...v, stock: value === '' ? undefined : Number(value) };
+        }
+        return { ...v, [field]: value };
+      }
+      return v;
+    }));
+  };
+
+  const removeVariant = (index: number) => {
+    setVariants(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!categoryId) {
@@ -231,6 +263,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         images,
         benefits: benefits.filter(b => b.trim() !== ''),
         tags: formattedTags,
+        variants: variants.filter(v => v.name.trim() !== ''),
       };
 
       let currentProductId = productId;
@@ -559,6 +592,72 @@ export default function ProductForm({ productId }: ProductFormProps) {
             placeholder="e.g. earbuds, wireless, audio, sound"
             className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
           />
+        </div>
+      </div>
+
+      {/* Product Variants */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+          <div>
+            <h2 className="font-bold text-gray-900">Product Variants</h2>
+            <p className="text-xs text-gray-400 mt-0.5">Manage variations of this product (e.g. Colors, Sizes, Storage)</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleAddVariant}
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#ff6b35] hover:text-[#e55520] transition-colors cursor-pointer"
+          >
+            <Plus size={14} />
+            Add Variant
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {variants.map((v, i) => (
+            <div key={v.id} className="border border-gray-100 p-4 rounded-xl relative bg-gray-50/30 grid grid-cols-1 sm:grid-cols-3 gap-4 pr-12">
+              <button
+                type="button"
+                onClick={() => removeVariant(i)}
+                className="absolute top-2 right-2 p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+              >
+                <Trash2 size={15} />
+              </button>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Variant Name *</label>
+                <input
+                  type="text"
+                  value={v.name}
+                  onChange={(e) => handleVariantChange(i, 'name', e.target.value)}
+                  placeholder="e.g. Red, XL, 128GB"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black bg-white"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Override Price (Optional)</label>
+                <input
+                  type="number"
+                  value={v.price !== undefined ? v.price : ''}
+                  onChange={(e) => handleVariantChange(i, 'price', e.target.value)}
+                  placeholder="Leave blank to use base price"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black bg-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-600 mb-1">Override Stock (Optional)</label>
+                <input
+                  type="number"
+                  value={v.stock !== undefined ? v.stock : ''}
+                  onChange={(e) => handleVariantChange(i, 'stock', e.target.value)}
+                  placeholder="Leave blank to use base stock"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black bg-white"
+                />
+              </div>
+            </div>
+          ))}
+          {variants.length === 0 && (
+            <p className="text-xs text-gray-400 text-center py-4">No variants added yet. Selling as a standard single-variant product.</p>
+          )}
         </div>
       </div>
 

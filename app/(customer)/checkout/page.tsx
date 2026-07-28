@@ -254,11 +254,17 @@ export default function CheckoutPage() {
       sessionStorage.removeItem('incomplete_order_id');
 
       // Build WhatsApp message
-      const orderItems = items.map((item) => ({
-        name: formatName(item.product.name_bn, item.product.name_en),
-        qty: item.quantity,
-        price: item.product.price,
-      }));
+      const orderItems = items.map((item) => {
+        const variantObj = item.product.variants?.find((v) => v.name === item.selectedVariant);
+        const activePrice = variantObj && variantObj.price && variantObj.price > 0
+          ? variantObj.price
+          : item.product.price;
+        return {
+          name: formatName(item.product.name_bn, item.product.name_en) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
+          qty: item.quantity,
+          price: activePrice,
+        };
+      });
 
       const msg = generateOrderWhatsAppMessage(
         data.name,
@@ -489,13 +495,18 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-[#111827] line-clamp-1 mb-1">{formatName(item.product.name_bn, item.product.name_en)}</p>
+                      {item.selectedVariant && (
+                        <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 bg-orange-50 text-[#ff6b35] border border-orange-100 rounded-md mb-1 font-sans">
+                          ভ্যারিয়েন্ট: {item.selectedVariant}
+                        </span>
+                      )}
                       
                       <div className="flex items-center gap-2.5">
                         {/* Qty Controls */}
                         <div className="flex items-center border border-gray-200/80 rounded-lg overflow-hidden bg-gray-50/70 shadow-xs">
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedVariant)}
                             className="px-2 py-1 hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
                             aria-label="কমান"
                           >
@@ -506,7 +517,7 @@ export default function CheckoutPage() {
                           </span>
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedVariant)}
                             className="px-2 py-1 hover:bg-gray-100 text-gray-500 hover:text-gray-900 transition-colors cursor-pointer"
                             aria-label="বাড়ান"
                           >
@@ -518,7 +529,7 @@ export default function CheckoutPage() {
                         <button
                           type="button"
                           onClick={() => {
-                            removeItem(item.product.id);
+                            removeItem(item.product.id, item.selectedVariant);
                             showToast(`${formatName(item.product.name_bn, item.product.name_en)} সরানো হয়েছে`, 'info');
                           }}
                           className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition-all cursor-pointer flex items-center justify-center shrink-0"
@@ -529,7 +540,13 @@ export default function CheckoutPage() {
                       </div>
                     </div>
                     <span className="text-xs font-bold text-[#374151] flex-shrink-0">
-                      {formatBDTNumeric(item.product.price * item.quantity)}
+                      {(() => {
+                        const variantObj = item.product.variants?.find((v) => v.name === item.selectedVariant);
+                        const activePrice = variantObj && variantObj.price && variantObj.price > 0
+                          ? variantObj.price
+                          : item.product.price;
+                        return formatBDTNumeric(activePrice * item.quantity);
+                      })()}
                     </span>
                   </div>
                 ))}
@@ -640,11 +657,17 @@ export default function CheckoutPage() {
                       watchedValues.phone || '১১ ডিজিটের মোবাইল নাম্বার লিখুন',
                       watchedValues.address || 'গ্রাম.... থানা.... জেলা....',
                       watchedValues.district || '',
-                      items.map((item) => ({
-                        name: formatName(item.product.name_bn, item.product.name_en),
-                        qty: item.quantity,
-                        price: item.product.price,
-                      })),
+                      items.map((item) => {
+                        const variantObj = item.product.variants?.find((v) => v.name === item.selectedVariant);
+                        const activePrice = variantObj && variantObj.price && variantObj.price > 0
+                          ? variantObj.price
+                          : item.product.price;
+                        return {
+                          name: formatName(item.product.name_bn, item.product.name_en) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
+                          qty: item.quantity,
+                          price: activePrice,
+                        };
+                      }),
                       grandTotal
                     )
                   )}

@@ -19,11 +19,38 @@ export function ProductInfo({ product }: ProductInfoProps) {
   const [quantity, setQuantity] = useState(1);
   const [whatsappPhone, setWhatsappPhone] = useState('8801700000000');
   const [hotlinePhone, setHotlinePhone] = useState('01700000000');
-  
+  const [selectedVariant, setSelectedVariant] = useState<string>('');
+
+  useEffect(() => {
+    if (product.variants && product.variants.length > 0) {
+      setSelectedVariant(product.variants[0].name);
+    } else {
+      setSelectedVariant('');
+    }
+  }, [product.variants]);
+
   const addItem = useCartStore((s) => s.addItem);
   const showToast = useUIStore((s) => s.showToast);
-  
-  const discount = calculateDiscount(product.original_price, product.price);
+
+  const activeVariant = product.variants?.find((v) => v.name === selectedVariant);
+  const activePrice =
+    activeVariant && activeVariant.price && activeVariant.price > 0
+      ? activeVariant.price
+      : product.price;
+  const activeOriginalPrice =
+    activeVariant && activeVariant.price && activeVariant.price > 0
+      ? activeVariant.price // No discount badge showing if custom price is set
+      : product.original_price;
+
+  const discount = activeOriginalPrice > activePrice
+    ? calculateDiscount(activeOriginalPrice, activePrice)
+    : 0;
+
+  const maxStock =
+    activeVariant && activeVariant.stock !== undefined && activeVariant.stock !== null
+      ? activeVariant.stock
+      : product.stock;
+
   const avgRating = product.reviews && product.reviews.length
     ? product.reviews.reduce((s, r) => s + r.rating, 0) / product.reviews.length
     : 0;
@@ -43,14 +70,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
   }, []);
 
   const handleAddToCart = () => {
-    addItem(product, quantity);
-    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
-    showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
+    addItem(product, quantity, selectedVariant || undefined);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: activePrice }, quantity);
+    const varLabel = selectedVariant ? ` (${selectedVariant})` : '';
+    showToast(`${formatName(product.name_bn, product.name_en)}${varLabel} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
   const handleOrderNow = () => {
-    addItem(product, quantity);
-    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
+    addItem(product, quantity, selectedVariant || undefined);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: activePrice }, quantity);
     router.push('/checkout');
   };
 
@@ -124,12 +152,12 @@ export function ProductInfo({ product }: ProductInfoProps) {
           style={{ color: 'var(--price-color)' }}
           className="text-3xl font-extrabold"
         >
-          {formatBDTNumeric(product.price)}
+          {formatBDTNumeric(activePrice)}
         </span>
         {discount > 0 && (
           <>
             <span className="text-lg text-[#9ca3af] line-through">
-              {formatBDTNumeric(product.original_price)}
+              {formatBDTNumeric(activeOriginalPrice)}
             </span>
             <span 
               style={{ backgroundColor: 'var(--badge-color)' }}
@@ -146,8 +174,41 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <div className="bg-[#f0fdf4] border border-[#d1fae5] rounded-xl px-4 py-2 inline-block">
           <p className="text-[#047857] text-xs font-bold">
             💰 আপনি সাশ্রয় করছেন{' '}
-            {formatBDTNumeric(product.original_price - product.price)}
+            {formatBDTNumeric(activeOriginalPrice - activePrice)}
           </p>
+        </div>
+      )}
+
+      {/* Variant Selection */}
+      {product.variants && product.variants.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+            পছন্দ করুন (Select Option):
+          </label>
+          <div className="flex flex-wrap gap-2.5">
+            {product.variants.map((v) => {
+              const isSelected = selectedVariant === v.name;
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => setSelectedVariant(v.name)}
+                  className={`px-4 py-2.5 rounded-xl border text-sm font-extrabold transition-all duration-200 cursor-pointer ${
+                    isSelected
+                      ? 'border-[#ff6b35] bg-[#fff3ef] text-[#ff6b35] shadow-xs'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  {v.name}
+                  {v.price && v.price > 0 && v.price !== product.price && (
+                    <span className="text-[10px] ml-1.5 font-bold text-gray-400">
+                      (৳{v.price})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -189,7 +250,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
               {quantity}
             </span>
             <button
-              onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
+              onClick={() => setQuantity((q) => Math.min(maxStock, q + 1))}
               className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 transition-colors text-gray-600 font-bold"
               aria-label="বাড়ান"
             >
@@ -199,7 +260,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
           <button
             onClick={handleAddToCart}
-            disabled={product.stock === 0}
+            disabled={maxStock === 0}
             className="flex-1 max-w-[220px] flex items-center justify-center gap-2 bg-[#f59e0b] hover:bg-[#d97706] disabled:bg-gray-100 disabled:text-gray-400 text-white font-extrabold py-3.5 px-6 rounded-full transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md cursor-pointer text-sm"
           >
             <Lock size={16} />
@@ -211,7 +272,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <div>
           <button
             onClick={handleOrderNow}
-            disabled={product.stock === 0}
+            disabled={maxStock === 0}
             className="w-full max-w-[200px] flex items-center justify-center bg-[#12b76a] hover:bg-[#0e9f58] disabled:bg-gray-100 disabled:text-gray-400 text-white font-extrabold py-3.5 px-6 rounded-full transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md cursor-pointer text-sm"
           >
             Buy Now
@@ -227,7 +288,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <div className="flex flex-col gap-2.5">
           {/* WhatsApp Order Button */}
           <a
-            href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${formatName(product.name_bn, product.name_en)}\nমূল্য: ${formatBDTNumeric(product.price)}`)}`}
+            href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${formatName(product.name_bn, product.name_en)}${selectedVariant ? ` (${selectedVariant})` : ''}\nমূল্য: ${formatBDTNumeric(activePrice)}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full max-w-[240px] flex items-center justify-center gap-2 bg-[#12b76a] hover:bg-[#0f9f59] text-white font-extrabold py-3 px-6 rounded-full transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md cursor-pointer text-sm"

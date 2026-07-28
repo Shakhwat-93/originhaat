@@ -5,9 +5,9 @@ import { CartItem, Product } from '@/types';
 interface CartStore {
   items: CartItem[];
   isOpen: boolean;
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (product: Product, quantity?: number, selectedVariant?: string) => void;
+  removeItem: (productId: string, selectedVariant?: string) => void;
+  updateQuantity: (productId: string, quantity: number, selectedVariant?: string) => void;
   clearCart: () => void;
   setIsOpen: (open: boolean) => void;
   getTotalItems: () => number;
@@ -22,38 +22,57 @@ export const useCartStore = create<CartStore>()(
       items: [],
       isOpen: false,
 
-      addItem: (product: Product, quantity = 1) => {
+      addItem: (product: Product, quantity = 1, selectedVariant?: string) => {
         const items = get().items;
-        const existing = items.find((item) => item.product.id === product.id);
+        const existing = items.find(
+          (item) => item.product.id === product.id && item.selectedVariant === selectedVariant
+        );
+
+        const variantObj = product.variants?.find((v) => v.name === selectedVariant);
+        const maxStock =
+          variantObj && variantObj.stock !== undefined && variantObj.stock !== null
+            ? variantObj.stock
+            : product.stock;
 
         if (existing) {
           set({
             items: items.map((item) =>
-              item.product.id === product.id
-                ? { ...item, quantity: Math.min(item.quantity + quantity, product.stock) }
+              item.product.id === product.id && item.selectedVariant === selectedVariant
+                ? { ...item, quantity: Math.min(item.quantity + quantity, maxStock) }
                 : item
             ),
           });
         } else {
-          set({ items: [...items, { product, quantity }] });
+          set({ items: [...items, { product, quantity, selectedVariant }] });
         }
       },
 
-      removeItem: (productId: string) => {
-        set({ items: get().items.filter((item) => item.product.id !== productId) });
+      removeItem: (productId: string, selectedVariant?: string) => {
+        set({
+          items: get().items.filter(
+            (item) => !(item.product.id === productId && item.selectedVariant === selectedVariant)
+          ),
+        });
       },
 
-      updateQuantity: (productId: string, quantity: number) => {
+      updateQuantity: (productId: string, quantity: number, selectedVariant?: string) => {
         if (quantity <= 0) {
-          get().removeItem(productId);
+          get().removeItem(productId, selectedVariant);
           return;
         }
+
         set({
-          items: get().items.map((item) =>
-            item.product.id === productId
-              ? { ...item, quantity: Math.min(quantity, item.product.stock) }
-              : item
-          ),
+          items: get().items.map((item) => {
+            if (item.product.id === productId && item.selectedVariant === selectedVariant) {
+              const variantObj = item.product.variants?.find((v) => v.name === selectedVariant);
+              const maxStock =
+                variantObj && variantObj.stock !== undefined && variantObj.stock !== null
+                  ? variantObj.stock
+                  : item.product.stock;
+              return { ...item, quantity: Math.min(quantity, maxStock) };
+            }
+            return item;
+          }),
         });
       },
 
@@ -64,7 +83,14 @@ export const useCartStore = create<CartStore>()(
       getTotalItems: () => get().items.reduce((sum, item) => sum + item.quantity, 0),
 
       getTotalPrice: () =>
-        get().items.reduce((sum, item) => sum + item.product.price * item.quantity, 0),
+        get().items.reduce((sum, item) => {
+          const variantObj = item.product.variants?.find((v) => v.name === item.selectedVariant);
+          const price =
+            variantObj && variantObj.price && variantObj.price > 0
+              ? variantObj.price
+              : item.product.price;
+          return sum + price * item.quantity;
+        }, 0),
 
       getDeliveryCharge: () => {
         return 0;

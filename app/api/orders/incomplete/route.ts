@@ -104,16 +104,23 @@ export async function POST(request: NextRequest) {
 
     // Insert order items if items are provided
     if (items && items.length > 0) {
-      const orderItems = items.map((item: any) => ({
-        order_id: orderId,
-        product_id: item.product.id,
-        product_slug: item.product.slug,
-        product_name: formatName(item.product.name_bn, item.product.name_en),
-        product_image: item.product.images?.[0] || null,
-        price: item.product.price,
-        quantity: item.quantity,
-        subtotal: item.product.price * item.quantity,
-      }));
+      const orderItems = items.map((item: any) => {
+        const variantObj = item.product.variants?.find((v: any) => v.name === item.selectedVariant);
+        const activePrice = variantObj && variantObj.price && variantObj.price > 0
+          ? Number(variantObj.price)
+          : Number(item.product.price);
+        return {
+          order_id: orderId,
+          product_id: item.product.id,
+          product_slug: item.product.slug,
+          product_name: formatName(item.product.name_bn, item.product.name_en) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
+          product_image: item.product.images?.[0] || null,
+          price: activePrice,
+          quantity: item.quantity,
+          subtotal: activePrice * item.quantity,
+          selected_variant: item.selectedVariant || null,
+        };
+      });
 
       const { error: itemsError } = await supabase.from('oh_order_items').insert(orderItems);
       if (itemsError) console.error('Incomplete order items insert error:', itemsError);

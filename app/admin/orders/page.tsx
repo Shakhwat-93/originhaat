@@ -116,16 +116,24 @@ function OrdersPageContent() {
     });
   };
 
-  const handleCreateAddItem = (productId: string) => {
+  const handleCreateAddItem = (valueStr: string) => {
+    const [productId, variantName] = valueStr.split('::');
     const product = productsList.find(p => p.id === productId);
     if (!product) return;
 
     setCreateForm((prev: any) => {
-      const existing = prev.items.find((item: any) => item.product_id === product.id);
+      const existing = prev.items.find((item: any) => 
+        item.product_id === product.id && item.selected_variant === (variantName || null)
+      );
       let updatedItems;
+      const variantObj = product.variants?.find((v: any) => v.name === variantName);
+      const activePrice = variantObj && variantObj.price && variantObj.price > 0
+        ? variantObj.price
+        : product.price;
+
       if (existing) {
         updatedItems = prev.items.map((item: any) => 
-          item.product_id === product.id 
+          item.product_id === product.id && item.selected_variant === (variantName || null)
             ? { ...item, quantity: item.quantity + 1, subtotal: item.price * (item.quantity + 1) } 
             : item
         );
@@ -134,11 +142,12 @@ function OrdersPageContent() {
           id: Math.random().toString(),
           product_id: product.id,
           product_slug: product.slug,
-          product_name: product.name_bn || product.name_en,
+          product_name: (product.name_bn || product.name_en) + (variantName ? ` (${variantName})` : ''),
           product_image: product.images?.[0] || null,
-          price: product.price,
+          price: activePrice,
           quantity: 1,
-          subtotal: product.price
+          subtotal: activePrice,
+          selected_variant: variantName || null
         };
         updatedItems = [...prev.items, newItem];
       }
@@ -359,18 +368,25 @@ function OrdersPageContent() {
     });
   };
 
-  const handleAddItem = (productId: string) => {
+  const handleAddItem = (valueStr: string) => {
+    const [productId, variantName] = valueStr.split('::');
     const product = productsList.find(p => p.id === productId);
     if (!product) return;
 
     setEditForm((prev: any) => {
       if (!prev) return prev;
       
-      // Check if product already exists in items
-      const existing = prev.items.find((item: any) => item.product_id === product.id);
+      const existing = prev.items.find((item: any) => 
+        item.product_id === product.id && item.selected_variant === (variantName || null)
+      );
+      const variantObj = product.variants?.find((v: any) => v.name === variantName);
+      const activePrice = variantObj && variantObj.price && variantObj.price > 0
+        ? variantObj.price
+        : product.price;
+
       if (existing) {
         const updatedItems = prev.items.map((item: any) => 
-          item.product_id === product.id 
+          item.product_id === product.id && item.selected_variant === (variantName || null)
             ? { ...item, quantity: item.quantity + 1, subtotal: item.price * (item.quantity + 1) } 
             : item
         );
@@ -382,11 +398,12 @@ function OrdersPageContent() {
         id: Math.random().toString(),
         product_id: product.id,
         product_slug: product.slug,
-        product_name: product.name_bn || product.name_en,
+        product_name: (product.name_bn || product.name_en) + (variantName ? ` (${variantName})` : ''),
         product_image: product.images?.[0] || null,
-        price: product.price,
+        price: activePrice,
         quantity: 1,
-        subtotal: product.price
+        subtotal: activePrice,
+        selected_variant: variantName || null
       };
       
       const updatedItems = [...prev.items, newItem];
@@ -2434,11 +2451,23 @@ function OrdersPageContent() {
                       disabled={loadingProducts}
                     >
                       <option value="">{loadingProducts ? 'Loading products...' : 'Select a product to add...'}</option>
-                      {productsList.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name_bn || p.name_en} (৳{p.price})
-                        </option>
-                      ))}
+                      {productsList.map((p) => {
+                        const options = [
+                          <option key={p.id} value={p.id}>
+                            {p.name_bn || p.name_en} (৳{p.price})
+                          </option>
+                        ];
+                        if (p.variants && p.variants.length > 0) {
+                          p.variants.forEach((v: any) => {
+                            options.push(
+                              <option key={`${p.id}::${v.name}`} value={`${p.id}::${v.name}`}>
+                                {p.name_bn || p.name_en} - {v.name} (৳{v.price && v.price > 0 ? v.price : p.price})
+                              </option>
+                            );
+                          });
+                        }
+                        return options;
+                      })}
                     </select>
                   </div>
 
@@ -3194,11 +3223,23 @@ function OrdersPageContent() {
                     disabled={loadingProducts}
                   >
                     <option value="">{loadingProducts ? 'Loading products...' : 'Select a product to add...'}</option>
-                    {productsList.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name_bn || p.name_en} (৳{p.price})
-                      </option>
-                    ))}
+                    {productsList.map((p) => {
+                      const options = [
+                        <option key={p.id} value={p.id}>
+                          {p.name_bn || p.name_en} (৳{p.price})
+                        </option>
+                      ];
+                      if (p.variants && p.variants.length > 0) {
+                        p.variants.forEach((v: any) => {
+                          options.push(
+                            <option key={`${p.id}::${v.name}`} value={`${p.id}::${v.name}`}>
+                              {p.name_bn || p.name_en} - {v.name} (৳{v.price && v.price > 0 ? v.price : p.price})
+                            </option>
+                          );
+                        });
+                      }
+                      return options;
+                    })}
                   </select>
                 </div>
 

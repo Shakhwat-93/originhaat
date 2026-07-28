@@ -141,18 +141,24 @@ export async function POST(request: NextRequest) {
           price: Number(item.price),
           quantity: Number(item.quantity),
           subtotal: Number(item.price) * Number(item.quantity),
+          selected_variant: item.selected_variant || null,
         };
       }
       // Client format (has nested product object)
+      const variantObj = item.product.variants?.find((v: any) => v.name === item.selectedVariant);
+      const activePrice = variantObj && variantObj.price && variantObj.price > 0
+        ? Number(variantObj.price)
+        : Number(item.product.price);
       return {
         order_id: order.id,
         product_id: item.product.id,
         product_slug: item.product.slug,
-        product_name: formatName(item.product.name_bn, item.product.name_en),
+        product_name: formatName(item.product.name_bn, item.product.name_en) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
         product_image: item.product.images?.[0] || null,
-        price: Number(item.product.price),
+        price: activePrice,
         quantity: Number(item.quantity),
-        subtotal: Number(item.product.price) * Number(item.quantity),
+        subtotal: activePrice * Number(item.quantity),
+        selected_variant: item.selectedVariant || null,
       };
     });
 

@@ -42,6 +42,12 @@ export async function GET(request: NextRequest) {
 
     -- Add default_faqs column to oh_settings for editable product FAQs
     ALTER TABLE oh_settings ADD COLUMN IF NOT EXISTS default_faqs jsonb DEFAULT '[]'::jsonb;
+
+    -- Add variants column to oh_products
+    ALTER TABLE oh_products ADD COLUMN IF NOT EXISTS variants jsonb DEFAULT '[]'::jsonb;
+
+    -- Add selected_variant column to oh_order_items
+    ALTER TABLE oh_order_items ADD COLUMN IF NOT EXISTS selected_variant text;
   `;
 
   // We will try to connect to the internal database container

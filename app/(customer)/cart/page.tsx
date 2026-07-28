@@ -13,9 +13,10 @@ export default function CartPage() {
     useCartStore();
   const showToast = useUIStore((s) => s.showToast);
 
-  const handleRemove = (productId: string, productName: string) => {
-    removeItem(productId);
-    showToast(`${productName} কার্ট থেকে সরানো হয়েছে`, 'info');
+  const handleRemove = (productId: string, productName: string, selectedVariant?: string) => {
+    removeItem(productId, selectedVariant);
+    const varLabel = selectedVariant ? ` (${selectedVariant})` : '';
+    showToast(`${productName}${varLabel} কার্ট থেকে সরানো হয়েছে`, 'info');
   };
 
   if (items.length === 0) {
@@ -85,9 +86,20 @@ export default function CartPage() {
                       {formatName(item.product.name_bn, item.product.name_en)}
                     </p>
                   </Link>
+                  {item.selectedVariant && (
+                    <span className="inline-block text-[10px] font-bold px-2 py-0.5 bg-orange-50 text-[#ff6b35] border border-orange-100 rounded-md mb-1.5">
+                      ভ্যারিয়েন্ট: {item.selectedVariant}
+                    </span>
+                  )}
                   <p className="text-[#6b7280] text-xs mb-2">{item.product.category}</p>
                   <p className="font-bold text-[#ff6b35]">
-                    {formatBDTNumeric(item.product.price)}
+                    {(() => {
+                      const variantObj = item.product.variants?.find((v) => v.name === item.selectedVariant);
+                      const activePrice = variantObj && variantObj.price && variantObj.price > 0
+                        ? variantObj.price
+                        : item.product.price;
+                      return formatBDTNumeric(activePrice);
+                    })()}
                   </p>
                 </div>
 
@@ -95,7 +107,7 @@ export default function CartPage() {
                 <div className="flex flex-col items-end gap-2">
                   {/* Remove */}
                   <button
-                    onClick={() => handleRemove(item.product.id, formatName(item.product.name_bn, item.product.name_en))}
+                    onClick={() => handleRemove(item.product.id, formatName(item.product.name_bn, item.product.name_en), item.selectedVariant)}
                     className="text-[#ef4444] hover:text-red-700 transition-colors p-1"
                     aria-label="সরিয়ে দিন"
                   >
@@ -105,7 +117,7 @@ export default function CartPage() {
                   {/* Qty */}
                   <div className="flex items-center border border-[#e5e7eb] rounded-lg overflow-hidden">
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedVariant)}
                       className="px-2.5 py-1.5 hover:bg-[#f8f9fa] transition-colors"
                       aria-label="কমান"
                     >
@@ -115,7 +127,7 @@ export default function CartPage() {
                       {item.quantity}
                     </span>
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedVariant)}
                       className="px-2.5 py-1.5 hover:bg-[#f8f9fa] transition-colors"
                       aria-label="বাড়ান"
                     >
@@ -124,7 +136,13 @@ export default function CartPage() {
                   </div>
 
                   <p className="text-xs font-semibold text-[#374151]">
-                    {formatBDTNumeric(item.product.price * item.quantity)}
+                    {(() => {
+                      const variantObj = item.product.variants?.find((v) => v.name === item.selectedVariant);
+                      const activePrice = variantObj && variantObj.price && variantObj.price > 0
+                        ? variantObj.price
+                        : item.product.price;
+                      return formatBDTNumeric(activePrice * item.quantity);
+                    })()}
                   </p>
                 </div>
               </motion.div>

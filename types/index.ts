@@ -17,6 +17,14 @@ export interface Product {
   reviews: Review[];
   tags: string[];
   created_at: string;
+  variants?: ProductVariant[];
+}
+
+export interface ProductVariant {
+  id: string;
+  name: string;
+  price?: number;
+  stock?: number;
 }
 
 export interface FAQ {
@@ -47,6 +55,7 @@ export interface Category {
 export interface CartItem {
   product: Product;
   quantity: number;
+  selectedVariant?: string;
 }
 
 export interface Order {

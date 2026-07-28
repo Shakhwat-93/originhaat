@@ -20,8 +20,28 @@ interface StickyProductCTAProps {
 export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
   const router = useRouter();
   const [visible, setVisible] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState<string>('');
+
+  useEffect(() => {
+    if (product.variants && product.variants.length > 0) {
+      setSelectedVariant(product.variants[0].name);
+    } else {
+      setSelectedVariant('');
+    }
+  }, [product.variants]);
+
   const addItem = useCartStore((s) => s.addItem);
   const showToast = useUIStore((s) => s.showToast);
+
+  const activeVariant = product.variants?.find((v) => v.name === selectedVariant);
+  const activePrice =
+    activeVariant && activeVariant.price && activeVariant.price > 0
+      ? activeVariant.price
+      : product.price;
+  const maxStock =
+    activeVariant && activeVariant.stock !== undefined && activeVariant.stock !== null
+      ? activeVariant.stock
+      : product.stock;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,14 +52,15 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
   }, []);
 
   const handleAddToCart = () => {
-    addItem(product, quantity);
-    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
-    showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
+    addItem(product, quantity, selectedVariant || undefined);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: activePrice }, quantity);
+    const varLabel = selectedVariant ? ` (${selectedVariant})` : '';
+    showToast(`${formatName(product.name_bn, product.name_en)}${varLabel} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
   const handleOrderNow = () => {
-    addItem(product, quantity);
-    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, quantity);
+    addItem(product, quantity, selectedVariant || undefined);
+    trackAddToCart({ id: product.id, name_bn: product.name_bn, price: activePrice }, quantity);
     router.push('/checkout');
   };
 
@@ -56,13 +77,13 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm font-semibold text-[#111827] truncate flex-1">{formatName(product.name_bn, product.name_en)}</span>
             <span className="text-sm font-bold text-[#ff6b35]">
-              {formatBDTNumeric(product.price * quantity)}
+              {formatBDTNumeric(activePrice * quantity)}
             </span>
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleOrderNow}
-              disabled={product.stock === 0}
+              disabled={maxStock === 0}
               className="flex-1 flex items-center justify-center gap-2 bg-[#ff6b35] hover:bg-[#e55520] disabled:bg-[#d1d5db] text-white font-bold py-3.5 rounded-xl text-base transition-colors active:scale-95 cursor-pointer"
             >
               <Zap size={18} />
@@ -70,7 +91,7 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
             </button>
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
+              disabled={maxStock === 0}
               className="flex items-center justify-center gap-1 bg-[#ff6b35] hover:bg-[#e55520] disabled:bg-[#d1d5db] text-white font-bold py-3.5 px-4 rounded-xl transition-colors active:scale-95"
               aria-label="কার্টে যোগ করুন"
             >
