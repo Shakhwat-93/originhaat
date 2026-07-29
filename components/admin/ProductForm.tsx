@@ -116,11 +116,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
     loadInitData();
   }, [productId]);
 
-  const handleNameEnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
+    setNameBn(val);
     setNameEn(val);
     if (!productId) {
-      setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+      const slugVal = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      if (slugVal) {
+        setSlug(slugVal);
+      }
     }
   };
 
@@ -359,25 +363,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
       <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
         <h2 className="font-bold text-gray-900 border-b border-gray-100 pb-3">Primary Product Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Name (Bangla)</label>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Name</label>
             <input
               type="text"
               value={nameBn}
-              onChange={(e) => setNameBn(e.target.value)}
+              onChange={handleNameChange}
               placeholder="e.g. Smart Watch Ultra 2"
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
               required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Name (English)</label>
-            <input
-              type="text"
-              value={nameEn}
-              onChange={handleNameEnChange}
-              placeholder="e.g. Smart Watch Ultra 2 (Optional)"
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
             />
           </div>
           <div>
