@@ -627,7 +627,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-6 scrollbar-thin">
           <div>
             {!isCollapsed && (
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-3.5 mb-3">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-3.5 mb-3">
                 MAIN CONSOLE
               </p>
             )}
@@ -656,7 +656,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
+                        className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-extrabold transition-all relative ${
                           isActive 
                             ? 'bg-[#fff3ef] text-[#ff6b35] nav-item-active' 
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
@@ -665,7 +665,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         {isActive && (
                           <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg nav-indicator" />
                         )}
-                        <Icon size={16} className={isActive ? 'text-[#ff6b35] nav-icon-active' : 'text-gray-400'} />
+                        <Icon size={18} className={isActive ? 'text-[#ff6b35] nav-icon-active' : 'text-gray-400'} />
                         {!isCollapsed && <span className="flex-1">{item.label}</span>}
                         {!isCollapsed && renderBadge(item.badgeType)}
                       </Link>
@@ -682,7 +682,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     <li key={item.id} className="space-y-1">
                       <button
                         onClick={() => toggleGroup(item.id)}
-                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
+                        className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-extrabold transition-all relative ${
                           isChildActive && !isExpanded
                             ? 'bg-[#fff3ef] text-[#ff6b35] nav-item-active' 
                             : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
@@ -691,10 +691,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                         {isChildActive && !isExpanded && (
                           <span className="absolute left-0 top-1/4 bottom-1/4 w-1 bg-[#ff6b35] rounded-r-lg nav-indicator" />
                         )}
-                        <Icon size={16} className={isChildActive ? 'text-[#ff6b35] nav-icon-active' : 'text-gray-400'} />
+                        <Icon size={18} className={isChildActive ? 'text-[#ff6b35] nav-icon-active' : 'text-gray-400'} />
                         {!isCollapsed && <span className="flex-1 text-left">{item.label}</span>}
                         {!isCollapsed && (
-                          isExpanded ? <ChevronUp size={13} className="text-gray-400" /> : <ChevronDown size={13} className="text-gray-400" />
+                          isExpanded ? <ChevronUp size={15} className="text-gray-400" /> : <ChevronDown size={15} className="text-gray-400" />
                         )}
                       </button>
 
@@ -706,7 +706,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                               <Link
                                 key={child.href}
                                 href={child.href}
-                                className={`flex items-center gap-2.5 py-2 pl-6 pr-3.5 rounded-lg text-xs font-bold transition-all ${
+                                className={`flex items-center gap-2.5 py-2.5 pl-6 pr-3.5 rounded-lg text-[13px] font-bold transition-all ${
                                   isSubActive 
                                     ? 'bg-[#fff3ef] text-[#ff6b35] nav-item-active' 
                                     : 'text-gray-500 hover:text-gray-900'
@@ -738,31 +738,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {isInstallable && (
             <button
               onClick={installApp}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-[#ff6b35] hover:bg-[#ff6b35]/10 border border-[#ff6b35]/25 transition-colors cursor-pointer`}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold text-[#ff6b35] hover:bg-[#ff6b35]/10 border border-[#ff6b35]/25 transition-colors cursor-pointer`}
               title="Install App"
             >
-              <span className="flex items-center gap-2"><Smartphone size={14} /> {!isCollapsed && 'Install Console'}</span>
+              <span className="flex items-center gap-2"><Smartphone size={15} /> {!isCollapsed && 'Install Console'}</span>
             </button>
           )}
 
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-red-500 transition-colors cursor-pointer ${
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-bold text-red-500 transition-colors cursor-pointer ${
               theme === 'dark' ? 'hover:bg-red-950/20' : 'hover:bg-red-50'
             }`}
           >
-            <span className="flex items-center gap-2"><LogOut size={14} /> Logout</span>
+            <span className="flex items-center gap-2"><LogOut size={15} /> Logout</span>
           </button>
           
           <div className="flex items-center gap-3 px-2 text-black">
             {/* Avatar matching Canvas style */}
-            <div className="w-9 h-9 rounded-full bg-[#ff6b35] flex items-center justify-center shrink-0 text-white font-extrabold text-xs shadow-sm capitalize">
+            <div className="w-10 h-10 rounded-full bg-[#ff6b35] flex items-center justify-center shrink-0 text-white font-black text-sm shadow-sm capitalize">
               {(userName || 'AD').substring(0, 2)}
             </div>
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className={`text-xs font-black truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{userName || 'Administrator'}</p>
-                <p className="text-[10px] text-gray-400 font-semibold truncate capitalize">{userRole || 'Admin'}</p>
+                <p className={`text-sm font-black truncate ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{userName || 'Administrator'}</p>
+                <p className="text-xs text-gray-400 font-bold truncate capitalize">{userRole || 'Admin'}</p>
               </div>
             )}
           </div>
