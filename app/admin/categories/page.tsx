@@ -56,11 +56,15 @@ export default function AdminCategoriesPage() {
     fetchCategories();
   }, []);
 
-  const handleNameEnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
+    setNameBn(val);
     setNameEn(val);
     if (!editingId) {
-      setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
+      const slugVal = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      if (slugVal) {
+        setSlug(slugVal);
+      }
     }
   };
 
@@ -434,24 +438,14 @@ export default function AdminCategoriesPage() {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category Name (Bangla)</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category Name</label>
               <input
                 type="text"
                 value={nameBn}
-                onChange={(e) => setNameBn(e.target.value)}
+                onChange={handleNameChange}
                 placeholder="e.g. Smart Gadgets"
                 className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
                 required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Category Name (English)</label>
-              <input
-                type="text"
-                value={nameEn}
-                onChange={handleNameEnChange}
-                placeholder="e.g. Smart Gadgets (Optional)"
-                className="w-full px-4 py-3 border border-gray-200 bg-gray-50/50 rounded-xl focus:bg-white focus:border-[#ff6b35] focus:outline-none text-xs text-black"
               />
             </div>
             <div>
