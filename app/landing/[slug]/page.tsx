@@ -18,11 +18,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     return notFound();
   }
 
+  const decodedSlug = decodeURIComponent(slug);
+
   // Fetch landing page layout along with its associated product details
   const { data: landingPage, error } = await supabase
     .from('oh_landing_pages')
     .select('*, product:oh_products (*)')
-    .eq('slug', slug.trim().toLowerCase())
+    .eq('slug', decodedSlug.trim().toLowerCase())
     .eq('is_active', true)
     .single();
 

@@ -21,7 +21,8 @@ const SIDEBAR_LINKS = [
 export default function DynamicCustomerPage() {
   const params = useParams();
   const router = useRouter();
-  const slug = params?.slug as string;
+  const rawSlug = params?.slug as string;
+  const slug = rawSlug ? decodeURIComponent(rawSlug) : '';
 
   const [pageData, setPageData] = useState<{
     title: string;

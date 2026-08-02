@@ -121,11 +121,12 @@ export async function getAllProducts() {
 }
 
 export async function getProductBySlug(slug: string) {
+  const decodedSlug = decodeURIComponent(slug);
   // Fetch product with category name
   const { data: product, error } = await supabaseServer
     .from('oh_products')
     .select('*, oh_categories(name_bn)')
-    .eq('slug', slug)
+    .eq('slug', decodedSlug)
     .eq('is_active', true)
     .single();
 

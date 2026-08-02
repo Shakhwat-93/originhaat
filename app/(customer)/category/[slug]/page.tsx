@@ -14,10 +14,11 @@ export const revalidate = 30; // cache for 30 seconds (ISR)
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
   const { data: category } = await supabaseServer
     .from('oh_categories')
     .select('name_bn, name_en, description')
-    .eq('slug', slug)
+    .eq('slug', decodedSlug)
     .single();
 
   if (!category) return { title: 'ক্যাটাগরি পাওয়া যায়নি', robots: { index: false, follow: false } };
@@ -52,12 +53,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
+  const decodedSlug = decodeURIComponent(slug);
 
   // 1. Fetch category
   const { data: category, error: catError } = await supabaseServer
     .from('oh_categories')
     .select('*')
-    .eq('slug', slug)
+    .eq('slug', decodedSlug)
     .eq('is_active', true)
     .single();
 
