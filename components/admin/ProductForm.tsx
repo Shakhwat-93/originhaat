@@ -38,6 +38,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   // Form Fields
   const [nameBn, setNameBn] = useState('');
   const [nameEn, setNameEn] = useState('');
+  const [displayNameLang, setDisplayNameLang] = useState('bn');
   const [slug, setSlug] = useState('');
   const [descriptionBn, setDescriptionBn] = useState('');
   const [shortDescriptionBn, setShortDescriptionBn] = useState('');
@@ -80,6 +81,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
           if (prod) {
             setNameBn(prod.name_bn || '');
             setNameEn(prod.name_en || '');
+            setDisplayNameLang(prod.display_name_lang || 'bn');
             setSlug(prod.slug || '');
             setDescriptionBn(prod.description_bn || '');
             setShortDescriptionBn(prod.short_description_bn || '');
@@ -116,15 +118,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
     loadInitData();
   }, [productId]);
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNameBnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setNameBn(e.target.value);
+  };
+
+  const handleNameEnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    setNameBn(val);
     setNameEn(val);
     if (!productId) {
-      const slugVal = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      if (slugVal) {
-        setSlug(slugVal);
-      }
+      setSlug(val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''));
     }
   };
 
@@ -253,6 +255,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
       const productPayload = {
         name_bn: nameBn,
         name_en: nameEn,
+        display_name_lang: displayNameLang,
         slug,
         description_bn: descriptionBn,
         short_description_bn: shortDescriptionBn,
@@ -363,16 +366,54 @@ export default function ProductForm({ productId }: ProductFormProps) {
       <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
         <h2 className="font-bold text-gray-900 border-b border-gray-100 pb-3">Primary Product Details</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="md:col-span-2">
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Name</label>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Name (Bangla)</label>
             <input
               type="text"
               value={nameBn}
-              onChange={handleNameChange}
+              onChange={handleNameBnChange}
+              placeholder="e.g. স্মার্ট ওয়াচ আল্ট্রা ২"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Name (English)</label>
+            <input
+              type="text"
+              value={nameEn}
+              onChange={handleNameEnChange}
               placeholder="e.g. Smart Watch Ultra 2"
               className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
               required
             />
+          </div>
+          <div className="md:col-span-2 bg-[#fffcfb] border border-[#ffece5] rounded-xl p-4.5 space-y-2">
+            <label className="block text-sm font-bold text-gray-800">ওয়েবসাইটে প্রদর্শনের ভাষা (Display Name Language):</label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2.5 text-sm font-semibold text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="displayNameLang"
+                  value="bn"
+                  checked={displayNameLang === 'bn'}
+                  onChange={() => setDisplayNameLang('bn')}
+                  className="accent-[#ff6b35] w-4 h-4 cursor-pointer"
+                />
+                বাংলা নাম দেখান (Show Bangla Name)
+              </label>
+              <label className="flex items-center gap-2.5 text-sm font-semibold text-gray-700 cursor-pointer">
+                <input
+                  type="radio"
+                  name="displayNameLang"
+                  value="en"
+                  checked={displayNameLang === 'en'}
+                  onChange={() => setDisplayNameLang('en')}
+                  className="accent-[#ff6b35] w-4 h-4 cursor-pointer"
+                />
+                English Name দেখান (Show English Name)
+              </label>
+            </div>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Slug</label>

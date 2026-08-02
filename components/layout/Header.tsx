@@ -147,12 +147,12 @@ export function Header({ initialSettings }: HeaderProps) {
                   <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-gray-100">
                     <img
                       src={p.images?.[0] || 'https://placeholder.co/100'}
-                      alt={formatName(p.name_bn, p.name_en)}
+                      alt={formatName(p.name_bn, p.name_en, p.display_name_lang)}
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h5 className="font-bold text-xs text-gray-800 truncate">{formatName(p.name_bn, p.name_en)}</h5>
+                    <h5 className="font-bold text-xs text-gray-800 truncate">{formatName(p.name_bn, p.name_en, p.display_name_lang)}</h5>
                     <p className="text-[10px] text-gray-400 mt-0.5 truncate">{p.short_description_bn || p.name_en}</p>
                   </div>
                   <div className="text-right shrink-0">

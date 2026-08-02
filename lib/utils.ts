@@ -83,7 +83,10 @@ export function formatImageUrl(url: string | undefined | null): string {
   return url;
 }
 
-export function formatName(bn?: string, en?: string): string {
+export function formatName(bn?: string, en?: string, displayNameLang?: string): string {
+  if (displayNameLang === 'en') {
+    return en?.trim() || bn?.trim() || '';
+  }
   return bn?.trim() || en?.trim() || '';
 }
 

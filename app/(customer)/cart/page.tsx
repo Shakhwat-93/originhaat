@@ -71,7 +71,7 @@ export default function CartPage() {
                   <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-[#f8f9fa] flex-shrink-0">
                     <Image
                       src={item.product.images[0]}
-                      alt={formatName(item.product.name_bn, item.product.name_en)}
+                      alt={formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang)}
                       fill
                       className="object-cover"
                       sizes="80px"
@@ -83,7 +83,7 @@ export default function CartPage() {
                 <div className="flex-1 min-w-0">
                   <Link href={`/product/${item.product.slug}`}>
                     <p className="font-semibold text-[#111827] text-sm line-clamp-2 mb-1 hover:text-[#ff6b35] transition-colors">
-                      {formatName(item.product.name_bn, item.product.name_en)}
+                      {formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang)}
                     </p>
                   </Link>
                   {item.selectedVariant && (
@@ -107,7 +107,7 @@ export default function CartPage() {
                 <div className="flex flex-col items-end gap-2">
                   {/* Remove */}
                   <button
-                    onClick={() => handleRemove(item.product.id, formatName(item.product.name_bn, item.product.name_en), item.selectedVariant)}
+                    onClick={() => handleRemove(item.product.id, formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang), item.selectedVariant)}
                     className="text-[#ef4444] hover:text-red-700 transition-colors p-1"
                     aria-label="সরিয়ে দিন"
                   >

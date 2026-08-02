@@ -35,10 +35,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!product) return { title: 'পণ্য পাওয়া যায়নি', robots: { index: false, follow: false } };
 
   const firstImage = product.images?.[0] || '';
-  const title = `${product.name_bn} — দাম, রিভিউ ও অফার | Origin Haat`;
+  const resolvedName = formatName(product.name_bn, product.name_en, product.display_name_lang);
+  const title = `${resolvedName} — দাম, রিভিউ ও অফার | Origin Haat`;
   const description =
     product.short_description_bn ||
-    `${product.name_bn} কিনুন Origin Haat-এ সেরা দামে। ক্যাশ অন ডেলিভারি উপলব্ধ। বাংলাদেশে দ্রুত ডেলিভারি।`;
+    `${resolvedName} কিনুন Origin Haat-এ সেরা দামে। ক্যাশ অন ডেলিভারি উপলব্ধ। বাংলাদেশে দ্রুত ডেলিভারি।`;
   const price = product.sale_price || product.price;
 
   return {
@@ -61,7 +62,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale: 'bn_BD',
       type: 'website',
       images: firstImage
-        ? [{ url: firstImage, width: 800, height: 800, alt: product.name_bn }]
+        ? [{ url: firstImage, width: 800, height: 800, alt: resolvedName }]
         : [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Origin Haat' }],
     },
     twitter: {
@@ -165,13 +166,13 @@ export default async function ProductPage({ params }: Props) {
         <nav className="flex items-center gap-2 text-sm text-[#6b7280] mb-6" aria-label="Breadcrumb">
           <a href="/" className="hover:text-[#ff6b35] transition-colors">হোম</a>
           <span>/</span>
-          <span className="text-[#374151] font-medium line-clamp-1">{formatName(product.name_bn, product.name_en)}</span>
+          <span className="text-[#374151] font-medium line-clamp-1">{formatName(product.name_bn, product.name_en, product.display_name_lang)}</span>
         </nav>
 
 
         {/* Product Detail */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-10">
-          <ProductGallery images={product.images || []} productName={formatName(product.name_bn, product.name_en)} />
+          <ProductGallery images={product.images || []} productName={formatName(product.name_bn, product.name_en, product.display_name_lang)} />
           <ProductInfo product={product as any} />
         </div>
 

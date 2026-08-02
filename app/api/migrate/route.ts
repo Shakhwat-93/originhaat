@@ -48,6 +48,9 @@ export async function GET(request: NextRequest) {
 
     -- Add selected_variant column to oh_order_items
     ALTER TABLE oh_order_items ADD COLUMN IF NOT EXISTS selected_variant text;
+
+    -- Add display_name_lang column to oh_products
+    ALTER TABLE oh_products ADD COLUMN IF NOT EXISTS display_name_lang text DEFAULT 'bn';
   `;
 
   // We will try to connect to the internal database container

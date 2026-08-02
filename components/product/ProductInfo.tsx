@@ -73,7 +73,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
     addItem(product, quantity, selectedVariant || undefined);
     trackAddToCart({ id: product.id, name_bn: product.name_bn, price: activePrice }, quantity);
     const varLabel = selectedVariant ? ` (${selectedVariant})` : '';
-    showToast(`${formatName(product.name_bn, product.name_en)}${varLabel} কার্টে যোগ হয়েছে ✓`, 'success');
+    showToast(`${formatName(product.name_bn, product.name_en, product.display_name_lang)}${varLabel} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
   const handleOrderNow = () => {
@@ -102,7 +102,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Title */}
       <h1 className="text-2xl sm:text-3xl font-extrabold text-[#111827] leading-tight">
-        {formatName(product.name_bn, product.name_en)}
+        {formatName(product.name_bn, product.name_en, product.display_name_lang)}
       </h1>
 
       {/* Badges Section */}
@@ -288,7 +288,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
         <div className="flex flex-col gap-2.5">
           {/* WhatsApp Order Button */}
           <a
-            href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${formatName(product.name_bn, product.name_en)}${selectedVariant ? ` (${selectedVariant})` : ''}\nমূল্য: ${formatBDTNumeric(activePrice)}`)}`}
+            href={`https://wa.me/${whatsappPhone}?text=${encodeURIComponent(`হ্যালো! আমি Origin Haat থেকে এই প্রোডাক্টটি কিনতে চাই:\n\n${formatName(product.name_bn, product.name_en, product.display_name_lang)}${selectedVariant ? ` (${selectedVariant})` : ''}\nমূল্য: ${formatBDTNumeric(activePrice)}`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full max-w-[240px] flex items-center justify-center gap-2 bg-[#12b76a] hover:bg-[#0f9f59] text-white font-extrabold py-3 px-6 rounded-full transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md cursor-pointer text-sm"

@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
           order_id: orderId,
           product_id: item.product.id,
           product_slug: item.product.slug,
-          product_name: formatName(item.product.name_bn, item.product.name_en) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
+          product_name: formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
           product_image: item.product.images?.[0] || null,
           price: activePrice,
           quantity: item.quantity,

@@ -260,7 +260,7 @@ export default function CheckoutPage() {
           ? variantObj.price
           : item.product.price;
         return {
-          name: formatName(item.product.name_bn, item.product.name_en) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
+          name: formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
           qty: item.quantity,
           price: activePrice,
         };
@@ -487,14 +487,14 @@ export default function CheckoutPage() {
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-[#f8f9fa] flex-shrink-0">
                       <Image
                         src={item.product.images[0]}
-                        alt={formatName(item.product.name_bn, item.product.name_en)}
+                        alt={formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang)}
                         fill
                         className="object-cover"
                         sizes="48px"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-[#111827] line-clamp-1 mb-1">{formatName(item.product.name_bn, item.product.name_en)}</p>
+                      <p className="text-xs font-semibold text-[#111827] line-clamp-1 mb-1">{formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang)}</p>
                       {item.selectedVariant && (
                         <span className="inline-block text-[9px] font-bold px-1.5 py-0.5 bg-orange-50 text-[#ff6b35] border border-orange-100 rounded-md mb-1 font-sans">
                           ভ্যারিয়েন্ট: {item.selectedVariant}
@@ -530,7 +530,7 @@ export default function CheckoutPage() {
                           type="button"
                           onClick={() => {
                             removeItem(item.product.id, item.selectedVariant);
-                            showToast(`${formatName(item.product.name_bn, item.product.name_en)} সরানো হয়েছে`, 'info');
+                            showToast(`${formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang)} সরানো হয়েছে`, 'info');
                           }}
                           className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg border border-transparent hover:border-rose-100 transition-all cursor-pointer flex items-center justify-center shrink-0"
                           aria-label="সরিয়ে দিন"
@@ -663,7 +663,7 @@ export default function CheckoutPage() {
                           ? variantObj.price
                           : item.product.price;
                         return {
-                          name: formatName(item.product.name_bn, item.product.name_en) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
+                          name: formatName(item.product.name_bn, item.product.name_en, item.product.display_name_lang) + (item.selectedVariant ? ` (${item.selectedVariant})` : ''),
                           qty: item.quantity,
                           price: activePrice,
                         };

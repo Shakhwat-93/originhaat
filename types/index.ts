@@ -18,6 +18,7 @@ export interface Product {
   tags: string[];
   created_at: string;
   variants?: ProductVariant[];
+  display_name_lang?: string;
 }
 
 export interface ProductVariant {

@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Sparkles, RefreshCw } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert } from '@/lib/alerts';
-import { formatImageUrl } from '@/lib/utils';
+import { formatImageUrl, formatName } from '@/lib/utils';
 
 interface Product {
   id: string;
   name_bn: string;
+  name_en: string;
+  display_name_lang?: string;
   price: number;
   original_price: number;
   stock: number;
@@ -171,7 +173,8 @@ export default function AdminProductsPage() {
   };
 
   const filteredProducts = products.filter((prod) => {
-    const matchesSearch = prod.name_bn.toLowerCase().includes(search.toLowerCase()) || 
+    const displayName = formatName(prod.name_bn, prod.name_en, prod.display_name_lang);
+    const matchesSearch = displayName.toLowerCase().includes(search.toLowerCase()) || 
                           prod.slug.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = categoryFilter === '' || prod.category_id === categoryFilter;
     
@@ -353,7 +356,7 @@ export default function AdminProductsPage() {
                     <td className="px-6 py-4 shrink-0">
                       <div className="relative w-12 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
                         {mainImage ? (
-                          <img src={formatImageUrl(mainImage)} alt={prod.name_bn} className="w-full h-full object-cover" />
+                          <img src={formatImageUrl(mainImage)} alt={formatName(prod.name_bn, prod.name_en, prod.display_name_lang)} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
                             <ImageIcon size={18} />
@@ -362,7 +365,7 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900 line-clamp-1">{prod.name_bn}</div>
+                      <div className="font-semibold text-gray-900 line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{categoryName} · {prod.slug}</div>
                     </td>
                     <td className="px-6 py-4 font-bold text-gray-900">৳{prod.price}</td>
@@ -480,7 +483,7 @@ export default function AdminProductsPage() {
               <div className="flex items-center gap-3">
                 <div className="relative w-12 h-12 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 shrink-0">
                   {mainImage ? (
-                    <img src={formatImageUrl(mainImage)} alt={prod.name_bn} className="w-full h-full object-cover" />
+                    <img src={formatImageUrl(mainImage)} alt={formatName(prod.name_bn, prod.name_en, prod.display_name_lang)} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
                       <ImageIcon size={18} />
@@ -488,7 +491,7 @@ export default function AdminProductsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{prod.name_bn}</h4>
+                  <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</h4>
                   <p className="text-xs text-gray-400 mt-0.5">{categoryName}</p>
                 </div>
                 <span className="text-xs text-gray-400 font-mono shrink-0">slug: {prod.slug.substring(0, 8)}...</span>

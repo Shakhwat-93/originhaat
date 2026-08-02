@@ -55,7 +55,7 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
     addItem(product, quantity, selectedVariant || undefined);
     trackAddToCart({ id: product.id, name_bn: product.name_bn, price: activePrice }, quantity);
     const varLabel = selectedVariant ? ` (${selectedVariant})` : '';
-    showToast(`${formatName(product.name_bn, product.name_en)}${varLabel} কার্টে যোগ হয়েছে ✓`, 'success');
+    showToast(`${formatName(product.name_bn, product.name_en, product.display_name_lang)}${varLabel} কার্টে যোগ হয়েছে ✓`, 'success');
   };
 
   const handleOrderNow = () => {
@@ -75,7 +75,7 @@ export function StickyProductCTA({ product, quantity }: StickyProductCTAProps) {
           className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-[#e5e7eb] p-4 sticky-cta-safe"
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-semibold text-[#111827] truncate flex-1">{formatName(product.name_bn, product.name_en)}</span>
+            <span className="text-sm font-semibold text-[#111827] truncate flex-1">{formatName(product.name_bn, product.name_en, product.display_name_lang)}</span>
             <span className="text-sm font-bold text-[#ff6b35]">
               {formatBDTNumeric(activePrice * quantity)}
             </span>
