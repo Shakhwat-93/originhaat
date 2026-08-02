@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // Fetch orders from DB
     const { data: orders, error: fetchErr } = await supabase
       .from('oh_orders')
-      .select('id,order_number,customer_name,phone,address,district,grand_total')
+      .select('id,order_number,customer_name,phone,address,district,grand_total,note')
       .in('id', orderIds);
 
     if (fetchErr || !orders) {
@@ -65,7 +65,10 @@ export async function POST(req: NextRequest) {
           item_quantity: 1,
           item_weight: 0.5,
           amount_to_collect: Math.round(order.grand_total),
-          item_description: `Order #${order.order_number} from Origin Haat`,
+          item_description: order.note 
+            ? `${order.note} | Order #${order.order_number}`.substring(0, 140) 
+            : `Order #${order.order_number} from Origin Haat`,
+          special_instruction: order.note || '',
         };
 
         const pathaoRes = await fetch(`${auth.baseUrl}/aladdin/api/v1/orders`, {
