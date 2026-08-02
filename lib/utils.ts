@@ -84,9 +84,22 @@ export function formatImageUrl(url: string | undefined | null): string {
 }
 
 export function formatName(bn?: string, en?: string, displayNameLang?: string): string {
-  if (displayNameLang === 'en') {
-    return en?.trim() || bn?.trim() || '';
+  const lang = displayNameLang || 'bn';
+
+  if (lang === 'en') {
+    const rawEn = en?.trim() || bn?.trim() || '';
+    if (rawEn.includes('|')) {
+      const parts = rawEn.split('|');
+      return parts[0].trim();
+    }
+    return rawEn;
+  } else {
+    const rawBn = bn?.trim() || en?.trim() || '';
+    if (rawBn.includes('|')) {
+      const parts = rawBn.split('|');
+      return parts[1]?.trim() || parts[0].trim();
+    }
+    return rawBn;
   }
-  return bn?.trim() || en?.trim() || '';
 }
 
