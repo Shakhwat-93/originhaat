@@ -65,7 +65,7 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Low Stock Badge */}
           {isLowStock && (
             <div className="absolute top-2 right-2 bg-[#ef4444] text-white text-xs font-bold px-2 py-1 rounded-lg">
-              সীমিত!
+              সীমিত
             </div>
           )}
           {/* Out of stock overlay */}
