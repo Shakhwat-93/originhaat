@@ -16,8 +16,12 @@ import {
   FileText,
   Download,
   Clock,
+  User,
+  Users,
+  Percent,
 } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { supabase } from '@/lib/supabase';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -39,6 +43,7 @@ interface Order {
   delivery_charge: number;
   discount_amount: number;
   grand_total: number;
+  assigned_to?: string | null;
   oh_order_items?: OrderItem[];
 }
 
@@ -54,6 +59,8 @@ export default function SalesReportPage() {
   const [endDate, setEndDate] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [adminUsers, setAdminUsers] = useState<any[]>([]);
+  const [activeReportTab, setActiveReportTab] = useState<'sales' | 'employees'>('sales');
 
   // Fetch all orders
   const fetchReportData = async (silent = false) => {
@@ -111,6 +118,14 @@ export default function SalesReportPage() {
   };
 
   useEffect(() => {
+    const fetchUsersList = async () => {
+      const { data } = await supabase.from('oh_admin_users').select('id, username, role');
+      if (data) setAdminUsers(data);
+    };
+    fetchUsersList();
+  }, []);
+
+  useEffect(() => {
     fetchReportData();
   }, [dateFilter, startDate, endDate]);
 
@@ -144,6 +159,28 @@ export default function SalesReportPage() {
       return matchesProduct && matchesSearch;
     });
   }, [orders, selectedProductId, searchQuery]);
+
+  // ─── Employee Assignment Stats ─────────────────────────────────────────────
+  const employeeStats = useMemo(() => {
+    return adminUsers.map(user => {
+      // Find orders assigned to this employee (case-insensitive username check)
+      const assignedOrders = filteredOrders.filter(o => o.assigned_to?.toLowerCase() === user.username?.toLowerCase());
+      
+      const totalAssigned = assignedOrders.length;
+      const confirmed = assignedOrders.filter(o => ['confirmed', 'delivered', 'processing', 'shipped'].includes(o.status)).length;
+      const cancelled = assignedOrders.filter(o => ['cancelled', 'fake', 'trash'].includes(o.status)).length;
+      const successRate = totalAssigned > 0 ? Math.round((confirmed / totalAssigned) * 100) : 0;
+
+      return {
+        username: user.username,
+        role: user.role,
+        totalAssigned,
+        confirmed,
+        cancelled,
+        successRate
+      };
+    }).sort((a, b) => b.totalAssigned - a.totalAssigned);
+  }, [filteredOrders, adminUsers]);
 
   // ─── KPI Calculations ──────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -356,6 +393,30 @@ export default function SalesReportPage() {
         </div>
       </div>
 
+      {/* Tab Selector */}
+      <div className="flex gap-6 border-b border-gray-200/80 pb-px">
+        <button
+          onClick={() => setActiveReportTab('sales')}
+          className={`pb-3 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+            activeReportTab === 'sales'
+              ? 'border-[#ff6b35] text-[#ff6b35]'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Sales & Analytics
+        </button>
+        <button
+          onClick={() => setActiveReportTab('employees')}
+          className={`pb-3 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+            activeReportTab === 'employees'
+              ? 'border-[#ff6b35] text-[#ff6b35]'
+              : 'border-transparent text-gray-400 hover:text-gray-600'
+          }`}
+        >
+          Employee Performance Reports
+        </button>
+      </div>
+
       {/* Filters Toolbar */}
       <div className="bg-white border border-gray-200/60 rounded-2xl p-5 space-y-4 shadow-3xs">
         <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
@@ -438,312 +499,438 @@ export default function SalesReportPage() {
         )}
       </div>
 
-      {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Revenue', value: `৳${stats.successfulRevenue.toLocaleString()}`, sub: 'Successful orders', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
-          { label: 'Total Orders', value: stats.totalOrders, sub: 'Filtered orders', icon: ShoppingCart, color: 'text-blue-600 bg-blue-50 border-blue-100' },
-          { label: 'Average Order Value', value: `৳${stats.averageOrderValue.toLocaleString()}`, sub: 'AOV per check', icon: TrendingUp, color: 'text-violet-600 bg-violet-50 border-violet-100' },
-          { label: 'Fake Orders Ratio', value: `${stats.fakeRate}%`, sub: `${stats.fakeOrders} Fake Orders`, icon: AlertTriangle, color: 'text-rose-600 bg-rose-50 border-rose-100' },
-        ].map((kpi, idx) => (
-          <div key={idx} className="bg-white border border-gray-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-3xs">
-            <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${kpi.color}`}>
-              <kpi.icon size={20} />
-            </div>
-            <div>
-              <div className="text-xl font-black text-gray-900">{kpi.value}</div>
-              <div className="text-[12px] text-gray-400 font-semibold">{kpi.label}</div>
-              <div className="text-[10px] text-gray-300 font-medium mt-0.5">{kpi.sub}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Visual Analytics Row */}
-      {(() => {
-        const chartWidth = 600;
-        const chartHeight = 220;
-        const chartPadding = 35;
-        const maxRevenue = Math.max(...dailyData.map(d => d.revenue), 1000);
-
-        const points = dailyData.map((d, i) => {
-          const x = chartPadding + (i / Math.max(dailyData.length - 1, 1)) * (chartWidth - 2 * chartPadding);
-          const y = chartHeight - chartPadding - (d.revenue / maxRevenue) * (chartHeight - 2 * chartPadding);
-          return { x, y, label: d.label, revenue: d.revenue };
-        });
-
-        const linePath = points.reduce((acc, p, i) => {
-          return i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
-        }, '');
-
-        const areaPath = points.length > 0 
-          ? `${linePath} L ${points[points.length - 1].x} ${chartHeight - chartPadding} L ${points[0].x} ${chartHeight - chartPadding} Z` 
-          : '';
-
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Revenue Line Chart */}
-            <div className="lg:col-span-2 bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs space-y-4 relative">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp size={16} className="text-[#ff6b35]" />
-                  <h3 className="text-sm font-bold text-gray-900">Revenue Trend Line</h3>
+      {activeReportTab === 'sales' ? (
+        <>
+          {/* KPI Cards Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: 'Total Revenue', value: `৳${stats.successfulRevenue.toLocaleString()}`, sub: 'Successful orders', icon: DollarSign, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+              { label: 'Total Orders', value: stats.totalOrders, sub: 'Filtered orders', icon: ShoppingCart, color: 'text-blue-600 bg-blue-50 border-blue-100' },
+              { label: 'Average Order Value', value: `৳${stats.averageOrderValue.toLocaleString()}`, sub: 'AOV per check', icon: TrendingUp, color: 'text-violet-600 bg-violet-50 border-violet-100' },
+              { label: 'Fake Orders Ratio', value: `${stats.fakeRate}%`, sub: `${stats.fakeOrders} Fake Orders`, icon: AlertTriangle, color: 'text-rose-600 bg-rose-50 border-rose-100' },
+            ].map((kpi, idx) => (
+              <div key={idx} className="bg-white border border-gray-200/60 rounded-2xl p-5 flex items-center gap-4 shadow-3xs">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center border ${kpi.color}`}>
+                  <kpi.icon size={20} />
                 </div>
-                <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full">Excl. Cancelled</span>
+                <div>
+                  <div className="text-xl font-black text-gray-900">{kpi.value}</div>
+                  <div className="text-[12px] text-gray-400 font-semibold">{kpi.label}</div>
+                  <div className="text-[10px] text-gray-300 font-medium mt-0.5">{kpi.sub}</div>
+                </div>
               </div>
+            ))}
+          </div>
 
-              {dailyData.length === 0 ? (
-                <div className="h-[220px] flex items-center justify-center text-gray-400 text-xs">No revenue data to plot.</div>
-              ) : (
-                <div className="relative">
-                  <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto overflow-visible">
-                    {/* Grid Lines */}
-                    {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
-                      const y = chartPadding + ratio * (chartHeight - 2 * chartPadding);
-                      const val = Math.round(maxRevenue * (1 - ratio));
-                      return (
-                        <g key={i}>
-                          <line x1={chartPadding} y1={y} x2={chartWidth - chartPadding} y2={y} stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3,3" />
-                          <text x={chartPadding - 5} y={y + 4} textAnchor="end" className="text-[9px] fill-gray-400 font-mono font-medium">৳{val >= 1000 ? `${(val/1000).toFixed(1)}k` : val}</text>
-                        </g>
-                      );
-                    })}
+          {/* Visual Analytics Row */}
+          {(() => {
+            const chartWidth = 600;
+            const chartHeight = 220;
+            const chartPadding = 35;
+            const maxRevenue = Math.max(...dailyData.map(d => d.revenue), 1000);
 
-                    {/* X axis labels */}
-                    {points.map((p, i) => {
-                      const showLabel = dailyData.length <= 7 || i % 4 === 0 || i === dailyData.length - 1;
-                      if (!showLabel) return null;
-                      return (
-                        <text key={i} x={p.x} y={chartHeight - chartPadding + 14} textAnchor="middle" className="text-[9px] fill-gray-400 font-bold">
-                          {p.label}
-                        </text>
-                      );
-                    })}
+            const points = dailyData.map((d, i) => {
+              const x = chartPadding + (i / Math.max(dailyData.length - 1, 1)) * (chartWidth - 2 * chartPadding);
+              const y = chartHeight - chartPadding - (d.revenue / maxRevenue) * (chartHeight - 2 * chartPadding);
+              return { x, y, label: d.label, revenue: d.revenue };
+            });
 
-                    {/* Shaded Area */}
-                    {areaPath && (
-                      <path d={areaPath} fill="url(#revenueGrad)" opacity="0.15" />
-                    )}
+            const linePath = points.reduce((acc, p, i) => {
+              return i === 0 ? `M ${p.x} ${p.y}` : `${acc} L ${p.x} ${p.y}`;
+            }, '');
 
-                    {/* Line Path */}
-                    {linePath && (
-                      <path d={linePath} fill="none" stroke="#ff6b35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                    )}
+            const areaPath = points.length > 0 
+              ? `${linePath} L ${points[points.length - 1].x} ${chartHeight - chartPadding} L ${points[0].x} ${chartHeight - chartPadding} Z` 
+              : '';
 
-                    {/* Interactive circles */}
-                    {points.map((p, i) => (
-                      <circle
-                        key={i}
-                        cx={p.x}
-                        cy={p.y}
-                        r={hoveredPoint?.label === p.label ? 6 : 4}
-                        fill={hoveredPoint?.label === p.label ? "#ff6b35" : "#ffffff"}
-                        stroke="#ff6b35"
-                        strokeWidth="2.5"
-                        className="cursor-pointer transition-all duration-150"
-                        onMouseEnter={() => setHoveredPoint(p)}
-                        onMouseLeave={() => setHoveredPoint(null)}
-                      />
-                    ))}
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Revenue Line Chart */}
+                <div className="lg:col-span-2 bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs space-y-4 relative">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp size={16} className="text-[#ff6b35]" />
+                      <h3 className="text-sm font-bold text-gray-900">Revenue Trend Line</h3>
+                    </div>
+                    <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full">Excl. Cancelled</span>
+                  </div>
 
-                    {/* Gradients */}
-                    <defs>
-                      <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#ff6b35" />
-                        <stop offset="100%" stopColor="#ffffff" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
+                  {dailyData.length === 0 ? (
+                    <div className="h-[220px] flex items-center justify-center text-gray-400 text-xs">No revenue data to plot.</div>
+                  ) : (
+                    <div className="relative">
+                      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto overflow-visible">
+                        {/* Grid Lines */}
+                        {[0, 0.25, 0.5, 0.75, 1].map((ratio, i) => {
+                          const y = chartPadding + ratio * (chartHeight - 2 * chartPadding);
+                          const val = Math.round(maxRevenue * (1 - ratio));
+                          return (
+                            <g key={i}>
+                              <line x1={chartPadding} y1={y} x2={chartWidth - chartPadding} y2={y} stroke="#f1f5f9" strokeWidth="1" strokeDasharray="3,3" />
+                              <text x={chartPadding - 5} y={y + 4} textAnchor="end" className="text-[9px] fill-gray-400 font-mono font-medium">৳{val >= 1000 ? `${(val/1000).toFixed(1)}k` : val}</text>
+                            </g>
+                          );
+                        })}
 
-                  {/* Tooltip Overlay */}
-                  {hoveredPoint && (
-                    <div
-                      className="absolute z-10 bg-gray-900 text-white rounded-xl px-3 py-2 text-[11px] shadow-lg pointer-events-none space-y-0.5 border border-gray-850"
-                      style={{
-                        left: `${(hoveredPoint.x / chartWidth) * 100}%`,
-                        top: `${(hoveredPoint.y / chartHeight) * 100 - 25}%`,
-                        transform: 'translate(-50%, -100%)'
-                      }}
-                    >
-                      <p className="font-bold text-[#ff6b35] text-center">{hoveredPoint.label}</p>
-                      <p className="font-mono text-center">Revenue: ৳{hoveredPoint.revenue.toLocaleString()}</p>
+                        {/* X axis labels */}
+                        {points.map((p, i) => {
+                          const showLabel = dailyData.length <= 7 || i % 4 === 0 || i === dailyData.length - 1;
+                          if (!showLabel) return null;
+                          return (
+                            <text key={i} x={p.x} y={chartHeight - chartPadding + 14} textAnchor="middle" className="text-[9px] fill-gray-400 font-bold">
+                              {p.label}
+                            </text>
+                          );
+                        })}
+
+                        {/* Shaded Area */}
+                        {areaPath && (
+                          <path d={areaPath} fill="url(#revenueGrad)" opacity="0.15" />
+                        )}
+
+                        {/* Line Path */}
+                        {linePath && (
+                          <path d={linePath} fill="none" stroke="#ff6b35" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                        )}
+
+                        {/* Interactive circles */}
+                        {points.map((p, i) => (
+                          <circle
+                            key={i}
+                            cx={p.x}
+                            cy={p.y}
+                            r={hoveredPoint?.label === p.label ? 6 : 4}
+                            fill={hoveredPoint?.label === p.label ? "#ff6b35" : "#ffffff"}
+                            stroke="#ff6b35"
+                            strokeWidth="2.5"
+                            className="cursor-pointer transition-all duration-150"
+                            onMouseEnter={() => setHoveredPoint(p)}
+                            onMouseLeave={() => setHoveredPoint(null)}
+                          />
+                        ))}
+
+                        {/* Gradients */}
+                        <defs>
+                          <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#ff6b35" />
+                            <stop offset="100%" stopColor="#ffffff" />
+                          </linearGradient>
+                        </defs>
+                      </svg>
+
+                      {/* Tooltip Overlay */}
+                      {hoveredPoint && (
+                        <div
+                          className="absolute z-10 bg-gray-900 text-white rounded-xl px-3 py-2 text-[11px] shadow-lg pointer-events-none space-y-0.5 border border-gray-850"
+                          style={{
+                            left: `${(hoveredPoint.x / chartWidth) * 100}%`,
+                            top: `${(hoveredPoint.y / chartHeight) * 100 - 25}%`,
+                            transform: 'translate(-50%, -100%)'
+                          }}
+                        >
+                          <p className="font-bold text-[#ff6b35] text-center">{hoveredPoint.label}</p>
+                          <p className="font-mono text-center">Revenue: ৳{hoveredPoint.revenue.toLocaleString()}</p>
+                        </div>
+                      )}
                     </div>
                   )}
+                </div>
+
+                {/* Hourly Peaks Bar Chart */}
+                <div className="bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-[#ff6b35]" />
+                      <h3 className="text-sm font-bold text-gray-900">Hourly Order Traffic</h3>
+                    </div>
+                    <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full">24 Hrs</span>
+                  </div>
+
+                  <div className="flex items-end justify-between gap-1 h-[180px] pt-4 px-2">
+                    {(() => {
+                      const maxCount = Math.max(...hourlyData.map(h => h.count), 1);
+                      return hourlyData.map((h, i) => {
+                        const heightPercent = `${(h.count / maxCount) * 100}%`;
+                        const showHourLabel = i % 4 === 0;
+
+                        return (
+                          <div key={i} className="flex-1 flex flex-col items-center group h-full justify-end relative">
+                            {/* Tooltip */}
+                            {h.count > 0 && (
+                              <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[9px] font-bold py-1 px-2 rounded pointer-events-none z-10 whitespace-nowrap">
+                                {h.count} orders
+                              </div>
+                            )}
+                            
+                            {/* Bar */}
+                            <div
+                              style={{ height: heightPercent }}
+                              className={`w-full min-h-[3px] rounded-t-sm transition-all duration-300 ${
+                                h.count > 0 
+                                  ? 'bg-gradient-to-t from-[#ff6b35] to-[#ff9e7a] group-hover:from-[#e55520] group-hover:to-[#ff8c60]' 
+                                  : 'bg-gray-100'
+                              }`}
+                            />
+                            
+                            {/* Label */}
+                            <span className="text-[8px] text-gray-400 font-semibold font-mono mt-1.5 transform scale-90 origin-top">
+                              {showHourLabel ? h.label : ''}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Leaderboard Grid Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Selling Products */}
+            <div className="bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs space-y-4">
+              <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                <TrendingUp size={16} className="text-emerald-500" />
+                <h3 className="text-sm font-bold text-gray-900">Top Selling Products</h3>
+              </div>
+              {productStats.topSelling.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 text-xs">No successful sales recorded.</div>
+              ) : (
+                <div className="space-y-3">
+                  {productStats.topSelling.map((prod, index) => (
+                    <div key={prod.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-lg bg-[#ff6b35]/10 text-[#ff6b35] flex items-center justify-center text-xs font-bold shrink-0">
+                          {index + 1}
+                        </span>
+                        <span className="text-[13px] font-semibold text-gray-800 line-clamp-1">{prod.name}</span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[13px] font-bold text-emerald-600">৳{prod.revenue.toLocaleString()}</p>
+                        <p className="text-[11px] text-gray-400 font-medium">{prod.soldQty} units sold</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
 
-            {/* Hourly Peaks Bar Chart */}
-            <div className="bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs flex flex-col justify-between">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <Clock size={16} className="text-[#ff6b35]" />
-                  <h3 className="text-sm font-bold text-gray-900">Hourly Order Traffic</h3>
-                </div>
-                <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full">24 Hrs</span>
+            {/* Top Fake Order Products */}
+            <div className="bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs space-y-4">
+              <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
+                <AlertTriangle size={16} className="text-rose-500" />
+                <h3 className="text-sm font-bold text-gray-900">Top Fake Order Products</h3>
               </div>
-
-              <div className="flex items-end justify-between gap-1 h-[180px] pt-4 px-2">
-                {(() => {
-                  const maxCount = Math.max(...hourlyData.map(h => h.count), 1);
-                  return hourlyData.map((h, i) => {
-                    const heightPercent = `${(h.count / maxCount) * 100}%`;
-                    const showHourLabel = i % 4 === 0;
-
-                    return (
-                      <div key={i} className="flex-1 flex flex-col items-center group h-full justify-end relative">
-                        {/* Tooltip */}
-                        {h.count > 0 && (
-                          <div className="absolute bottom-full mb-1 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-[9px] font-bold py-1 px-2 rounded pointer-events-none z-10 whitespace-nowrap">
-                            {h.count} orders
-                          </div>
-                        )}
-                        
-                        {/* Bar */}
-                        <div
-                          style={{ height: heightPercent }}
-                          className={`w-full min-h-[3px] rounded-t-sm transition-all duration-300 ${
-                            h.count > 0 
-                              ? 'bg-gradient-to-t from-[#ff6b35] to-[#ff9e7a] group-hover:from-[#e55520] group-hover:to-[#ff8c60]' 
-                              : 'bg-gray-100'
-                          }`}
-                        />
-                        
-                        {/* Label */}
-                        <span className="text-[8px] text-gray-400 font-semibold font-mono mt-1.5 transform scale-90 origin-top">
-                          {showHourLabel ? h.label : ''}
+              {productStats.topFake.length === 0 ? (
+                <div className="text-center py-10 text-gray-400 text-xs">No fake orders recorded.</div>
+              ) : (
+                <div className="space-y-3">
+                  {productStats.topFake.map((prod, index) => (
+                    <div key={prod.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold shrink-0">
+                          {index + 1}
                         </span>
+                        <span className="text-[13px] font-semibold text-gray-800 line-clamp-1">{prod.name}</span>
                       </div>
-                    );
-                  });
-                })()}
+                      <div className="text-right shrink-0">
+                        <p className="text-[13px] font-bold text-rose-600">{prod.fakeQty} fake orders</p>
+                        <p className="text-[10px] text-gray-400 font-medium">Flagged spam</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Complete Product Report Table */}
+          <div className="bg-white border border-gray-200/60 rounded-2xl shadow-3xs overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 flex-wrap gap-3">
+              <div className="flex items-center gap-2">
+                <Package size={16} className="text-[#ff6b35]" />
+                <h3 className="text-sm font-bold text-gray-900">Inventory Performance & Sales Summary</h3>
               </div>
             </div>
-          </div>
-        );
-      })()}
 
-      {/* Leaderboard Grid Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Selling Products */}
-        <div className="bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-            <TrendingUp size={16} className="text-emerald-500" />
-            <h3 className="text-sm font-bold text-gray-900">Top Selling Products</h3>
+            {loading ? (
+              <div className="flex items-center justify-center py-20 gap-3 text-gray-400">
+                <RefreshCw size={18} className="animate-spin" />
+                <span className="text-[13px]">Loading reports…</span>
+              </div>
+            ) : productStats.list.length === 0 ? (
+              <div className="text-center py-20 text-gray-400 text-xs">No product sales to show in this range.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-400 text-[11px] font-semibold uppercase tracking-wider">
+                      <th className="px-5 py-3.5">Product Name</th>
+                      <th className="px-5 py-3.5 text-center">Successful Qty Sold</th>
+                      <th className="px-5 py-3.5 text-right">Revenue Generated</th>
+                      <th className="px-5 py-3.5 text-center">Spam/Fake Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {productStats.list.map(p => (
+                      <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors last:border-none">
+                        <td className="px-5 py-4">
+                          <p className="text-[13px] font-semibold text-gray-800 line-clamp-1">{p.name}</p>
+                          <p className="text-[10px] text-gray-400 font-mono mt-0.5">ID: {p.id}</p>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">
+                            {p.soldQty} units
+                          </span>
+                        </td>
+                        <td className="px-5 py-4 text-right">
+                          <p className="text-[13px] font-bold text-gray-800">৳{p.revenue.toLocaleString()}</p>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          {p.fakeQty > 0 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700">
+                              {p.fakeQty} units
+                            </span>
+                          ) : (
+                            <span className="text-gray-300 text-xs">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-          {productStats.topSelling.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-xs">No successful sales recorded.</div>
-          ) : (
-            <div className="space-y-3">
-              {productStats.topSelling.map((prod, index) => (
-                <div key={prod.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-lg bg-[#ff6b35]/10 text-[#ff6b35] flex items-center justify-center text-xs font-bold shrink-0">
-                      {index + 1}
-                    </span>
-                    <span className="text-[13px] font-semibold text-gray-800 line-clamp-1">{prod.name}</span>
+
+          <p className="text-center text-[11px] text-gray-400">
+            * Successful Revenue calculation accounts for orders in <strong>Processing</strong>, <strong>Confirmed</strong>, <strong>Shipped</strong>, and <strong>Delivered</strong> status.
+          </p>
+        </>
+      ) : (
+        <div className="space-y-6">
+          {/* Employee KPI Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {employeeStats.map((emp) => (
+              <div key={emp.username} className="bg-white border border-gray-200/60 rounded-3xl p-6 shadow-3xs hover:shadow-2xs transition-all relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#ff6b35]/5 to-transparent rounded-bl-full pointer-events-none" />
+                
+                {/* User Header */}
+                <div className="flex items-center gap-3.5 mb-5">
+                  <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-[#ff6b35]/5 group-hover:border-[#ff6b35]/15 transition-all">
+                    <User size={22} className="group-hover:text-[#ff6b35] transition-all" />
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-[13px] font-bold text-emerald-600">৳{prod.revenue.toLocaleString()}</p>
-                    <p className="text-[11px] text-gray-400 font-medium">{prod.soldQty} units sold</p>
+                  <div>
+                    <h3 className="text-base font-black text-gray-900 tracking-tight capitalize">{emp.username}</h3>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-100 mt-1 inline-block">{emp.role}</span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        {/* Top Fake Order Products */}
-        <div className="bg-white border border-gray-200/60 rounded-2xl p-5 shadow-3xs space-y-4">
-          <div className="flex items-center gap-2 border-b border-gray-100 pb-3">
-            <AlertTriangle size={16} className="text-rose-500" />
-            <h3 className="text-sm font-bold text-gray-900">Top Fake Order Products</h3>
-          </div>
-          {productStats.topFake.length === 0 ? (
-            <div className="text-center py-10 text-gray-400 text-xs">No fake orders recorded.</div>
-          ) : (
-            <div className="space-y-3">
-              {productStats.topFake.map((prod, index) => (
-                <div key={prod.id} className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-xl">
-                  <div className="flex items-center gap-3">
-                    <span className="w-6 h-6 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs font-bold shrink-0">
-                      {index + 1}
-                    </span>
-                    <span className="text-[13px] font-semibold text-gray-800 line-clamp-1">{prod.name}</span>
+                {/* Report stats */}
+                <div className="grid grid-cols-3 gap-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                  <div className="text-center">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Assigned</span>
+                    <span className="text-lg font-black text-gray-900 block mt-1">{emp.totalAssigned}</span>
                   </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-[13px] font-bold text-rose-600">{prod.fakeQty} fake orders</p>
-                    <p className="text-[10px] text-gray-400 font-medium">Flagged spam</p>
+                  <div className="text-center border-l border-r border-gray-200/60">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Confirmed</span>
+                    <span className="text-lg font-black text-emerald-600 block mt-1">{emp.confirmed}</span>
+                  </div>
+                  <div className="text-center">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Cancelled</span>
+                    <span className="text-lg font-black text-rose-500 block mt-1">{emp.cancelled}</span>
                   </div>
                 </div>
-              ))}
+
+                {/* Conversion gauge */}
+                <div className="mt-5 pt-4 border-t border-gray-50 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Percent size={14} className="text-[#ff6b35]" />
+                    <span className="text-xs font-bold text-gray-500">Success Rate</span>
+                  </div>
+                  <span className={`text-sm font-black ${
+                    emp.successRate >= 80 ? 'text-emerald-600' :
+                    emp.successRate >= 50 ? 'text-blue-500' :
+                    emp.totalAssigned === 0 ? 'text-gray-400' :
+                    'text-rose-500'
+                  }`}>
+                    {emp.successRate}%
+                  </span>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full bg-gray-150 h-1.5 rounded-full mt-3 overflow-hidden">
+                  <div
+                    style={{ width: `${emp.successRate}%` }}
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      emp.successRate >= 80 ? 'bg-emerald-500' :
+                      emp.successRate >= 50 ? 'bg-blue-500' :
+                      'bg-rose-500'
+                    }`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Detailed Employee Stats Table */}
+          <div className="bg-white border border-gray-200/60 rounded-2xl shadow-3xs overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Users size={16} className="text-[#ff6b35]" />
+                <h3 className="text-sm font-bold text-gray-900">Detailed Performance Table</h3>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      {/* Complete Product Report Table */}
-      <div className="bg-white border border-gray-200/60 rounded-2xl shadow-3xs overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100 flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <Package size={16} className="text-[#ff6b35]" />
-            <h3 className="text-sm font-bold text-gray-900">Inventory Performance & Sales Summary</h3>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-20 gap-3 text-gray-400">
-            <RefreshCw size={18} className="animate-spin" />
-            <span className="text-[13px]">Loading reports…</span>
-          </div>
-        ) : productStats.list.length === 0 ? (
-          <div className="text-center py-20 text-gray-400 text-xs">No product sales to show in this range.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-400 text-[11px] font-semibold uppercase tracking-wider">
-                  <th className="px-5 py-3.5">Product Name</th>
-                  <th className="px-5 py-3.5 text-center">Successful Qty Sold</th>
-                  <th className="px-5 py-3.5 text-right">Revenue Generated</th>
-                  <th className="px-5 py-3.5 text-center">Spam/Fake Qty</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productStats.list.map(p => (
-                  <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors last:border-none">
-                    <td className="px-5 py-4">
-                      <p className="text-[13px] font-semibold text-gray-800 line-clamp-1">{p.name}</p>
-                      <p className="text-[10px] text-gray-400 font-mono mt-0.5">ID: {p.id}</p>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700">
-                        {p.soldQty} units
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <p className="text-[13px] font-bold text-gray-800">৳{p.revenue.toLocaleString()}</p>
-                    </td>
-                    <td className="px-5 py-4 text-center">
-                      {p.fakeQty > 0 ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700">
-                          {p.fakeQty} units
-                        </span>
-                      ) : (
-                        <span className="text-gray-300 text-xs">—</span>
-                      )}
-                    </td>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-400 text-[11px] font-semibold uppercase tracking-wider">
+                    <th className="px-5 py-3.5">Employee Name</th>
+                    <th className="px-5 py-3.5">Role</th>
+                    <th className="px-5 py-3.5 text-center">Assigned Orders</th>
+                    <th className="px-5 py-3.5 text-center">Confirmed Orders</th>
+                    <th className="px-5 py-3.5 text-center">Cancelled Orders</th>
+                    <th className="px-5 py-3.5 text-right">Success Rate</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {employeeStats.map(emp => (
+                    <tr key={emp.username} className="border-b border-gray-100 hover:bg-gray-50/30 transition-colors last:border-none">
+                      <td className="px-5 py-4">
+                        <p className="text-[13px] font-semibold text-gray-800 capitalize">{emp.username}</p>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="text-[11px] font-semibold text-gray-500 uppercase tracking-wider">{emp.role}</span>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <span className="text-[13px] font-bold text-gray-700">{emp.totalAssigned}</span>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <span className="text-[13px] font-bold text-emerald-600">{emp.confirmed}</span>
+                      </td>
+                      <td className="px-5 py-4 text-center">
+                        <span className="text-[13px] font-bold text-rose-500">{emp.cancelled}</span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <span className={`text-[13px] font-extrabold ${
+                          emp.successRate >= 80 ? 'text-emerald-600' :
+                          emp.successRate >= 50 ? 'text-blue-500' :
+                          emp.totalAssigned === 0 ? 'text-gray-400' :
+                          'text-rose-500'
+                        }`}>
+                          {emp.successRate}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </div>
-
-      <p className="text-center text-[11px] text-gray-400">
-        * Successful Revenue calculation accounts for orders in <strong>Processing</strong>, <strong>Confirmed</strong>, <strong>Shipped</strong>, and <strong>Delivered</strong> status.
-      </p>
+        </div>
+      )}
     </div>
   );
 }

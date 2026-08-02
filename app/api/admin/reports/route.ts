@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
       .from('oh_orders')
       .select(`
         id, order_number, customer_name, status, created_at,
-        subtotal, delivery_charge, discount_amount, grand_total,
+        subtotal, delivery_charge, discount_amount, grand_total, assigned_to,
         oh_order_items (
           id, product_id, product_name, quantity, price
         )

@@ -428,7 +428,13 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updateFields: any = {};
-    if (status !== undefined) updateFields.status = status;
+    if (status !== undefined) {
+      updateFields.status = status;
+      // Auto-assign to the user changing status if not explicitly setting assigned_to
+      if (assigned_to === undefined) {
+        updateFields.assigned_to = adminUsername;
+      }
+    }
     if (customer_name !== undefined) updateFields.customer_name = customer_name;
     if (phone !== undefined) updateFields.phone = phone;
     if (address !== undefined) updateFields.address = address;
