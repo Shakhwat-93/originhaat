@@ -267,6 +267,8 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status') || '';
   const dateFilter = searchParams.get('dateFilter') || 'all';
   const productFilter = searchParams.get('productFilter') || '';
+  const locationFilter = searchParams.get('locationFilter') || 'all';
+  const assignedToFilter = searchParams.get('assignedToFilter') || 'all';
 
   let query = supabase
     .from('oh_orders')
@@ -314,6 +316,22 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // 5. Location Filter
+  if (locationFilter === 'inside') {
+    query = query.eq('district', 'Dhaka');
+  } else if (locationFilter === 'outside') {
+    query = query.neq('district', 'Dhaka');
+  }
+
+  // 6. Assigned To Filter
+  if (assignedToFilter !== 'all') {
+    if (assignedToFilter === 'unassigned') {
+      query = query.is('assigned_to', null);
+    } else {
+      query = query.eq('assigned_to', assignedToFilter);
+    }
+  }
+
   // Order and Pagination Range
   const from = (page - 1) * limit;
   const to = from + limit - 1;
@@ -347,6 +365,36 @@ export async function PATCH(request: NextRequest) {
 
   try {
     const body = await request.json();
+
+    // Check if it's a bulk operation
+    if (Array.isArray(body.orderIds)) {
+      const { orderIds, assigned_to, status } = body;
+      const updateFields: any = {
+        updated_at: new Date().toISOString()
+      };
+      if (assigned_to !== undefined) updateFields.assigned_to = assigned_to;
+      if (status !== undefined) updateFields.status = status;
+
+      const { error } = await supabase
+        .from('oh_orders')
+        .update(updateFields)
+        .in('id', orderIds);
+
+      if (error) {
+        console.error('Bulk update error:', error);
+        return NextResponse.json({ error: 'Failed to update orders in bulk' }, { status: 500 });
+      }
+
+      await writeAuditLog(
+        adminUsername,
+        'BULK_UPDATE_ORDERS',
+        `Bulk updated ${orderIds.length} orders. Assigned to: ${assigned_to || 'unassigned'}, Status: ${status || 'no change'}`,
+        request.headers.get('x-forwarded-for') || 'unknown'
+      );
+
+      return NextResponse.json({ success: true, message: `Successfully updated ${orderIds.length} orders.` });
+    }
+
     const {
       orderId,
       status,
@@ -359,7 +407,8 @@ export async function PATCH(request: NextRequest) {
       discount_amount,
       subtotal,
       grand_total,
-      items
+      items,
+      assigned_to
     } = body;
 
     if (!orderId) {
@@ -389,6 +438,7 @@ export async function PATCH(request: NextRequest) {
     if (discount_amount !== undefined) updateFields.discount_amount = Number(discount_amount);
     if (subtotal !== undefined) updateFields.subtotal = Number(subtotal);
     if (grand_total !== undefined) updateFields.grand_total = Number(grand_total);
+    if (assigned_to !== undefined) updateFields.assigned_to = assigned_to;
     updateFields.updated_at = new Date().toISOString();
 
     const { error } = await supabase

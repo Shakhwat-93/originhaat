@@ -72,6 +72,7 @@ export interface Order {
   payment_method: 'cod';
   whatsapp_confirmed: boolean;
   created_at: string;
+  assigned_to?: string | null;
 }
 
 export type OrderStatus =

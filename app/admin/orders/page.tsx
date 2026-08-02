@@ -47,6 +47,7 @@ interface Order {
   utm_source?: string | null;
   utm_medium?: string | null;
   utm_campaign?: string | null;
+  assigned_to?: string | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -549,6 +550,9 @@ function OrdersPageContent() {
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'yesterday' | 'week'>('all');
   const [selectedProductFilter, setSelectedProductFilter] = useState<string>('');
+  const [locationFilter, setLocationFilter] = useState<'all' | 'inside' | 'outside'>('all');
+  const [assignedToFilter, setAssignedToFilter] = useState<string>('all');
+  const [adminUsers, setAdminUsers] = useState<any[]>([]);
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -566,11 +570,16 @@ function OrdersPageContent() {
   // Reset page on filter/search change
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, statusFilter, dateFilter, selectedProductFilter]);
+  }, [debouncedSearch, statusFilter, dateFilter, selectedProductFilter, locationFilter, assignedToFilter]);
 
-  // Fetch catalog on mount for filtering
+  // Fetch catalog and users on mount for filtering & assignment
   useEffect(() => {
     fetchProductsCatalog();
+    const fetchUsersList = async () => {
+      const { data } = await supabase.from('oh_admin_users').select('id, username, role');
+      if (data) setAdminUsers(data);
+    };
+    fetchUsersList();
   }, []);
 
   // Permissions State
@@ -891,6 +900,8 @@ function OrdersPageContent() {
       if (statusFilter) params.set('status', statusFilter);
       if (dateFilter) params.set('dateFilter', dateFilter);
       if (selectedProductFilter) params.set('productFilter', selectedProductFilter);
+      if (locationFilter && locationFilter !== 'all') params.set('locationFilter', locationFilter);
+      if (assignedToFilter && assignedToFilter !== 'all') params.set('assignedToFilter', assignedToFilter);
 
       const res = await fetch(`/api/orders?${params.toString()}`, {
         headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123' },
@@ -905,7 +916,7 @@ function OrdersPageContent() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [page, debouncedSearch, statusFilter, dateFilter, selectedProductFilter]);
+  }, [page, debouncedSearch, statusFilter, dateFilter, selectedProductFilter, locationFilter, assignedToFilter]);
 
   useEffect(() => {
     fetchOrders();
@@ -1596,6 +1607,40 @@ function OrdersPageContent() {
           />
         </div>
 
+        {/* Location filter */}
+        <div className="relative shrink-0 w-full md:w-auto">
+          <select
+            value={locationFilter}
+            onChange={(e: any) => setLocationFilter(e.target.value)}
+            className="w-full md:w-auto appearance-none pl-3.5 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-600 font-medium focus:outline-none focus:border-[#5c59f6] cursor-pointer transition-colors"
+          >
+            <option value="all">All Zones</option>
+            <option value="inside">Inside Dhaka</option>
+            <option value="outside">Outside Dhaka</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+          </div>
+        </div>
+
+        {/* Assigned user filter */}
+        <div className="relative shrink-0 w-full md:w-auto">
+          <select
+            value={assignedToFilter}
+            onChange={(e: any) => setAssignedToFilter(e.target.value)}
+            className="w-full md:w-auto appearance-none pl-3.5 pr-8 py-2.5 bg-white border border-gray-200 rounded-xl text-[13px] text-gray-600 font-medium focus:outline-none focus:border-[#5c59f6] cursor-pointer transition-colors"
+          >
+            <option value="all">All Assignments</option>
+            <option value="unassigned">Unassigned Only</option>
+            {adminUsers.map(user => (
+              <option key={user.id} value={user.username}>Assigned: {user.username}</option>
+            ))}
+          </select>
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+          </div>
+        </div>
+
         {/* Date filter */}
         <div className="relative shrink-0 w-full md:w-auto">
           <select
@@ -1747,6 +1792,60 @@ function OrdersPageContent() {
             >
               Cancel Selection
             </button>
+            <div className="flex items-center gap-2 border-l border-amber-200/50 pl-3">
+              <select
+                id="bulkAssignUser"
+                defaultValue=""
+                className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none focus:border-[#5c59f6] cursor-pointer"
+              >
+                <option value="" disabled>Assign User...</option>
+                <option value="unassigned">None (Unassign)</option>
+                {adminUsers.map(user => (
+                  <option key={user.id} value={user.username}>{user.username} ({user.role})</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={async () => {
+                  const selectEl = document.getElementById('bulkAssignUser') as HTMLSelectElement;
+                  const selectedUserVal = selectEl?.value;
+                  if (!selectedUserVal) {
+                    showWarningAlert('Warning', 'Please select a user to assign.');
+                    return;
+                  }
+                  const confirmResult = await showConfirmAlert(
+                    'Confirm Assignment',
+                    `Do you want to assign ${selectedOrderIds.length} orders to ${selectedUserVal === 'unassigned' ? 'Unassigned' : selectedUserVal}?`,
+                    'Yes, assign'
+                  );
+                  if (!confirmResult.isConfirmed) return;
+
+                  try {
+                    const res = await fetch('/api/orders', {
+                      method: 'PATCH',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'
+                      },
+                      body: JSON.stringify({
+                        orderIds: selectedOrderIds,
+                        assigned_to: selectedUserVal === 'unassigned' ? null : selectedUserVal
+                      })
+                    });
+                    if (!res.ok) throw new Error('Bulk assignment failed');
+                    showSuccessAlert('Success', `${selectedOrderIds.length} orders successfully assigned.`);
+                    setSelectedOrderIds([]);
+                    fetchOrders(true);
+                  } catch (err: any) {
+                    showErrorAlert('Error', err.message || 'Failed to bulk assign orders.');
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer"
+              >
+                <UserCheck size={13} />
+                <span>Assign</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1768,6 +1867,7 @@ function OrdersPageContent() {
                 <th className="px-4 py-3">Order Info</th>
                 <th className="px-4 py-3">Customer & Zone</th>
                 <th className="px-4 py-3">Products</th>
+                <th className="px-4 py-3">Assigned User</th>
                 <th className="px-4 py-3">Fulfillment</th>
                 <th className="px-4 py-3">Actions</th>
                 <th className="px-4 py-3 text-right">Total</th>
@@ -1787,6 +1887,7 @@ function OrdersPageContent() {
                       <div className="h-3 bg-gray-100 rounded-md w-24 mt-1.5" />
                     </td>
                     <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded-md w-32" /></td>
+                    <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-md w-24" /></td>
                     <td className="px-4 py-4"><div className="h-6 bg-gray-200 rounded-full w-20" /></td>
                     <td className="px-4 py-4"><div className="h-8 bg-gray-100 rounded-xl w-36" /></td>
                     <td className="px-4 py-4 text-right"><div className="h-8 bg-gray-200 rounded-lg w-16 ml-auto" /></td>
@@ -1878,6 +1979,47 @@ function OrdersPageContent() {
                       <td className="px-4 py-3 max-w-[200px]">
                         <p className="text-[13px] font-semibold text-gray-800 truncate" title={productNames}>{productNames}</p>
                         <p className="text-[10px] text-gray-400 mt-1 font-bold">Qty: {itemsCount} items</p>
+                      </td>
+
+                      {/* ASSIGNED USER */}
+                      <td className="px-4 py-3">
+                        <select
+                          value={order.assigned_to || ''}
+                          onChange={async (e) => {
+                            const username = e.target.value;
+                            const confirmResult = await showConfirmAlert(
+                              'Assign Order',
+                              `Do you want to assign order #${order.order_number} to ${username || 'Unassigned'}?`,
+                              'Yes, assign'
+                            );
+                            if (!confirmResult.isConfirmed) return;
+                            
+                            try {
+                              const res = await fetch('/api/orders', {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'
+                                },
+                                body: JSON.stringify({
+                                  orderId: order.id,
+                                  assigned_to: username || null
+                                })
+                              });
+                              if (!res.ok) throw new Error('Assignment failed');
+                              showSuccessAlert('Success', 'Order successfully assigned.');
+                              fetchOrders(true);
+                            } catch (err: any) {
+                              showErrorAlert('Error', err.message || 'Failed to assign order.');
+                            }
+                          }}
+                          className="text-xs font-semibold px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-[#5c59f6] cursor-pointer"
+                        >
+                          <option value="">Unassigned</option>
+                          {adminUsers.map(user => (
+                            <option key={user.id} value={user.username}>{user.username}</option>
+                          ))}
+                        </select>
                       </td>
 
                       {/* STATUS */}
@@ -2104,6 +2246,46 @@ function OrdersPageContent() {
               <div>
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Amount</span>
                 <span className="text-sm font-bold text-gray-900 block">৳{order.grand_total}</span>
+              </div>
+              <div className="col-span-2">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Assigned User</span>
+                <select
+                  value={order.assigned_to || ''}
+                  onChange={async (e) => {
+                    const username = e.target.value;
+                    const confirmResult = await showConfirmAlert(
+                      'Assign Order',
+                      `Do you want to assign order #${order.order_number} to ${username || 'Unassigned'}?`,
+                      'Yes, assign'
+                    );
+                    if (!confirmResult.isConfirmed) return;
+                    
+                    try {
+                      const res = await fetch('/api/orders', {
+                        method: 'PATCH',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123'
+                        },
+                        body: JSON.stringify({
+                          orderId: order.id,
+                          assigned_to: username || null
+                        })
+                      });
+                      if (!res.ok) throw new Error('Assignment failed');
+                      showSuccessAlert('Success', 'Order successfully assigned.');
+                      fetchOrders(true);
+                    } catch (err: any) {
+                      showErrorAlert('Error', err.message || 'Failed to assign order.');
+                    }
+                  }}
+                  className="text-xs font-semibold px-2 py-1.5 bg-white border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:border-[#5c59f6] cursor-pointer w-full"
+                >
+                  <option value="">Unassigned</option>
+                  {adminUsers.map(user => (
+                    <option key={user.id} value={user.username}>{user.username} ({user.role})</option>
+                  ))}
+                </select>
               </div>
             </div>
 
