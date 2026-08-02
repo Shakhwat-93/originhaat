@@ -179,6 +179,13 @@ export function ProductInfo({ product }: ProductInfoProps) {
         </div>
       )}
 
+      {/* Short Description */}
+      {product.short_description_bn && (
+        <div className="text-sm text-gray-600 leading-relaxed border-t border-b border-gray-100/70 py-3.5 whitespace-pre-line">
+          {product.short_description_bn}
+        </div>
+      )}
+
       {/* Variant Selection */}
       {product.variants && product.variants.length > 0 && (
         <div className="space-y-3 pt-2">
