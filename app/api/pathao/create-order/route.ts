@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
             pathao_order_status: orderStatus,
             pathao_delivery_fee: deliveryFee,
             pathao_sent_at: new Date().toISOString(),
+            status: 'confirmed',
           })
           .eq('id', order.id);
 

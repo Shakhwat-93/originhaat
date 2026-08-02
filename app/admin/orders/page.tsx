@@ -807,7 +807,12 @@ function OrdersPageContent() {
         setOrders(prev => prev.map(o => {
           const result = data.results.find((r: any) => r.orderId === o.id);
           if (result?.success) {
-            return { ...o, pathao_consignment_id: result.consignment_id, pathao_sent_at: new Date().toISOString() };
+            return {
+              ...o,
+              pathao_consignment_id: result.consignment_id,
+              pathao_sent_at: new Date().toISOString(),
+              status: 'confirmed'
+            };
           }
           return o;
         }));
@@ -815,15 +820,22 @@ function OrdersPageContent() {
         if (selectedOrder) {
           const result = data.results.find((r: any) => r.orderId === selectedOrder.id);
           if (result?.success) {
-            setSelectedOrder(prev => prev ? { ...prev, pathao_consignment_id: result.consignment_id, pathao_sent_at: new Date().toISOString() } : null);
+            setSelectedOrder(prev => prev ? {
+              ...prev,
+              pathao_consignment_id: result.consignment_id,
+              pathao_sent_at: new Date().toISOString(),
+              status: 'confirmed'
+            } : null);
           }
         }
       }
 
       if (data.success) {
         showSuccessAlert('Sent to Pathao! 🚚', data.message || 'Order(s) successfully created on Pathao.');
+        fetchOrders(true);
       } else {
         showErrorAlert('Partial Success', data.message);
+        fetchOrders(true);
       }
     } catch (err: any) {
       console.error(err);
@@ -855,7 +867,8 @@ function OrdersPageContent() {
               steadfast_consignment_id: result.consignment_id,
               steadfast_tracking_code: result.tracking_code,
               steadfast_order_status: 'in_review',
-              steadfast_sent_at: new Date().toISOString()
+              steadfast_sent_at: new Date().toISOString(),
+              status: 'confirmed'
             };
           }
           return o;
@@ -869,7 +882,8 @@ function OrdersPageContent() {
               steadfast_consignment_id: result.consignment_id,
               steadfast_tracking_code: result.tracking_code,
               steadfast_order_status: 'in_review',
-              steadfast_sent_at: new Date().toISOString()
+              steadfast_sent_at: new Date().toISOString(),
+              status: 'confirmed'
             } : null);
           }
         }
@@ -877,8 +891,10 @@ function OrdersPageContent() {
 
       if (data.success) {
         showSuccessAlert('Sent to Steadfast! 🚚', data.message || 'Order(s) successfully created on Steadfast.');
+        fetchOrders(true);
       } else {
         showErrorAlert('Partial Success', data.message);
+        fetchOrders(true);
       }
     } catch (err: any) {
       console.error(err);

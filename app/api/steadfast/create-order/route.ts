@@ -88,6 +88,7 @@ export async function POST(req: NextRequest) {
             steadfast_tracking_code: trackingCode,
             steadfast_order_status: orderStatus,
             steadfast_sent_at: new Date().toISOString(),
+            status: 'confirmed',
           })
           .eq('id', order.id);
 
