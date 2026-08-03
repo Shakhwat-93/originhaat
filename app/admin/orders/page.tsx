@@ -1493,6 +1493,68 @@ function OrdersPageContent() {
     count: p.stock
   }));
 
+  const TAB_STYLE_MAP: Record<string, {
+    active: string;
+    inactive: string;
+    activeCount: string;
+    inactiveCount: string;
+  }> = {
+    '': { // All Orders
+      active: 'bg-indigo-600 text-white border-indigo-600 shadow-sm',
+      inactive: 'bg-white text-gray-600 border-gray-250 hover:bg-indigo-50/20 hover:border-indigo-200 hover:text-indigo-700',
+      activeCount: 'bg-indigo-500/30 text-white',
+      inactiveCount: 'bg-indigo-50 text-indigo-700 border border-indigo-100',
+    },
+    'processing': { // New Order
+      active: 'bg-blue-600 text-white border-blue-600 shadow-sm',
+      inactive: 'bg-white text-gray-650 border-gray-250 hover:bg-blue-50/20 hover:border-blue-200 hover:text-blue-700',
+      activeCount: 'bg-blue-500/30 text-white',
+      inactiveCount: 'bg-blue-50 text-blue-700 border border-blue-100',
+    },
+    'pending': { // Pending Call
+      active: 'bg-amber-500 text-white border-amber-500 shadow-sm',
+      inactive: 'bg-white text-gray-650 border-gray-250 hover:bg-amber-50/20 hover:border-amber-200 hover:text-amber-700',
+      activeCount: 'bg-amber-400/40 text-white',
+      inactiveCount: 'bg-amber-50 text-amber-700 border border-amber-100',
+    },
+    'confirmed': { // Confirmed
+      active: 'bg-violet-600 text-white border-violet-600 shadow-sm',
+      inactive: 'bg-white text-gray-650 border-gray-250 hover:bg-violet-50/20 hover:border-violet-200 hover:text-violet-700',
+      activeCount: 'bg-violet-500/30 text-white',
+      inactiveCount: 'bg-violet-50 text-violet-700 border border-violet-100',
+    },
+    'shipped': { // Shipped
+      active: 'bg-sky-600 text-white border-sky-600 shadow-sm',
+      inactive: 'bg-white text-gray-650 border-gray-250 hover:bg-sky-50/20 hover:border-sky-200 hover:text-sky-700',
+      activeCount: 'bg-sky-500/30 text-white',
+      inactiveCount: 'bg-sky-50 text-sky-700 border border-sky-100',
+    },
+    'delivered': { // Delivered
+      active: 'bg-emerald-600 text-white border-emerald-600 shadow-sm',
+      inactive: 'bg-white text-gray-650 border-gray-250 hover:bg-emerald-50/20 hover:border-emerald-200 hover:text-emerald-700',
+      activeCount: 'bg-emerald-500/30 text-white',
+      inactiveCount: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+    },
+    'cancelled': { // Cancelled
+      active: 'bg-rose-600 text-white border-rose-600 shadow-sm',
+      inactive: 'bg-white text-gray-655 border-gray-250 hover:bg-rose-50/20 hover:border-rose-200 hover:text-rose-700',
+      activeCount: 'bg-rose-500/30 text-white',
+      inactiveCount: 'bg-rose-50 text-rose-700 border border-rose-100',
+    },
+    'incomplete': { // Incomplete
+      active: 'bg-pink-600 text-white border-pink-600 shadow-sm',
+      inactive: 'bg-white text-gray-650 border-gray-250 hover:bg-pink-50/20 hover:border-pink-200 hover:text-pink-700',
+      activeCount: 'bg-pink-500/30 text-white',
+      inactiveCount: 'bg-pink-50 text-pink-700 border border-pink-100',
+    },
+    'trash': { // Trash
+      active: 'bg-gray-600 text-white border-gray-600 shadow-sm',
+      inactive: 'bg-white text-gray-650 border-gray-250 hover:bg-gray-50/40 hover:border-gray-300 hover:text-gray-700',
+      activeCount: 'bg-gray-500/30 text-white',
+      inactiveCount: 'bg-gray-100 text-gray-600 border border-gray-200',
+    },
+  };
+
   const statusTabs = [
     { label: 'All Orders', value: '' },
     { label: 'New Order', value: 'processing' },
@@ -1574,19 +1636,25 @@ function OrdersPageContent() {
               ? orders.filter(o => o.status !== 'trash').length
               : orders.filter(o => o.status === tab.value).length;
             const isActive = statusFilter === tab.value;
+            const styles = TAB_STYLE_MAP[tab.value] || {
+              active: 'bg-indigo-650 text-white border-indigo-600 shadow-xs',
+              inactive: 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700',
+              activeCount: 'bg-indigo-500/30 text-white',
+              inactiveCount: 'bg-indigo-50 text-indigo-700 border border-indigo-100',
+            };
             return (
               <button
                 key={tab.label}
                 type="button"
                 onClick={() => setStatusFilter(tab.value)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-[#5c59f6] text-white shadow-sm'
-                    : 'bg-white text-gray-500 border border-gray-200 hover:border-gray-300 hover:text-gray-700'
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-all cursor-pointer border ${
+                  isActive ? styles.active : styles.inactive
                 }`}
               >
                 <span>{tab.label}</span>
-                <span className={`text-[11px] font-bold tabular-nums ${isActive ? 'text-white/75' : 'text-gray-400'}`}>
+                <span className={`text-[11px] font-extrabold tabular-nums px-2 py-0.5 rounded-full ${
+                  isActive ? styles.activeCount : styles.inactiveCount
+                }`}>
                   {count}
                 </span>
               </button>
