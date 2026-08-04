@@ -55,6 +55,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [tagInput, setTagInput] = useState('');
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [variants, setVariants] = useState<VariantItem[]>([]);
+  const [code, setCode] = useState('');
 
   // Fetch categories and product data (if edit mode)
   useEffect(() => {
@@ -97,6 +98,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             setTags(prod.tags || []);
             setTagInput(prod.tags?.join(', ') || '');
             setVariants(prod.variants || []);
+            setCode(prod.code || '');
           }
 
           // Fetch FAQs
@@ -257,6 +259,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         name_en: nameEn,
         display_name_lang: displayNameLang,
         slug,
+        code: code || null,
         description_bn: descriptionBn,
         short_description_bn: shortDescriptionBn,
         price: Number(price),
@@ -439,6 +442,16 @@ export default function ProductForm({ productId }: ProductFormProps) {
                 <option key={c.id} value={c.id}>{c.name_bn}</option>
               ))}
             </select>
+          </div>
+          <div className="md:col-span-2">
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Product Code (কোড / SKU)</label>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="e.g. OH-101 (Optional)"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black"
+            />
           </div>
         </div>
 

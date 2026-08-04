@@ -95,9 +95,15 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
   return (
     <div className="space-y-6">
-      {/* Category */}
-      <div className="text-sm text-gray-500">
-        Category: <span className="text-[#12b76a] font-semibold">{product.category}</span>
+      {/* Category & Product Code */}
+      <div className="flex items-center gap-3 text-sm text-gray-500">
+        <span>Category: <span className="text-[#12b76a] font-semibold">{product.category}</span></span>
+        {product.code && (
+          <>
+            <span>•</span>
+            <span>Product Code: <span className="text-[#ff6b35] font-semibold">{product.code}</span></span>
+          </>
+        )}
       </div>
 
       {/* Title */}

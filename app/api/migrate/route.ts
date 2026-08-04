@@ -54,6 +54,9 @@ export async function GET(request: NextRequest) {
 
     -- Add assigned_to column to oh_orders
     ALTER TABLE oh_orders ADD COLUMN IF NOT EXISTS assigned_to text;
+
+    -- Add code column to oh_products
+    ALTER TABLE oh_products ADD COLUMN IF NOT EXISTS code text;
   `;
 
   // We will try to connect to the internal database container

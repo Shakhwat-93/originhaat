@@ -21,6 +21,7 @@ interface Product {
   images: string[];
   category_id: string;
   slug: string;
+  code?: string | null;
 }
 
 interface Category {
@@ -366,7 +367,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-semibold text-gray-900 line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{categoryName} · {prod.slug}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{categoryName} · {prod.slug}{prod.code ? ` · Code: ${prod.code}` : ''}</div>
                     </td>
                     <td className="px-6 py-4 font-bold text-gray-900">৳{prod.price}</td>
                     <td className="px-6 py-4 text-gray-400 line-through">৳{prod.original_price}</td>
@@ -492,7 +493,7 @@ export default function AdminProductsPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</h4>
-                  <p className="text-xs text-gray-400 mt-0.5">{categoryName}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{categoryName}{prod.code ? ` · Code: ${prod.code}` : ''}</p>
                 </div>
                 <span className="text-xs text-gray-400 font-mono shrink-0">slug: {prod.slug.substring(0, 8)}...</span>
               </div>

@@ -19,6 +19,7 @@ export interface Product {
   created_at: string;
   variants?: ProductVariant[];
   display_name_lang?: string;
+  code?: string | null;
 }
 
 export interface ProductVariant {
