@@ -299,9 +299,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     '/admin/categories': 'categories',
     '/admin/banners': 'banners',
     '/admin/orders': 'orders',
+    '/admin/courier': 'courier',
+    '/admin/inbox': 'inbox',
     '/admin/reviews': 'reviews',
     '/admin/settings': 'settings',
     '/admin/pages': 'pages',
+    '/admin/landing': 'landing',
+    '/admin/reports': 'reports',
     '/admin/inventory': 'inventory',
     '/admin/users': 'manage_users',
   };
