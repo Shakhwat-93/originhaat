@@ -43,7 +43,12 @@ export async function POST(req: NextRequest) {
 
     for (const order of orders) {
       try {
-        const recipientAddress = (order.address || '').trim().substring(0, 240);
+        // Ensure ONLY the exact customer address is sent without any trailing district or 'Dhaka'
+        const recipientAddress = (order.address || '')
+          .trim()
+          .replace(/,\s*(inside\s+dhaka|outside\s+dhaka|dhaka|ঢাকা|ঢাকার\s*ভিতরে|ঢাকার\s*বাইরে)\s*$/gi, '')
+          .trim()
+          .substring(0, 240);
         const recipientPhone = order.phone.replace(/[^0-9]/g, '').slice(-11);
 
         const payload = {

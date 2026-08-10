@@ -51,15 +51,19 @@ export async function POST(req: NextRequest) {
 
     for (const order of orders) {
       try {
-        // Build recipient address
-        const recipientAddress = (order.address || '').trim().substring(0, 220);
+        // Build recipient address ensuring ONLY the exact customer address without any trailing district or 'Dhaka'
+        const recipientAddress = (order.address || '')
+          .trim()
+          .replace(/,\s*(inside\s+dhaka|outside\s+dhaka|dhaka|ঢাকা|ঢাকার\s*ভিতরে|ঢাকার\s*বাইরে)\s*$/gi, '')
+          .trim()
+          .substring(0, 220);
 
         const pathaoPayload = {
           store_id: storeId,
           merchant_order_id: order.order_number,
           recipient_name: order.customer_name,
           recipient_phone: order.phone.replace(/[^0-9]/g, '').slice(-11), // ensure 11 digits
-          recipient_address: recipientAddress.length < 10 ? recipientAddress + ', Bangladesh' : recipientAddress,
+          recipient_address: recipientAddress,
           delivery_type: 48, // Normal Delivery
           item_type: 2,       // Parcel
           item_quantity: 1,
