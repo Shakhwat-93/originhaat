@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
     // 4. Sort and select relevant products based on query keywords
     const lowerQuery = message.toLowerCase();
     const sortedProducts = [...products].sort((a, b) => {
-      const aMatch = (a.name_bn + ' ' + a.name_en + ' ' + (a.tags || []).join(' ')).toLowerCase().includes(lowerQuery);
-      const bMatch = (b.name_bn + ' ' + b.name_en + ' ' + (b.tags || []).join(' ')).toLowerCase().includes(lowerQuery);
+      const aMatch = `${a.name_bn || ''} ${a.name_en || ''} ${a.short_description_bn || ''}`.toLowerCase().includes(lowerQuery);
+      const bMatch = `${b.name_bn || ''} ${b.name_en || ''} ${b.short_description_bn || ''}`.toLowerCase().includes(lowerQuery);
       if (aMatch && !bMatch) return -1;
       if (!aMatch && bMatch) return 1;
       return 0;
