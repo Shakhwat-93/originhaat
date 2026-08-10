@@ -37,10 +37,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch orders from DB
+    // Fetch orders with order items from DB
     const { data: orders, error: fetchErr } = await supabase
       .from('oh_orders')
-      .select('id,order_number,customer_name,phone,address,district,grand_total,note')
+      .select('id,order_number,customer_name,phone,address,district,grand_total,note,oh_order_items(product_name,quantity,selected_variant)')
       .in('id', orderIds);
 
     if (fetchErr || !orders) {
@@ -58,21 +58,33 @@ export async function POST(req: NextRequest) {
           .trim()
           .substring(0, 220);
 
+        const recipientPhone = order.phone.replace(/[^0-9]/g, '').slice(-11);
+
+        // Format product details with variant/color and quantity
+        const productDetails = (order.oh_order_items && order.oh_order_items.length > 0)
+          ? order.oh_order_items.map((item: any) => {
+              const variantStr = item.selected_variant ? ` (${item.selected_variant.trim()})` : '';
+              return `${item.product_name}${variantStr} x${item.quantity}`;
+            }).join(', ')
+          : `Order #${order.order_number}`;
+
+        const totalQuantity = (order.oh_order_items && order.oh_order_items.length > 0)
+          ? order.oh_order_items.reduce((sum: number, it: any) => sum + (Number(it.quantity) || 1), 0)
+          : 1;
+
         const pathaoPayload = {
           store_id: storeId,
           merchant_order_id: order.order_number,
           recipient_name: order.customer_name,
-          recipient_phone: order.phone.replace(/[^0-9]/g, '').slice(-11), // ensure 11 digits
+          recipient_phone: recipientPhone,
           recipient_address: recipientAddress,
           delivery_type: 48, // Normal Delivery
           item_type: 2,       // Parcel
-          item_quantity: 1,
+          item_quantity: totalQuantity,
           item_weight: 0.5,
           amount_to_collect: Math.round(order.grand_total),
-          item_description: order.note 
-            ? `${order.note} | Order #${order.order_number}`.substring(0, 140) 
-            : `Order #${order.order_number} from Origin Haat`,
-          special_instruction: order.note || '',
+          item_description: productDetails.substring(0, 200),
+          special_instruction: (order.note || '').trim().substring(0, 200),
         };
 
         const pathaoRes = await fetch(`${auth.baseUrl}/aladdin/api/v1/orders`, {

@@ -29,10 +29,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Fetch orders from DB
+    // Fetch orders with order items from DB
     const { data: orders, error: fetchErr } = await supabase
       .from('oh_orders')
-      .select('id,order_number,customer_name,phone,address,district,grand_total,note')
+      .select('id,order_number,customer_name,phone,address,district,grand_total,note,oh_order_items(product_name,quantity,selected_variant)')
       .in('id', orderIds);
 
     if (fetchErr || !orders) {
@@ -51,13 +51,27 @@ export async function POST(req: NextRequest) {
           .substring(0, 240);
         const recipientPhone = order.phone.replace(/[^0-9]/g, '').slice(-11);
 
+        // Format product details with variant/color and quantity
+        const productDetails = (order.oh_order_items && order.oh_order_items.length > 0)
+          ? order.oh_order_items.map((item: any) => {
+              const variantStr = item.selected_variant ? ` (${item.selected_variant.trim()})` : '';
+              return `${item.product_name}${variantStr} x${item.quantity}`;
+            }).join(', ')
+          : '';
+
+        // Order Note: User optional note + product summary
+        const noteContent = order.note?.trim()
+          ? (productDetails ? `${order.note.trim()} [${productDetails}]` : order.note.trim())
+          : (productDetails || `Order #${order.order_number}`);
+
         const payload = {
           invoice: order.order_number,
           recipient_name: order.customer_name,
           recipient_phone: recipientPhone,
           recipient_address: recipientAddress,
           cod_amount: Math.round(order.grand_total),
-          note: order.note || `Order #${order.order_number} from Origin Haat`,
+          note: noteContent.substring(0, 300),
+          item_description: (productDetails || `Order #${order.order_number}`).substring(0, 300),
         };
 
         const response = await fetch(`${BASE_URL}/create_order`, {
