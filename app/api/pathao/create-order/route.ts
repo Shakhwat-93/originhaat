@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
 
     for (const order of orders) {
       try {
-        // Build recipient address (address + district)
-        const recipientAddress = `${order.address}, ${order.district}`.substring(0, 220);
+        // Build recipient address
+        const recipientAddress = (order.address || '').trim().substring(0, 220);
 
         const pathaoPayload = {
           store_id: storeId,

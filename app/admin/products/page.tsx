@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Sparkles, RefreshCw } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Sparkles, RefreshCw, Flame, X, Check } from 'lucide-react';
 import { showConfirmAlert, showSuccessAlert } from '@/lib/alerts';
 import { formatImageUrl, formatName } from '@/lib/utils';
 
@@ -39,6 +39,11 @@ export default function AdminProductsPage() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'featured' | 'out-of-stock' | 'inactive'>('all');
+
+  // Best Seller Modal state
+  const [showBestSellerModal, setShowBestSellerModal] = useState(false);
+  const [bestSellerSearch, setBestSellerSearch] = useState('');
+  const [modalFilter, setModalFilter] = useState<'all' | 'featured' | 'not-featured'>('all');
 
   const fetchData = async () => {
     setLoading(true);
@@ -132,6 +137,12 @@ export default function AdminProductsPage() {
     if (error) {
       console.error(error);
       fetchData();
+    } else {
+      if (newFeatured) {
+        showSuccessAlert('বেস্ট সেলার যোগ হয়েছে!', `${formatName(prod.name_bn, prod.name_en, prod.display_name_lang)} এখন বেস্ট সেলার সেকশনে দেখাবে।`);
+      } else {
+        showSuccessAlert('বেস্ট সেলার থেকে সরানো হয়েছে', `${formatName(prod.name_bn, prod.name_en, prod.display_name_lang)} বেস্ট সেলার সেকশন থেকে সরানো হয়েছে।`);
+      }
     }
   };
 
@@ -176,7 +187,9 @@ export default function AdminProductsPage() {
   const filteredProducts = products.filter((prod) => {
     const displayName = formatName(prod.name_bn, prod.name_en, prod.display_name_lang);
     const matchesSearch = displayName.toLowerCase().includes(search.toLowerCase()) || 
-                          prod.slug.toLowerCase().includes(search.toLowerCase());
+                          prod.slug.toLowerCase().includes(search.toLowerCase()) ||
+                          (prod.name_bn || '').toLowerCase().includes(search.toLowerCase()) ||
+                          (prod.name_en || '').toLowerCase().includes(search.toLowerCase());
     const matchesCategory = categoryFilter === '' || prod.category_id === categoryFilter;
     
     let matchesType = true;
@@ -189,6 +202,25 @@ export default function AdminProductsPage() {
     }
 
     return matchesSearch && matchesCategory && matchesType;
+  });
+
+  // Modal products (supports search in English, Bengali, Slug, and Code)
+  const modalProducts = products.filter((prod) => {
+    const q = bestSellerSearch.toLowerCase().trim();
+    const matchesSearch = !q ||
+      (prod.name_bn || '').toLowerCase().includes(q) ||
+      (prod.name_en || '').toLowerCase().includes(q) ||
+      (prod.slug || '').toLowerCase().includes(q) ||
+      (prod.code || '').toLowerCase().includes(q);
+
+    let matchesTab = true;
+    if (modalFilter === 'featured') {
+      matchesTab = prod.is_featured === true;
+    } else if (modalFilter === 'not-featured') {
+      matchesTab = prod.is_featured === false;
+    }
+
+    return matchesSearch && matchesTab;
   });
 
   if (loading) {
@@ -206,15 +238,29 @@ export default function AdminProductsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage all products, stock levels, pricing, and active status for your store</p>
+          <p className="text-sm text-gray-500 mt-1">Manage all products, Best Sellers, stock levels, pricing, and visibility</p>
         </div>
-        <Link
-          href="/admin/products/new"
-          className="inline-flex items-center gap-2 px-5 py-3 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold rounded-xl shadow-lg shadow-[#ff6b35]/25 transition-all text-sm cursor-pointer"
-        >
-          <Plus size={16} />
-          Add New Product
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setBestSellerSearch('');
+              setModalFilter('all');
+              setShowBestSellerModal(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-50 hover:bg-orange-100 text-[#ff6b35] border border-orange-200 font-bold rounded-xl shadow-xs transition-all text-sm cursor-pointer"
+          >
+            <Flame size={16} />
+            + বেস্ট সেলার যোগ করুন
+          </button>
+          <Link
+            href="/admin/products/new"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ff6b35] hover:bg-[#e55520] text-white font-bold rounded-xl shadow-lg shadow-[#ff6b35]/25 transition-all text-sm cursor-pointer"
+          >
+            <Plus size={16} />
+            Add New Product
+          </Link>
+        </div>
       </div>
 
       {/* Quick Status Tabs */}
@@ -278,16 +324,16 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* Info Tip Banner for Reordering */}
+      {/* Info Tip Banner for Reordering & Best Sellers */}
       <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200/60 rounded-2xl p-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#ff6b35] text-white flex items-center justify-center shrink-0 shadow-sm">
             <Sparkles size={18} />
           </div>
           <div>
-            <h4 className="font-bold text-gray-900 text-xs">পণ্য সাজানোর নির্দেশিকা (Product Reordering)</h4>
+            <h4 className="font-bold text-gray-900 text-xs">🔥 বেস্ট সেলিং পণ্য নিয়ন্ত্রণ ও সাজানোর নির্দেশিকা</h4>
             <p className="text-[11px] text-gray-600 mt-0.5 leading-relaxed">
-              ওয়েবসাইট হোমপেজের **বেস্ট সেলার (Hot / Featured Products)** সেকশনে কোন প্রোডাক্ট আগে দেখাবে তা এখান থেকে নিয়ন্ত্রণ করুন। <b>⬆️ / ⬇️</b> বাটনে ক্লিক করে বা সরাসরি <b>পজিশন নম্বর</b> বসিয়ে ক্রমানুসারে সাজান।
+              হোমপেজের <b>বেস্ট সেলার (Hot / Featured Products)</b> সেকশনে যে প্রোডাক্টগুলো দেখাতে চান তাদের Featured টগল চালু রাখুন। কোন প্রোডাক্ট আগে দেখাবে তা <b>⬆️ / ⬇️</b> বাটন বা পজিশন নম্বর দিয়ে সাজান।
             </p>
           </div>
         </div>
@@ -311,7 +357,7 @@ export default function AdminProductsPage() {
                 <th className="px-6 py-4">Sales Price</th>
                 <th className="px-6 py-4">Original Price</th>
                 <th className="px-6 py-4">Stock</th>
-                <th className="px-6 py-4">Featured</th>
+                <th className="px-6 py-4">Best Seller</th>
                 <th className="px-6 py-4">Status</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
@@ -394,11 +440,15 @@ export default function AdminProductsPage() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleToggleFeatured(prod)}
-                        className={`flex items-center text-xs font-semibold cursor-pointer ${
-                          prod.is_featured ? 'text-[#ff6b35]' : 'text-gray-400'
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                          prod.is_featured
+                            ? 'bg-orange-50 text-[#ff6b35] border border-orange-200 shadow-2xs hover:bg-orange-100'
+                            : 'bg-gray-50 text-gray-400 border border-gray-200 hover:bg-gray-100 hover:text-gray-600'
                         }`}
+                        title={prod.is_featured ? 'Click to remove from Best Sellers' : 'Click to add to Best Sellers'}
                       >
-                        {prod.is_featured ? <ToggleRight size={26} className="text-[#ff6b35]" /> : <ToggleLeft size={26} className="text-gray-400" />}
+                        <Flame size={13} className={prod.is_featured ? 'fill-[#ff6b35]' : ''} />
+                        <span>{prod.is_featured ? 'Featured' : 'Add'}</span>
                       </button>
                     </td>
                     <td className="px-6 py-4">
@@ -413,6 +463,15 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-2">
+                        {typeFilter === 'featured' && (
+                          <button
+                            onClick={() => handleToggleFeatured(prod)}
+                            className="px-2.5 py-1 text-[11px] font-bold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors cursor-pointer"
+                            title="বেস্ট সেলার থেকে সরান"
+                          >
+                            Remove
+                          </button>
+                        )}
                         <Link
                           href={`/admin/products/${prod.id}`}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer inline-block"
@@ -432,7 +491,7 @@ export default function AdminProductsPage() {
               })}
               {filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
                     No products found.
                   </td>
                 </tr>
@@ -530,28 +589,24 @@ export default function AdminProductsPage() {
                   </div>
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Status / Featured</span>
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-0.5">Best Seller / Status</span>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${prod.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
-                      {prod.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${prod.is_featured ? 'bg-orange-50 text-[#ff6b35]' : 'bg-gray-100 text-gray-400'}`}>
-                      {prod.is_featured ? 'Featured' : 'Regular'}
-                    </span>
+                    <button
+                      onClick={() => handleToggleFeatured(prod)}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                        prod.is_featured ? 'bg-orange-50 text-[#ff6b35] border border-orange-200' : 'bg-gray-100 text-gray-400'
+                      }`}
+                    >
+                      <Flame size={10} className={prod.is_featured ? 'fill-[#ff6b35]' : ''} />
+                      <span>{prod.is_featured ? 'Featured' : 'Not Featured'}</span>
+                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Footer */}
               <div className="flex items-center justify-between pt-1">
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => handleToggleFeatured(prod)}
-                    className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer"
-                  >
-                    <span>Featured:</span>
-                    {prod.is_featured ? <ToggleRight size={22} className="text-[#ff6b35]" /> : <ToggleLeft size={22} className="text-gray-400" />}
-                  </button>
+                <div className="flex items-center gap-3">
                   <button
                     onClick={() => handleToggleActive(prod)}
                     className="flex items-center gap-1 text-xs text-gray-500 font-semibold cursor-pointer"
@@ -585,6 +640,172 @@ export default function AdminProductsPage() {
           </div>
         )}
       </div>
+
+      {/* ─── ADD TO BEST SELLERS MODAL ─── */}
+      {showBestSellerModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-gray-100 flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/50 to-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-orange-100 text-[#ff6b35] flex items-center justify-center font-bold">
+                  <Flame size={18} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-gray-900 text-base">বেস্ট সেলার পণ্য ম্যানেজমেন্ট</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">যেকোনো পণ্যকে সরাসরি হোমপেজ বেস্ট সেলারে যুক্ত বা বাদ দিতে বাটনে ক্লিক করুন</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBestSellerModal(false)}
+                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Search & Quick Filters */}
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50 space-y-3">
+              <div className="relative">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="নাম (বাংলা/ইংরেজি), কোড বা স্ল্যাগ দিয়ে খুঁজুন (যেমন: po, sealing, filter)..."
+                  value={bestSellerSearch}
+                  onChange={(e) => setBestSellerSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:border-[#ff6b35] focus:outline-none text-black placeholder-gray-400 shadow-2xs"
+                  autoFocus
+                />
+              </div>
+
+              {/* Filter Tabs */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setModalFilter('all')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                    modalFilter === 'all'
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  সব পণ্য ({products.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalFilter('featured')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                    modalFilter === 'featured'
+                      ? 'bg-[#ff6b35] text-white'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  🔥 বেস্ট সেলারে আছে ({products.filter(p => p.is_featured).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModalFilter('not-featured')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                    modalFilter === 'not-featured'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  }`}
+                >
+                  ➕ এখনও যুক্ত হয়নি ({products.filter(p => !p.is_featured).length})
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Product List */}
+            <div className="flex-1 overflow-y-auto p-4 divide-y divide-gray-100 space-y-1">
+              {modalProducts.map((prod) => {
+                const mainImage = prod.images?.[0] || '';
+                const categoryName = categories.find(c => c.id === prod.category_id)?.name_bn || 'Uncategorized';
+                return (
+                  <div key={prod.id} className="py-3 px-2 flex items-center justify-between gap-4 hover:bg-gray-50/80 rounded-xl transition-colors">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative w-12 h-12 bg-gray-100 rounded-xl overflow-hidden border border-gray-200 shrink-0">
+                        {mainImage ? (
+                          <img src={formatImageUrl(mainImage)} alt={formatName(prod.name_bn, prod.name_en, prod.display_name_lang)} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                            <ImageIcon size={18} />
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-gray-900 text-sm truncate">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</h4>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="text-xs text-gray-400">{categoryName}</span>
+                          <span className="text-xs font-black text-gray-900">৳{prod.price}</span>
+                          {prod.is_featured ? (
+                            <span className="text-[10px] bg-orange-50 text-[#ff6b35] border border-orange-200 px-2 py-0.5 rounded-md font-extrabold flex items-center gap-1">
+                              <Flame size={10} className="fill-[#ff6b35]" />
+                              বেস্ট সেলার
+                            </span>
+                          ) : (
+                            <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md font-bold">
+                              রেগুলার
+                            </span>
+                          )}
+                          {prod.stock > 0 ? (
+                            <span className="text-[10px] bg-emerald-50 text-emerald-700 px-1.5 py-0.2 rounded font-bold">স্টকে আছে ({prod.stock})</span>
+                          ) : (
+                            <span className="text-[10px] bg-rose-50 text-rose-700 px-1.5 py-0.2 rounded font-bold">স্টক শেষ</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleFeatured(prod)}
+                      className={`px-4 py-2 rounded-xl text-xs font-black shrink-0 transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5 ${
+                        prod.is_featured
+                          ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200'
+                          : 'bg-[#ff6b35] hover:bg-[#e55520] text-white'
+                      }`}
+                    >
+                      {prod.is_featured ? (
+                        <>
+                          <X size={14} />
+                          <span>সরান (Remove)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={14} />
+                          <span>+ যোগ করুন</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
+
+              {modalProducts.length === 0 && (
+                <div className="p-8 text-center text-gray-400 text-sm">
+                  {bestSellerSearch ? `"${bestSellerSearch}" নামে কোনো পণ্য পাওয়া যায়নি।` : 'কোনো পণ্য পাওয়া যায়নি।'}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-between items-center">
+              <span className="text-xs font-semibold text-gray-500">
+                মোট {modalProducts.length} টি পণ্য প্রদর্শিত হচ্ছে
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowBestSellerModal(false)}
+                className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                সম্পন্ন (Done)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

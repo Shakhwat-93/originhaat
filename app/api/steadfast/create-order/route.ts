@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     for (const order of orders) {
       try {
-        const recipientAddress = `${order.address}, ${order.district}`.substring(0, 240);
+        const recipientAddress = (order.address || '').trim().substring(0, 240);
         const recipientPhone = order.phone.replace(/[^0-9]/g, '').slice(-11);
 
         const payload = {

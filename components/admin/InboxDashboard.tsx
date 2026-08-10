@@ -111,8 +111,11 @@ const STATUS_BADGE: Record<string, string> = {
   spam:     'bg-red-50     text-red-600    border border-red-200',
 };
 
+type TabType = 'active' | 'pending' | 'new' | 'resolved' | 'closed' | 'spam';
+
 export default function InboxDashboard() {
-  const [activeTab, setActiveTab]           = useState<'active' | 'pending' | 'resolved' | 'closed' | 'spam'>('active');
+  const [activeTab, setActiveTab]           = useState<TabType>('pending');
+  const [loadingChats, setLoadingChats]     = useState(false);
   const [showAnalytics, setShowAnalytics]   = useState(false);
   const [showLiveVisitors, setShowLiveVisitors] = useState(false);
   const [showCannedManager, setShowCannedManager] = useState(false);
@@ -155,9 +158,15 @@ export default function InboxDashboard() {
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>('default');
   const selectedChatRef = useRef<Chat | null>(null);
+  const activeTabRef = useRef<TabType>(activeTab);
   const processedChatsRef = useRef<Set<string>>(new Set());
   const processedMessagesRef = useRef<Set<string>>(new Set());
   const isFirstLoadRef = useRef(true);
+
+  // Keep activeTabRef in sync
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
   // Status Counts
   const [statusCounts, setStatusCounts] = useState<Record<string, number>>({
@@ -171,40 +180,11 @@ export default function InboxDashboard() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // ── Data Loading ──────────────────────────────────────────────────────────
-  useEffect(() => { fetchChats(); fetchAgents(); fetchCannedResponses(); }, [activeTab]);
-
-  // Keep ref in sync so global listener can read without stale closure
-  useEffect(() => { selectedChatRef.current = selectedChat; }, [selectedChat]);
-
-  useEffect(() => {
-    if (selectedChat && selectedChat.status === 'pending') {
-      setSlaSecondsLeft(30);
-      const iv = setInterval(() => setSlaSecondsLeft((p) => (p > 0 ? p - 1 : 0)), 1000);
-      return () => clearInterval(iv);
-    }
-  }, [selectedChat]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // ── Request Browser Notification Permission ───────────────────────────────
-  useEffect(() => {
-    if ('Notification' in window) {
-      setNotifPermission(Notification.permission);
-      if (Notification.permission === 'default') {
-        Notification.requestPermission().then((perm) => setNotifPermission(perm));
-      }
-    }
-  }, []);
-
   // ── Premium 3-Note Chime ─────────────────────────────────────────────────
   const playChime = useCallback((isNewChat = false) => {
     if (!soundEnabled) return;
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      // note sequence: D5 → F#5 → A5  (cheerful major arpeggio)
       const notes = isNewChat
         ? [523.25, 659.25, 783.99, 1046.5]   // C5→E5→G5→C6 (new chat fanfare)
         : [587.33, 739.99, 880];              // D5→F#5→A5 (new message chime)
@@ -227,10 +207,9 @@ export default function InboxDashboard() {
 
   // ── Show Toast helper ────────────────────────────────────────────────────
   const pushToast = useCallback((toast: Omit<ToastNotification, 'id' | 'timestamp'>) => {
-    const id = `toast-${Date.now()}`;
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const notification: ToastNotification = { ...toast, id, timestamp: new Date() };
     setToasts((prev) => [notification, ...prev].slice(0, 5)); // max 5 stacked
-    // Auto-dismiss after 6 seconds
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 6000);
   }, []);
 
@@ -249,7 +228,140 @@ export default function InboxDashboard() {
     }
   }, []);
 
-  // Poll for new global customer messages every 5 seconds (silently replaces WS listener)
+  // ── Fetch helpers ─────────────────────────────────────────────────────────
+  const fetchStatusCounts = useCallback(async () => {
+    try {
+      const { data } = await supabase.from('oh_chats').select('status, label');
+      if (data) {
+        const counts = { active: 0, pending: 0, resolved: 0, closed: 0, spam: 0, new: 0 };
+        data.forEach((chat: any) => {
+          if (chat.status in counts) {
+            counts[chat.status as keyof typeof counts]++;
+          }
+          if (chat.label === 'New') {
+            counts.new++;
+          }
+        });
+        setStatusCounts(counts);
+      }
+    } catch (_) {}
+  }, []);
+
+  const fetchChats = useCallback(async (targetTab?: TabType, isSilent = false) => {
+    const currentTab = targetTab || activeTabRef.current;
+    if (!isSilent) setLoadingChats(true);
+    try {
+      let query = supabase.from('oh_chats').select('*');
+      if (currentTab === 'new') {
+        query = query.eq('label', 'New');
+      } else {
+        query = query.eq('status', currentTab);
+      }
+      const { data, error } = await query.order('updated_at', { ascending: false });
+      
+      if (!error && data) {
+        if (isFirstLoadRef.current) {
+          data.forEach(c => processedChatsRef.current.add(c.id));
+          isFirstLoadRef.current = false;
+        } else {
+          data.forEach(newChat => {
+            if (!processedChatsRef.current.has(newChat.id)) {
+              processedChatsRef.current.add(newChat.id);
+              playChime(true);
+              pushToast({
+                type: 'new_chat',
+                title: `🆕 নতুন চ্যাট শুরু — ${newChat.customer_name || 'Anonymous'}`,
+                body: `Department: ${newChat.department} • ${newChat.city || 'Unknown location'}`,
+                chatId: newChat.id,
+                senderName: newChat.customer_name || 'Anonymous',
+                department: newChat.department,
+              });
+              sendBrowserNotification(
+                `🆕 নতুন চ্যাট — ${newChat.customer_name || 'Anonymous'}`,
+                `Department: ${newChat.department} — একটি নতুন কাস্টমার চ্যাট শুরু করেছেন।`
+              );
+            }
+          });
+        }
+        setChats(data);
+      }
+      fetchStatusCounts();
+    } catch (err) {
+      console.error('Error fetching chats:', err);
+    } finally {
+      if (!isSilent) setLoadingChats(false);
+    }
+  }, [playChime, pushToast, sendBrowserNotification, fetchStatusCounts]);
+
+  const fetchAgents = useCallback(async () => {
+    const { data } = await supabase.from('oh_chat_agents').select('*');
+    if (data) setAgents(data);
+  }, []);
+
+  const fetchCannedResponses = useCallback(async () => {
+    const { data } = await supabase.from('oh_chat_canned').select('*');
+    if (data) setCannedResponses(data || []);
+  }, []);
+
+  const fetchMessages = useCallback(async (chatId: string) => {
+    const { data } = await supabase
+      .from('oh_chat_messages').select('*').eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
+    if (data) setMessages(data);
+  }, []);
+
+  const fetchInternalNotes = useCallback(async (chatId: string) => {
+    const { data } = await supabase
+      .from('oh_chat_notes').select('*').eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
+    if (data) setInternalNotes(data || []);
+  }, []);
+
+  const fetchCRMProfile = useCallback(async (chat: Chat) => {
+    if (chat.customer_phone) {
+      const { data: orders } = await supabase
+        .from('oh_orders').select('*').eq('phone', chat.customer_phone)
+        .order('created_at', { ascending: false });
+      if (orders && orders.length > 0) {
+        const spent = orders.reduce((s, o) => s + (o.total_price || 0), 0);
+        setCrmProfile({ ordersCount: orders.length, spentAmount: spent, wishlistCount: 3, lastOrderDate: orders[0].created_at, orders });
+        return;
+      }
+    }
+    setCrmProfile(null);
+  }, []);
+
+  // ── Effects ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    fetchChats(activeTab);
+    fetchAgents();
+    fetchCannedResponses();
+  }, [activeTab, fetchChats, fetchAgents, fetchCannedResponses]);
+
+  useEffect(() => { selectedChatRef.current = selectedChat; }, [selectedChat]);
+
+  useEffect(() => {
+    if (selectedChat && selectedChat.status === 'pending') {
+      setSlaSecondsLeft(30);
+      const iv = setInterval(() => setSlaSecondsLeft((p) => (p > 0 ? p - 1 : 0)), 1000);
+      return () => clearInterval(iv);
+    }
+  }, [selectedChat]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if ('Notification' in window) {
+      setNotifPermission(Notification.permission);
+      if (Notification.permission === 'default') {
+        Notification.requestPermission().then((perm) => setNotifPermission(perm));
+      }
+    }
+  }, []);
+
+  // Poll for new global customer messages every 5 seconds
   useEffect(() => {
     let active = true;
     const checkNewMessages = async () => {
@@ -273,12 +385,10 @@ export default function InboxDashboard() {
           if (!processedMessagesRef.current.has(msg.id)) {
             processedMessagesRef.current.add(msg.id);
 
-            // Skip if this message belongs to the currently open/selected chat
             const currentChat = selectedChatRef.current;
             if (currentChat && currentChat.id === msg.chat_id) return;
 
             hasNew = true;
-            // Show in-app toast
             pushToast({
               type: 'new_message',
               title: `💬 নতুন বার্তা — ${msg.sender_name || 'Customer'}`,
@@ -287,7 +397,6 @@ export default function InboxDashboard() {
               senderName: msg.sender_name || 'Customer',
             });
 
-            // Browser OS notification
             sendBrowserNotification(
               `💬 ${msg.sender_name || 'Customer'} — Origin Haat`,
               msg.body ? msg.body.substring(0, 100) : '📎 Attachment sent'
@@ -304,25 +413,22 @@ export default function InboxDashboard() {
       }
     };
 
-    // Initial check
     checkNewMessages();
-
     const interval = setInterval(checkNewMessages, 5000);
     return () => {
       active = false;
       clearInterval(interval);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playChime, pushToast, sendBrowserNotification]);
+  }, [playChime, pushToast, sendBrowserNotification, fetchChats]);
 
-  // Fallback Polling for Chat sessions list (updates every 5s)
+  // Fallback Polling for Chat sessions list (updates every 5s silently)
   useEffect(() => {
     const interval = setInterval(() => {
-      fetchChats();
+      fetchChats(undefined, true);
       fetchStatusCounts();
     }, 5000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchChats, fetchStatusCounts]);
 
   useEffect(() => {
     if (!selectedChat) return;
@@ -330,7 +436,7 @@ export default function InboxDashboard() {
     fetchInternalNotes(selectedChat.id);
     fetchCRMProfile(selectedChat);
     setSlaSecondsLeft(30);
-  }, [selectedChat]);
+  }, [selectedChat, fetchMessages, fetchInternalNotes, fetchCRMProfile]);
 
   // Fallback Polling for active chat messages (updates every 3s)
   useEffect(() => {
@@ -340,95 +446,7 @@ export default function InboxDashboard() {
       fetchInternalNotes(selectedChat.id);
     }, 3000);
     return () => clearInterval(interval);
-  }, [selectedChat]);
-
-  // ── Fetch helpers ─────────────────────────────────────────────────────────
-  const fetchStatusCounts = async () => {
-    try {
-      const { data } = await supabase.from('oh_chats').select('status, label');
-      if (data) {
-        const counts = { active: 0, pending: 0, resolved: 0, closed: 0, spam: 0, new: 0 };
-        data.forEach((chat: any) => {
-          if (chat.status in counts) {
-            counts[chat.status as keyof typeof counts]++;
-          }
-          if (chat.label === 'New') {
-            counts.new++;
-          }
-        });
-        setStatusCounts(counts);
-      }
-    } catch (_) {}
-  };
-
-  const fetchChats = async () => {
-    const { data } = await supabase
-      .from('oh_chats').select('*').eq('status', activeTab)
-      .order('updated_at', { ascending: false });
-    
-    if (data) {
-      if (isFirstLoadRef.current) {
-        data.forEach(c => processedChatsRef.current.add(c.id));
-      } else {
-        data.forEach(newChat => {
-          if (!processedChatsRef.current.has(newChat.id)) {
-            processedChatsRef.current.add(newChat.id);
-            // Play sound
-            playChime(true);
-            // In-app toast
-            pushToast({
-              type: 'new_chat',
-              title: `🆕 নতুন চ্যাট শুরু — ${newChat.customer_name || 'Anonymous'}`,
-              body: `Department: ${newChat.department} • ${newChat.city || 'Unknown location'}`,
-              chatId: newChat.id,
-              senderName: newChat.customer_name || 'Anonymous',
-              department: newChat.department,
-            });
-            // OS notification
-            sendBrowserNotification(
-              `🆕 নতুন চ্যাট — ${newChat.customer_name || 'Anonymous'}`,
-              `Department: ${newChat.department} — একটি নতুন কাস্টমার চ্যাট শুরু করেছেন।`
-            );
-          }
-        });
-      }
-      setChats(data);
-    }
-    fetchStatusCounts();
-  };
-  const fetchAgents = async () => {
-    const { data } = await supabase.from('oh_chat_agents').select('*');
-    if (data) setAgents(data);
-  };
-  const fetchCannedResponses = async () => {
-    const { data } = await supabase.from('oh_chat_canned').select('*');
-    if (data) setCannedResponses(data || []);
-  };
-  const fetchMessages = async (chatId: string) => {
-    const { data } = await supabase
-      .from('oh_chat_messages').select('*').eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
-    if (data) setMessages(data);
-  };
-  const fetchInternalNotes = async (chatId: string) => {
-    const { data } = await supabase
-      .from('oh_chat_notes').select('*').eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
-    if (data) setInternalNotes(data || []);
-  };
-  const fetchCRMProfile = async (chat: Chat) => {
-    if (chat.customer_phone) {
-      const { data: orders } = await supabase
-        .from('oh_orders').select('*').eq('phone', chat.customer_phone)
-        .order('created_at', { ascending: false });
-      if (orders && orders.length > 0) {
-        const spent = orders.reduce((s, o) => s + (o.total_price || 0), 0);
-        setCrmProfile({ ordersCount: orders.length, spentAmount: spent, wishlistCount: 3, lastOrderDate: orders[0].created_at, orders });
-        return;
-      }
-    }
-    setCrmProfile(null);
-  };
+  }, [selectedChat, fetchMessages, fetchInternalNotes]);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const handleSendMessage = async (e?: React.FormEvent) => {
@@ -505,6 +523,34 @@ export default function InboxDashboard() {
     if (!c.isConfirmed) return;
     await supabase.from('oh_chat_messages')
       .update({ is_deleted: true, body: 'message was deleted' }).eq('id', msgId);
+  };
+
+  const handleDeleteConversation = async (chatId?: string) => {
+    const targetChatId = chatId || selectedChat?.id;
+    if (!targetChatId) return;
+
+    const c = await showConfirmAlert(
+      'কনভারসেশন ডিলিট করবেন?',
+      'এই চ্যাট এবং এর সকল মেসেজ চিরতরে মুছে ফেলা হবে। আপনি কি নিশ্চিত?',
+      'ডিলিট করুন'
+    );
+    if (!c.isConfirmed) return;
+
+    try {
+      await supabase.from('oh_chat_messages').delete().eq('chat_id', targetChatId);
+      await supabase.from('oh_chat_notes').delete().eq('chat_id', targetChatId);
+      const { error } = await supabase.from('oh_chats').delete().eq('id', targetChatId);
+      if (error) throw error;
+
+      showSuccessAlert('সফল', 'কনভারসেশন সফলভাবে ডিলিট করা হয়েছে।');
+      if (selectedChat?.id === targetChatId) {
+        setSelectedChat(null);
+        setActiveMobileView('list');
+      }
+      fetchChats();
+    } catch (err: any) {
+      showErrorAlert('ত্রুটি', err.message || 'কনভারসেশন ডিলিট করা সম্ভব হয়নি।');
+    }
   };
 
   const handleUpdateStatus = async (chatId: string, newStatus: Chat['status']) => {
@@ -888,25 +934,18 @@ export default function InboxDashboard() {
               {([
                 { id: 'active', label: 'Active', count: statusCounts.active, color: 'bg-emerald-500/10 text-emerald-700' },
                 { id: 'pending', label: 'Pending', count: statusCounts.pending, color: 'bg-amber-500/10 text-amber-700' },
-                { id: 'new_label', label: 'New', count: statusCounts.new, color: 'bg-purple-500/10 text-purple-700' },
+                { id: 'new', label: 'New', count: statusCounts.new, color: 'bg-purple-500/10 text-purple-700' },
                 { id: 'resolved', label: 'Solved', count: statusCounts.resolved, color: 'bg-blue-500/10 text-blue-700' },
                 { id: 'closed', label: 'Closed', count: statusCounts.closed, color: 'bg-gray-500/10 text-gray-700' },
                 { id: 'spam', label: 'Spam', count: statusCounts.spam, color: 'bg-red-500/10 text-red-700' },
               ] as const).map((tab) => {
-                const isActive = activeTab === tab.id || (tab.id === 'new_label' && activeTab as string === 'new');
+                const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => {
-                      if (tab.id === 'new_label') {
-                        // Switch to active but filter for new label (or we can handle status filter)
-                        // For simplicity, let's treat it as a tab transition or filter trigger
-                        setActiveTab('active');
-                        setSearchQuery('New'); // Set search to 'New' label
-                      } else {
-                        setActiveTab(tab.id as any);
-                        setSearchQuery('');
-                      }
+                      setActiveTab(tab.id);
+                      setSearchQuery('');
                       setSelectedChat(null);
                       setActiveMobileView('list');
                     }}
@@ -938,33 +977,68 @@ export default function InboxDashboard() {
 
             {/* Conversation List */}
             <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
-              {filteredChats.map((c) => {
-                const isSelected = selectedChat?.id === c.id;
-                return (
-                  <div key={c.id} onClick={() => { setSelectedChat(c); setActiveMobileView('chat'); }}
-                    className={`p-3.5 flex flex-col gap-1.5 cursor-pointer transition-all select-none border-l-2 ${
-                      isSelected ? 'bg-orange-50/60 border-[#ff6b35]' : 'hover:bg-gray-50 border-transparent'
-                    }`}
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-extrabold text-gray-900 text-xs truncate max-w-[140px]">
-                        {c.customer_name || 'Anonymous Visitor'}
-                      </span>
-                      <span className="text-[9px] text-gray-400 font-semibold">
-                        {new Date(c.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+              {loadingChats ? (
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="p-3 bg-gray-50/70 rounded-xl space-y-2 animate-pulse">
+                      <div className="flex justify-between items-center">
+                        <div className="h-3.5 bg-gray-200 rounded w-24" />
+                        <div className="h-2.5 bg-gray-200 rounded w-10" />
+                      </div>
+                      <div className="flex gap-1.5">
+                        <div className="h-4 bg-gray-200 rounded w-12" />
+                        <div className="h-4 bg-gray-200 rounded w-10" />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[9px] bg-gray-100 border border-gray-200 text-gray-500 font-bold px-1.5 py-0.5 rounded">{c.department}</span>
-                      {c.label && (
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${LABEL_STYLES[c.label] || ''}`}>{c.label}</span>
-                      )}
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {filteredChats.map((c) => {
+                    const isSelected = selectedChat?.id === c.id;
+                    return (
+                      <div key={c.id} onClick={() => { setSelectedChat(c); setActiveMobileView('chat'); }}
+                        className={`p-3.5 flex flex-col gap-1.5 cursor-pointer transition-all select-none border-l-2 group relative ${
+                          isSelected ? 'bg-orange-50/60 border-[#ff6b35]' : 'hover:bg-gray-50 border-transparent'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-extrabold text-gray-900 text-xs truncate max-w-[130px]">
+                            {c.customer_name || 'Anonymous Visitor'}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] text-gray-400 font-semibold">
+                              {new Date(c.updated_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteConversation(c.id);
+                              }}
+                              title="Delete conversation"
+                              className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-all cursor-pointer"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[9px] bg-gray-100 border border-gray-200 text-gray-500 font-bold px-1.5 py-0.5 rounded">{c.department}</span>
+                          {c.label && (
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-black ${LABEL_STYLES[c.label] || ''}`}>{c.label}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {filteredChats.length === 0 && (
+                    <div className="p-8 text-center text-gray-400 text-xs flex flex-col items-center justify-center gap-2">
+                      <MessageSquare size={28} className="text-gray-300 stroke-[1.5]" />
+                      <span>No conversations found.</span>
                     </div>
-                  </div>
-                );
-              })}
-              {filteredChats.length === 0 && (
-                <div className="p-8 text-center text-gray-400 text-xs">No conversations found.</div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -1018,6 +1092,13 @@ export default function InboxDashboard() {
                     <button onClick={() => handleUpdateStatus(selectedChat.id, 'spam')}
                       className="flex items-center gap-1 px-3 py-1.5 bg-red-50 border border-red-200 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl cursor-pointer transition-all">
                       <X size={12} /> <span className="hidden sm:inline">Spam</span>
+                    </button>
+                    <button
+                      onClick={() => handleDeleteConversation(selectedChat.id)}
+                      title="Delete Conversation"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-red-50 border border-gray-200 hover:border-red-200 text-gray-600 hover:text-red-600 font-bold text-xs rounded-xl cursor-pointer transition-all shadow-sm"
+                    >
+                      <Trash2 size={12} /> <span className="hidden sm:inline">Delete</span>
                     </button>
 
                     {/* Responsive Info Button */}

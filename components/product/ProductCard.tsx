@@ -47,8 +47,8 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Image */}
         <div className="relative aspect-square overflow-hidden bg-[#f8f9fa]">
           <Image
-            src={formatImageUrl(product.images[0])}
-            alt={formatName(product.name_bn, product.name_en, product.display_name_lang)}
+            src={formatImageUrl(product.images?.[0]) || '/placeholder.png'}
+            alt={formatName(product.name_bn, product.name_en, product.display_name_lang) || 'Product'}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"

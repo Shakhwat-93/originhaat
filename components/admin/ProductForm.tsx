@@ -524,24 +524,43 @@ export default function ProductForm({ productId }: ProductFormProps) {
           </div>
         </div>
 
-        <div className="flex gap-6 pt-2">
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer select-none">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <label className={`flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+            isFeatured ? 'bg-orange-50/70 border-[#ff6b35] shadow-xs' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+          }`}>
             <input
               type="checkbox"
               checked={isFeatured}
               onChange={(e) => setIsFeatured(e.target.checked)}
-              className="w-4 h-4 text-[#ff6b35] border-gray-300 rounded focus:ring-[#ff6b35]"
+              className="w-5 h-5 mt-0.5 text-[#ff6b35] border-gray-300 rounded focus:ring-[#ff6b35] cursor-pointer"
             />
-            Show as Featured Product on Homepage
+            <div>
+              <span className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                🔥 Best Seller / Featured Product
+              </span>
+              <p className="text-xs text-gray-500 mt-0.5">
+                এই পণ্যটি হোমপেজের "আমাদের হট সেলিং পণ্যসমূহ (Best Sellers)" সেকশনে প্রদর্শিত হবে।
+              </p>
+            </div>
           </label>
-          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer select-none">
+
+          <label className={`flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer select-none ${
+            isActive ? 'bg-emerald-50/70 border-emerald-400 shadow-xs' : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+          }`}>
             <input
               type="checkbox"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
-              className="w-4 h-4 text-[#ff6b35] border-gray-300 rounded focus:ring-[#ff6b35]"
+              className="w-5 h-5 mt-0.5 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500 cursor-pointer"
             />
-            Product is Active for Sale
+            <div>
+              <span className="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                ✅ Active for Sale (সক্রিয় পণ্য)
+              </span>
+              <p className="text-xs text-gray-500 mt-0.5">
+                পণ্যটি ওয়েবসাইটে দৃশ্যমান ও অর্ডার করার জন্য উন্মুক্ত থাকবে।
+              </p>
+            </div>
           </label>
         </div>
       </div>

@@ -1,4 +1,3 @@
-import { featuredProducts as defaultFeaturedProducts } from '@/data/products';
 import { ProductCard } from '@/components/product/ProductCard';
 import Link from 'next/link';
 import { ArrowRight, Flame } from 'lucide-react';
@@ -8,9 +7,7 @@ interface BestSellersProps {
 }
 
 export function BestSellers({ products }: BestSellersProps) {
-  const displayProducts = products && products.length > 0 
-    ? products 
-    : defaultFeaturedProducts;
+  if (!products || products.length === 0) return null;
 
   return (
     <section id="best-sellers" className="py-12 md:py-16 bg-white text-black font-sans">
@@ -26,11 +23,18 @@ export function BestSellers({ products }: BestSellersProps) {
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-[#111827]">আমাদের হট সেলিং পণ্যসমূহ</h2>
           </div>
+          <Link
+            href="/shop"
+            className="flex items-center gap-1 text-sm font-bold text-[#ff6b35] hover:text-[#e55520] transition-colors"
+          >
+            <span>সব দেখুন</span>
+            <ArrowRight size={16} />
+          </Link>
         </div>
 
         {/* Product Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-5">
-          {displayProducts.map((product) => (
+          {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>

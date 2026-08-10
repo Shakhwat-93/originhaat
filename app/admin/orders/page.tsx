@@ -17,6 +17,7 @@ interface OrderItem {
   product_slug?: string;
   product_image?: string | null;
   image_url?: string;
+  selected_variant?: string | null;
 }
 
 interface Order {
@@ -93,32 +94,72 @@ function OrdersPageContent() {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [editForm, setEditForm] = useState<any>(null);
 
+  // Live Store Settings for Delivery Charges
+  const [storeSettings, setStoreSettings] = useState<{
+    delivery_charge_inside: number;
+    delivery_charge_outside: number;
+    free_delivery_min_order: number;
+  }>({
+    delivery_charge_inside: 80,
+    delivery_charge_outside: 110,
+    free_delivery_min_order: 3000,
+  });
+
   // Order creation states
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingOrder, setCreatingOrder] = useState(false);
+  const [createSelectedProdId, setCreateSelectedProdId] = useState<string>('');
+  const [createSelectedVariantName, setCreateSelectedVariantName] = useState<string>('');
   const [createForm, setCreateForm] = useState({
     customer_name: '',
     phone: '',
     address: '',
-    district: 'Dhaka',
+    district: 'Inside Dhaka',
     note: '',
-    delivery_charge: 95,
+    delivery_charge: 80,
     discount_amount: 0,
     subtotal: 0,
-    grand_total: 95,
+    grand_total: 80,
     items: [] as any[]
   });
 
+  const calculateDeliveryCharge = (districtName: string, itemsSubtotal: number) => {
+    if (storeSettings.free_delivery_min_order > 0 && itemsSubtotal >= storeSettings.free_delivery_min_order) {
+      return 0;
+    }
+    const isInside = districtName === 'Inside Dhaka' || districtName === 'Dhaka';
+    return isInside ? storeSettings.delivery_charge_inside : storeSettings.delivery_charge_outside;
+  };
+
+  const handleOpenCreateModal = () => {
+    fetchProductsCatalog();
+    const defaultDelivery = storeSettings.delivery_charge_inside ?? 80;
+    setCreateForm({
+      customer_name: '',
+      phone: '',
+      address: '',
+      district: 'Inside Dhaka',
+      note: '',
+      delivery_charge: defaultDelivery,
+      discount_amount: 0,
+      subtotal: 0,
+      grand_total: defaultDelivery,
+      items: []
+    });
+    setCreateSelectedProdId('');
+    setCreateSelectedVariantName('');
+    setShowCreateModal(true);
+  };
+
   const handleCreateDistrictChange = (districtName: string) => {
-    const charge = districtName === 'Dhaka' ? 95 : 115;
     setCreateForm((prev: any) => {
+      const charge = calculateDeliveryCharge(districtName, prev.subtotal);
       const { subtotal, grand_total } = recalculateTotals(prev.items, charge, prev.discount_amount);
       return { ...prev, district: districtName, delivery_charge: charge, subtotal, grand_total };
     });
   };
 
-  const handleCreateAddItem = (valueStr: string) => {
-    const [productId, variantName] = valueStr.split('::');
+  const handleCreateAddItem = (productId: string, variantName?: string) => {
     const product = productsList.find(p => p.id === productId);
     if (!product) return;
 
@@ -132,6 +173,8 @@ function OrdersPageContent() {
         ? variantObj.price
         : product.price;
 
+      const variantImg = variantObj?.image || product.images?.[0] || null;
+
       if (existing) {
         updatedItems = prev.items.map((item: any) => 
           item.product_id === product.id && item.selected_variant === (variantName || null)
@@ -143,8 +186,8 @@ function OrdersPageContent() {
           id: Math.random().toString(),
           product_id: product.id,
           product_slug: product.slug,
-          product_name: (product.name_bn || product.name_en) + (variantName ? ` (${variantName})` : ''),
-          product_image: product.images?.[0] || null,
+          product_name: product.name_bn || product.name_en,
+          product_image: variantImg,
           price: activePrice,
           quantity: 1,
           subtotal: activePrice,
@@ -152,8 +195,10 @@ function OrdersPageContent() {
         };
         updatedItems = [...prev.items, newItem];
       }
-      const { subtotal, grand_total } = recalculateTotals(updatedItems, prev.delivery_charge, prev.discount_amount);
-      return { ...prev, items: updatedItems, subtotal, grand_total };
+      const newSubtotal = updatedItems.reduce((sum: number, it: any) => sum + (it.price * it.quantity), 0);
+      const newCharge = calculateDeliveryCharge(prev.district, newSubtotal);
+      const { subtotal, grand_total } = recalculateTotals(updatedItems, newCharge, prev.discount_amount);
+      return { ...prev, items: updatedItems, delivery_charge: newCharge, subtotal, grand_total };
     });
   };
 
@@ -278,7 +323,7 @@ function OrdersPageContent() {
     try {
       const { data, error } = await supabase
         .from('oh_products')
-        .select('id, name_bn, name_en, price, slug, images, stock')
+        .select('id, name_bn, name_en, price, slug, images, stock, variants')
         .eq('is_active', true);
       if (error) throw error;
       setProductsList(data || []);
@@ -301,7 +346,8 @@ function OrdersPageContent() {
       product_image: item.product_image || null,
       price: item.price,
       quantity: item.quantity,
-      subtotal: item.price * item.quantity
+      subtotal: item.price * item.quantity,
+      selected_variant: item.selected_variant || null
     })) || [];
 
     setEditForm({
@@ -536,8 +582,15 @@ function OrdersPageContent() {
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data?.hotline_number) setHotlineNumber(data.hotline_number);
+        if (data) {
+          setStoreSettings({
+            delivery_charge_inside: Number(data.delivery_charge_inside ?? 80),
+            delivery_charge_outside: Number(data.delivery_charge_outside ?? 110),
+            free_delivery_min_order: Number(data.free_delivery_min_order ?? 3000),
+          });
+        }
       })
-      .catch(err => console.error('Failed to load hotline in admin orders page:', err));
+      .catch(err => console.error('Failed to load settings in admin orders page:', err));
   }, []);
 
   // Search & Filter
@@ -1018,7 +1071,10 @@ function OrdersPageContent() {
       const itemsHtml = order.oh_order_items?.map((item, idx) => `
         <tr class="item-row">
           <td class="text-center">${idx + 1}</td>
-          <td class="desc">${item.product_name}</td>
+          <td class="desc">
+            <div>${item.product_name}</div>
+            ${item.selected_variant ? `<div style="font-size: 11px; color: #ff6b35; font-weight: bold; margin-top: 2px;">কালার / ভেরিয়েন্ট: ${item.selected_variant.trim()}</div>` : ''}
+          </td>
           <td class="text-center">${item.quantity}</td>
           <td class="text-right">৳${item.price}</td>
           <td class="text-right">৳${item.price * item.quantity}</td>
@@ -1047,7 +1103,7 @@ function OrdersPageContent() {
           .replace(/{{STATUS}}/g, order.status.toUpperCase())
           .replace(/{{CUSTOMER_NAME}}/g, order.customer_name)
           .replace(/{{CUSTOMER_PHONE}}/g, order.phone)
-          .replace(/{{CUSTOMER_ADDRESS}}/g, `${order.address}, ${order.district}`)
+          .replace(/{{CUSTOMER_ADDRESS}}/g, order.address || '')
           .replace(/{{ITEMS_TABLE}}/g, itemsHtml)
           .replace(/{{SUBTOTAL}}/g, String(subtotal))
           .replace(/{{DELIVERY_CHARGE}}/g, String(deliveryCharge))
@@ -1096,7 +1152,7 @@ function OrdersPageContent() {
               <p class="customer-name">${order.customer_name}</p>
               <p class="customer-info">
                 <strong>Phone:</strong> ${order.phone}<br/>
-                <strong>Address:</strong> ${order.address}, ${order.district}
+                <strong>Address:</strong> ${order.address || ''}
               </p>
             </div>
             <div class="billing-box payment-box">
@@ -1610,7 +1666,7 @@ function OrdersPageContent() {
             AUTO DISTRIBUTE ORDERS
           </button>
           <button
-            onClick={() => { fetchProductsCatalog(); setShowCreateModal(true); }}
+            onClick={handleOpenCreateModal}
             className="inline-flex items-center gap-2 px-4 py-2 bg-[#5c59f6] hover:bg-[#4d4ae1] text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer active:scale-95 animate-none"
           >
             <Plus size={14} />
@@ -2646,8 +2702,13 @@ function OrdersPageContent() {
                               )}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <div className="font-semibold text-gray-900 text-sm truncate">{item.product_name}</div>
-                            <div className="flex items-center gap-2 mt-1">
+                              <div className="font-semibold text-gray-900 text-sm">{item.product_name}</div>
+                              {item.selected_variant && (
+                                <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-[#ff6b35] text-[10px] font-extrabold">
+                                  <span>🎨 কালার / ভেরিয়েন্ট: {item.selected_variant}</span>
+                                </div>
+                              )}
+                            <div className="flex items-center gap-2 mt-1.5">
                               <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden h-7">
                                 <button
                                   type="button"
@@ -2905,7 +2966,7 @@ function OrdersPageContent() {
                             <button
                               type="button"
                               onClick={() => {
-                                const text = `Name: ${selectedOrder.customer_name}\nPhone: ${selectedOrder.phone}\nAddress: ${selectedOrder.address}, ${selectedOrder.district}`;
+                                const text = `Name: ${selectedOrder.customer_name}\nPhone: ${selectedOrder.phone}\nAddress: ${selectedOrder.address}`;
                                 navigator.clipboard.writeText(text);
                                 showSuccessAlert('কপি হয়েছে!', 'গ্রাহকের বিবরণ কপি করা হয়েছে।');
                               }}
@@ -2981,7 +3042,7 @@ function OrdersPageContent() {
                             </div>
                             <div className="flex flex-col gap-1 mt-1 border-t border-gray-50 pt-2.5">
                               <span>Delivery Address</span>
-                              <span className="font-extrabold text-gray-900 leading-relaxed mt-0.5">{selectedOrder.address}, {selectedOrder.district}</span>
+                              <span className="font-extrabold text-gray-900 leading-relaxed mt-0.5">{selectedOrder.address}</span>
                             </div>
                             <div className="flex justify-between items-baseline gap-2 border-t border-gray-50 pt-2.5">
                               <span>Delivery Charge</span>
@@ -3003,17 +3064,17 @@ function OrdersPageContent() {
                             <span className="text-xs font-black text-gray-900 uppercase tracking-wider">ORDERED PRODUCTS</span>
                           </div>
 
-                          <div className="space-y-2.5 max-h-[280px] overflow-y-auto pr-1">
+                          <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
                             {selectedOrder.oh_order_items?.map((item) => {
                               const imgUrl = item.product_image || item.image_url;
                               return (
-                                <div key={item.id} className="p-2.5 border border-gray-150 bg-white rounded-xl flex items-center justify-between gap-3 shadow-3xs">
-                                  <div className="flex items-center gap-3 min-w-0">
-                                    <span className="bg-[#f0f0fe] text-[#5c59f6] px-2 py-1 rounded-lg text-[10px] font-black shrink-0 border border-[#e0e0fd]">
+                                <div key={item.id} className="p-3 border border-gray-200 bg-gray-50/50 hover:bg-gray-50/90 rounded-xl flex items-start justify-between gap-3 shadow-3xs transition-colors">
+                                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                                    <span className="bg-[#5c59f6]/10 text-[#5c59f6] px-2 py-1 rounded-lg text-[11px] font-black shrink-0 border border-[#5c59f6]/20 mt-0.5">
                                       {item.quantity}x
                                     </span>
                                     {/* Product Thumbnail */}
-                                    <div className="w-9 h-9 rounded-lg border border-gray-150 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden shadow-3xs">
+                                    <div className="w-11 h-11 rounded-lg border border-gray-200 bg-white flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                                       {imgUrl ? (
                                         <img 
                                           src={formatImageUrl(imgUrl)} 
@@ -3024,9 +3085,28 @@ function OrdersPageContent() {
                                         <span className="text-[8px] text-gray-400 font-bold uppercase">No Img</span>
                                       )}
                                     </div>
-                                    <span className="font-extrabold text-gray-900 text-xs truncate">{item.product_name}</span>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="font-bold text-gray-900 text-xs leading-snug break-words">
+                                        {item.product_name}
+                                      </div>
+                                      {/* Variant / Color Badge */}
+                                      {item.selected_variant && (
+                                        <div className="inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-[#ff6b35] text-[11px] font-extrabold shadow-3xs">
+                                          <span>🎨 কালার / ভেরিয়েন্ট:</span>
+                                          <span className="font-black underline">{item.selected_variant.trim()}</span>
+                                        </div>
+                                      )}
+                                      <div className="text-[11px] text-gray-500 font-semibold mt-1">
+                                        ইউনিট মূল্য: ৳{item.price}
+                                      </div>
+                                    </div>
                                   </div>
-                                  <span className="font-black text-gray-900 text-xs shrink-0">৳{item.price * item.quantity}</span>
+                                  <div className="text-right shrink-0">
+                                    <span className="font-black text-gray-900 text-sm block">৳{item.price * item.quantity}</span>
+                                    {item.quantity > 1 && (
+                                      <span className="text-[10px] text-gray-400 font-medium">৳{item.price} × {item.quantity}</span>
+                                    )}
+                                  </div>
                                 </div>
                               );
                             })}
@@ -3325,76 +3405,172 @@ function OrdersPageContent() {
           <div className="bg-white rounded-2xl border border-gray-200 w-full max-w-4xl overflow-hidden shadow-2xl relative">
             
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-orange-50/40 via-white to-white">
               <div>
-                <h3 className="font-bold text-gray-900 text-lg">Create New Order</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Enter details to manually place a new order</p>
+                <h3 className="font-extrabold text-gray-900 text-lg flex items-center gap-2">
+                  <span>Create New Order</span>
+                  <span className="text-[11px] bg-orange-100 text-[#ff6b35] px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider">
+                    Manual Entry
+                  </span>
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">নতুন ম্যানুয়াল অর্ডার এন্ট্রি করুন (ডেলিভারি চার্জ ও ভেরিয়েন্ট স্বয়ংক্রিয়ভাবে সিঙ্ক হবে)</p>
               </div>
               <button 
                 onClick={() => setShowCreateModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 cursor-pointer"
+                className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors p-2 rounded-xl cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
               <div className="space-y-6 text-black">
                 {/* Customer Info Box */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-gray-50/80 rounded-2xl p-5 border border-gray-150 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Customer Name *</label>
+                    <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Customer Name *</label>
                     <input
                       type="text"
                       placeholder="e.g. Shakhwat Hossain"
                       value={createForm.customer_name}
                       onChange={(e) => setCreateForm({ ...createForm, customer_name: e.target.value })}
-                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] animate-none"
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#ff6b35] shadow-2xs"
                     />
                   </div>
                   <div>
-                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Mobile Number *</label>
+                    <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Mobile Number *</label>
                     <input
                       type="text"
                       placeholder="e.g. 01712345678"
                       value={createForm.phone}
                       onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 font-mono focus:outline-none focus:border-[#ff6b35] animate-none"
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 font-mono focus:outline-none focus:border-[#ff6b35] shadow-2xs"
                     />
                   </div>
 
+                  {/* Delivery Location / Area Selector */}
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Delivery Address *</label>
+                    <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block mb-1.5">
+                      Delivery Location / ডেলিভারি এরিয়া *
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {(() => {
+                        const isInside = createForm.district === 'Inside Dhaka' || createForm.district === 'Dhaka';
+                        const isOutside = createForm.district === 'Outside Dhaka';
+                        return (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleCreateDistrictChange('Inside Dhaka')}
+                              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                                isInside
+                                  ? 'bg-orange-50/90 border-[#ff6b35] ring-2 ring-[#ff6b35]/20 shadow-xs'
+                                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                                  isInside
+                                    ? 'border-[#ff6b35] bg-[#ff6b35]'
+                                    : 'border-gray-300 bg-white'
+                                }`}>
+                                  {isInside && (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="font-bold text-xs text-gray-900 block">📍 ঢাকার ভিতরে (Inside Dhaka)</span>
+                                  <span className="text-[11px] text-gray-500">হোম ডেলিভারি ২৪-৪৮ ঘণ্টা</span>
+                                </div>
+                              </div>
+                              <span className={`text-xs font-black px-2 py-0.5 rounded-lg transition-colors ${
+                                isInside ? 'text-[#ff6b35] bg-orange-100/90' : 'text-gray-600 bg-gray-100'
+                              }`}>
+                                ৳{storeSettings.delivery_charge_inside}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleCreateDistrictChange('Outside Dhaka')}
+                              className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                                isOutside
+                                  ? 'bg-orange-50/90 border-[#ff6b35] ring-2 ring-[#ff6b35]/20 shadow-xs'
+                                  : 'bg-white border-gray-200 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                                  isOutside
+                                    ? 'border-[#ff6b35] bg-[#ff6b35]'
+                                    : 'border-gray-300 bg-white'
+                                }`}>
+                                  {isOutside && (
+                                    <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                  )}
+                                </div>
+                                <div>
+                                  <span className="font-bold text-xs text-gray-900 block">🚚 ঢাকার বাইরে (Outside Dhaka)</span>
+                                  <span className="text-[11px] text-gray-500">হোম ডেলিভারি ২-৩ দিন</span>
+                                </div>
+                              </div>
+                              <span className={`text-xs font-black px-2 py-0.5 rounded-lg transition-colors ${
+                                isOutside ? 'text-[#ff6b35] bg-orange-100/90' : 'text-gray-600 bg-gray-100'
+                              }`}>
+                                ৳{storeSettings.delivery_charge_outside}
+                              </span>
+                            </button>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {storeSettings.free_delivery_min_order > 0 && createForm.subtotal >= storeSettings.free_delivery_min_order && (
+                      <div className="mt-2 text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                        <span>🎉 ৳{storeSettings.free_delivery_min_order}+ টাকার অর্ডারে ফ্রি ডেলিভারি সক্রিয় হয়েছে!</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Delivery Address *</label>
                     <textarea
                       rows={2}
                       placeholder="বাসা নম্বর, রাস্তা, গ্রাম, থানা, জেলা..."
                       value={createForm.address}
                       onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] animate-none"
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3.5 py-2.5 focus:outline-none focus:border-[#ff6b35] shadow-2xs"
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Order Note (Optional)</label>
+                    <label className="text-[11px] font-bold text-gray-600 uppercase tracking-wider block mb-1">Order Note (Optional)</label>
                     <textarea
-                      rows={2}
+                      rows={1}
                       placeholder="Special instructions for delivery..."
                       value={createForm.note}
                       onChange={(e) => setCreateForm({ ...createForm, note: e.target.value })}
-                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:border-[#ff6b35] animate-none"
+                      className="w-full text-sm font-semibold text-gray-900 bg-white border border-gray-200 rounded-xl px-3.5 py-2 focus:outline-none focus:border-[#ff6b35] shadow-2xs"
                     />
                   </div>
                 </div>
 
-                {/* Items List Editor */}
+                {/* Ordered Products List */}
                 <div className="space-y-3">
-                  <h4 className="font-bold text-gray-900 text-sm border-b border-gray-50 pb-2">Ordered Products</h4>
-                  <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden bg-white">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <h4 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                      <span>Ordered Products</span>
+                      <span className="text-xs font-black bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md">
+                        {createForm.items.length} items
+                      </span>
+                    </h4>
+                  </div>
+                  <div className="divide-y divide-gray-100 border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-2xs">
                     {createForm.items.map((item: any) => (
-                      <div key={item.id} className="p-3 flex items-center justify-between gap-4 hover:bg-gray-50/50">
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div key={item.id} className="p-3.5 flex items-center justify-between gap-4 hover:bg-gray-50/60 transition-colors">
+                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
                           {/* Product Thumbnail */}
-                          <div className="w-10 h-10 rounded-lg border border-gray-150 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden">
+                          <div className="w-12 h-12 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                             {item.product_image ? (
                               <img 
                                 src={formatImageUrl(item.product_image)} 
@@ -3406,21 +3582,26 @@ function OrdersPageContent() {
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="font-semibold text-gray-900 text-sm truncate">{item.product_name}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden h-7">
+                            <div className="font-bold text-gray-900 text-sm truncate">{item.product_name}</div>
+                            {item.selected_variant && (
+                              <div className="inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200/70 text-[#ff6b35] text-[10px] font-extrabold">
+                                <span>🎨 ভেরিয়েন্ট / কালার: {item.selected_variant}</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden h-7 bg-white shadow-2xs">
                                 <button
                                   type="button"
                                   onClick={() => handleCreateItemQtyChange(item.id, item.quantity - 1)}
-                                  className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs cursor-pointer animate-none"
+                                  className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs cursor-pointer"
                                 >
                                   -
                                 </button>
-                                <span className="px-3 text-xs font-semibold text-gray-800">{item.quantity}</span>
+                                <span className="px-3 text-xs font-bold text-gray-800">{item.quantity}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleCreateItemQtyChange(item.id, item.quantity + 1)}
-                                  className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs cursor-pointer animate-none"
+                                  className="px-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold text-xs cursor-pointer"
                                 >
                                   +
                                 </button>
@@ -3432,18 +3613,18 @@ function OrdersPageContent() {
                                   type="number"
                                   value={item.price}
                                   onChange={(e) => handleCreateItemPriceChange(item.id, parseInt(e.target.value) || 0)}
-                                  className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none animate-none"
+                                  className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0"
                                 />
                               </div>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <span className="font-bold text-gray-900 text-sm">৳{item.price * item.quantity}</span>
+                        <div className="flex items-center gap-3.5 shrink-0">
+                          <span className="font-extrabold text-gray-900 text-sm">৳{item.price * item.quantity}</span>
                           <button
                             type="button"
                             onClick={() => handleCreateRemoveItem(item.id)}
-                            className="p-1 hover:bg-red-50 text-red-500 rounded-lg transition-colors cursor-pointer"
+                            className="p-1.5 hover:bg-rose-50 text-rose-500 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-rose-100"
                             title="Remove item"
                           >
                             <Trash2 size={15} />
@@ -3453,89 +3634,188 @@ function OrdersPageContent() {
                     ))}
                     
                     {createForm.items.length === 0 && (
-                      <div className="p-6 text-center text-xs text-gray-400 italic">
-                        No items added to this order yet. Please select a product below.
+                      <div className="p-8 text-center text-xs text-gray-400 italic">
+                        No items added to this order yet. Please select a product and variant below.
                       </div>
                     )}
                   </div>
                 </div>
 
-                {/* Add Product Dropdown */}
-                <div className="bg-gray-50 p-3 rounded-xl border border-gray-150 flex flex-col sm:flex-row gap-2 items-center">
-                  <span className="text-xs font-bold text-gray-500 uppercase shrink-0">Add Product:</span>
-                  <select
-                    onChange={(e) => {
-                      if (e.target.value) {
-                        handleCreateAddItem(e.target.value);
-                        e.target.value = ''; // Reset select
-                      }
-                    }}
-                    className="w-full text-xs border border-gray-200 rounded-xl px-2.5 py-1.5 bg-white text-black focus:outline-none focus:border-[#ff6b35] cursor-pointer animate-none"
-                    disabled={loadingProducts}
-                  >
-                    <option value="">{loadingProducts ? 'Loading products...' : 'Select a product to add...'}</option>
-                    {productsList.map((p) => {
-                      const options = [
+                {/* ─── ADD PRODUCT & VARIANT PICKER ─── */}
+                <div className="bg-orange-50/30 p-4 rounded-2xl border border-orange-200/60 space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-2.5 items-center">
+                    <span className="text-xs font-extrabold text-gray-700 uppercase shrink-0 flex items-center gap-1.5">
+                      <Plus size={14} className="text-[#ff6b35]" />
+                      Add Product:
+                    </span>
+                    <select
+                      value={createSelectedProdId}
+                      onChange={(e) => {
+                        const pid = e.target.value;
+                        setCreateSelectedProdId(pid);
+                        const prod = productsList.find(p => p.id === pid);
+                        if (prod && prod.variants && prod.variants.length > 0) {
+                          setCreateSelectedVariantName(prod.variants[0].name || '');
+                        } else {
+                          setCreateSelectedVariantName('');
+                        }
+                      }}
+                      className="w-full text-xs font-semibold border border-gray-200 rounded-xl px-3 py-2 bg-white text-black focus:outline-none focus:border-[#ff6b35] cursor-pointer shadow-2xs"
+                      disabled={loadingProducts}
+                    >
+                      <option value="">{loadingProducts ? 'Loading products...' : 'Select a product to add...'}</option>
+                      {productsList.map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.name_bn || p.name_en} (৳{p.price})
+                          {p.name_bn || p.name_en} (মূল্য: ৳{p.price}{p.variants && p.variants.length > 0 ? ` · ${p.variants.length} টি ভেরিয়েন্ট/কালার আছে` : ''})
                         </option>
-                      ];
-                      if (p.variants && p.variants.length > 0) {
-                        p.variants.forEach((v: any) => {
-                          options.push(
-                            <option key={`${p.id}::${v.name}`} value={`${p.id}::${v.name}`}>
-                              {p.name_bn || p.name_en} - {v.name} (৳{v.price && v.price > 0 ? v.price : p.price})
-                            </option>
-                          );
-                        });
-                      }
-                      return options;
-                    })}
-                  </select>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* If product has variants, show interactive variant cards */}
+                  {(() => {
+                    const selectedProd = productsList.find(p => p.id === createSelectedProdId);
+                    if (!selectedProd) return null;
+
+                    const hasVariants = selectedProd.variants && selectedProd.variants.length > 0;
+
+                    return (
+                      <div className="bg-white p-3.5 rounded-xl border border-gray-200 space-y-3 animate-in fade-in duration-150">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
+                              {selectedProd.images?.[0] ? (
+                                <img src={formatImageUrl(selectedProd.images[0])} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-400 text-[9px]">No Img</div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h5 className="font-bold text-gray-900 text-xs truncate">{selectedProd.name_bn || selectedProd.name_en}</h5>
+                              <span className="text-[11px] text-gray-500 font-bold">মূল্য: ৳{selectedProd.price}</span>
+                            </div>
+                          </div>
+
+                          {!hasVariants && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleCreateAddItem(selectedProd.id);
+                                setCreateSelectedProdId('');
+                              }}
+                              className="px-4 py-2 bg-[#ff6b35] hover:bg-[#e55520] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5 shrink-0"
+                            >
+                              <Plus size={14} />
+                              <span>+ অর্ডারে যোগ করুন</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {hasVariants && (
+                          <div className="pt-2 border-t border-gray-100 space-y-2">
+                            <label className="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider block">
+                              👉 কালার / ভেরিয়েন্ট নির্বাচন করুন:
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedProd.variants.map((v: any) => {
+                                const isSelected = createSelectedVariantName === v.name;
+                                const vPrice = v.price && v.price > 0 ? v.price : selectedProd.price;
+                                return (
+                                  <button
+                                    key={v.name}
+                                    type="button"
+                                    onClick={() => setCreateSelectedVariantName(v.name)}
+                                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center gap-2 ${
+                                      isSelected
+                                        ? 'bg-orange-500 text-white border-orange-500 shadow-sm shadow-orange-500/20'
+                                        : 'bg-gray-50 border-gray-200 text-gray-800 hover:bg-gray-100'
+                                    }`}
+                                  >
+                                    <span>{v.name}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md ${
+                                      isSelected ? 'bg-white/20 text-white font-extrabold' : 'bg-white text-gray-600 border border-gray-200'
+                                    }`}>
+                                      ৳{vPrice}
+                                    </span>
+                                    {v.stock !== undefined && (
+                                      <span className={`text-[9px] ${isSelected ? 'text-white/80' : 'text-gray-400'}`}>
+                                        ({v.stock > 0 ? `${v.stock} in stock` : 'stock 0'})
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="pt-2 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleCreateAddItem(selectedProd.id, createSelectedVariantName);
+                                  setCreateSelectedProdId('');
+                                  setCreateSelectedVariantName('');
+                                }}
+                                disabled={!createSelectedVariantName}
+                                className="px-4 py-2 bg-[#ff6b35] hover:bg-[#e55520] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer active:scale-95 flex items-center gap-1.5 disabled:opacity-40"
+                              >
+                                <Plus size={14} />
+                                <span>+ {createSelectedVariantName ? `"${createSelectedVariantName}" অর্ডারে যোগ করুন` : 'অর্ডারে যোগ করুন'}</span>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Total Calculation */}
-                <div className="bg-gray-50/50 rounded-xl p-4 border border-gray-100 space-y-3">
+                <div className="bg-gray-50/70 rounded-2xl p-5 border border-gray-150 space-y-3">
                   <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>Subtotal</span>
+                    <span className="font-semibold">Subtotal</span>
                     <span className="font-bold text-gray-900">৳{createForm.subtotal}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>Delivery Charge</span>
-                    <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 h-7 w-24">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold">Delivery Charge</span>
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        ({createForm.district === 'Inside Dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})
+                      </span>
+                    </div>
+                    <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 h-7 w-24 shadow-2xs">
                       <span className="text-gray-400 text-xs mr-0.5">৳</span>
                       <input
                         type="number"
                         value={createForm.delivery_charge}
                         onChange={(e) => handleCreateDeliveryChargeChange(parseInt(e.target.value) || 0)}
-                        className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0 animate-none"
+                        className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0"
                       />
                     </div>
                   </div>
                   <div className="flex justify-between items-center text-xs text-gray-500">
-                    <span>Discount Amount</span>
-                    <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 h-7 w-24">
+                    <span className="font-semibold">Discount Amount</span>
+                    <div className="flex items-center bg-white border border-gray-200 rounded-lg px-2 h-7 w-24 shadow-2xs">
                       <span className="text-gray-400 text-xs mr-0.5">৳</span>
                       <input
                         type="number"
                         value={createForm.discount_amount}
                         onChange={(e) => handleCreateDiscountAmountChange(parseInt(e.target.value) || 0)}
-                        className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0 animate-none"
+                        className="w-full text-xs font-bold text-gray-800 bg-transparent border-none focus:outline-none p-0"
                       />
                     </div>
                   </div>
-                  <div className="flex justify-between font-bold text-gray-900 text-sm border-t border-gray-100 pt-2.5">
+                  <div className="flex justify-between font-extrabold text-gray-900 text-base border-t border-gray-200 pt-3">
                     <span>Grand Total</span>
-                    <span>৳{createForm.grand_total}</span>
+                    <span className="text-[#ff6b35]">৳{createForm.grand_total}</span>
                   </div>
                 </div>
 
                 {/* Actions Footer */}
-                <div className="flex gap-2 justify-end pt-4 border-t border-gray-100">
+                <div className="flex gap-2.5 justify-end pt-4 border-t border-gray-100">
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-all cursor-pointer animate-none"
+                    className="px-5 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold rounded-xl transition-all cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -3543,10 +3823,10 @@ function OrdersPageContent() {
                     type="button"
                     onClick={handleCreateOrderSubmit}
                     disabled={creatingOrder}
-                    className="inline-flex items-center gap-2 px-5 py-2 bg-[#ff6b35] hover:bg-[#ff5517] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer disabled:opacity-50 animate-none"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#ff6b35] hover:bg-[#e55520] text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-[#ff6b35]/20 cursor-pointer disabled:opacity-50 active:scale-95"
                   >
                     {creatingOrder ? (
-                      <><RefreshCw size={14} className="animate-spin" /><span>Creating...</span></>
+                      <><RefreshCw size={14} className="animate-spin" /><span>Creating Order...</span></>
                     ) : (
                       <span>Place Order</span>
                     )}
