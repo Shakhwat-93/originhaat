@@ -4,6 +4,7 @@ import { getSettings } from '@/lib/db';
 import { sendServerPurchaseEvent } from '@/lib/capi';
 import { writeAuditLog } from '@/lib/audit';
 import { formatName } from '@/lib/utils';
+import { syncProductStock } from '@/lib/inventory';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest) {
     if (itemsError) {
       console.error('Order items insert error:', itemsError);
     } else if (orderItems.length > 0) {
-      // Record sale in inventory logs (automatically decrements product stocks via database trigger)
+      // 1. Record sale in inventory transactions log
       const inventoryTransactions = orderItems.map((item: any) => ({
         product_id: item.product_id,
         quantity: -Number(item.quantity),
@@ -176,6 +177,9 @@ export async function POST(request: NextRequest) {
       }));
       const { error: invError } = await supabase.from('oh_inventory_transactions').insert(inventoryTransactions);
       if (invError) console.error('Inventory log insert error:', invError);
+
+      // 2. Real-time deduct stock from oh_products and its selected color/variant inside variants JSON
+      await syncProductStock(orderItems, 'deduct');
     }
 
     // Fetch settings dynamically to get CAPI keys
@@ -460,10 +464,10 @@ export async function PATCH(request: NextRequest) {
     // Handle status change inventory sync
     if (status !== undefined && status !== existingOrder.status) {
       if (status === 'cancelled') {
-        // Return products to stock (record positive transaction)
+        // Return products to stock (record positive transaction and restore product/variant stock)
         const { data: currentItems } = await supabase
           .from('oh_order_items')
-          .select('product_id, quantity')
+          .select('product_id, quantity, selected_variant')
           .eq('order_id', orderId);
         
         if (currentItems && currentItems.length > 0) {
@@ -475,12 +479,13 @@ export async function PATCH(request: NextRequest) {
             created_by: 'system'
           }));
           await supabase.from('oh_inventory_transactions').insert(returnLogs);
+          await syncProductStock(currentItems, 'restore');
         }
       } else if (existingOrder.status === 'cancelled') {
-        // Restore order: deduct products from stock (record negative transaction)
+        // Restore order: deduct products from stock (record negative transaction and deduct product/variant stock)
         const { data: currentItems } = await supabase
           .from('oh_order_items')
-          .select('product_id, quantity')
+          .select('product_id, quantity, selected_variant')
           .eq('order_id', orderId);
         
         if (currentItems && currentItems.length > 0) {
@@ -492,12 +497,19 @@ export async function PATCH(request: NextRequest) {
             created_by: 'system'
           }));
           await supabase.from('oh_inventory_transactions').insert(saleLogs);
+          await syncProductStock(currentItems, 'deduct');
         }
       }
     }
 
-    // If items are provided, replace them in the database
+    // If items are provided, replace them in the database and sync stock
     if (items && Array.isArray(items)) {
+      // Get old items before deleting to restore their stock if order is active
+      const { data: oldItems } = await supabase
+        .from('oh_order_items')
+        .select('product_id, quantity, selected_variant')
+        .eq('order_id', orderId);
+
       // Delete old items
       const { error: deleteError } = await supabase
         .from('oh_order_items')
@@ -519,6 +531,7 @@ export async function PATCH(request: NextRequest) {
           price: Number(item.price),
           quantity: Number(item.quantity),
           subtotal: Number(item.price) * Number(item.quantity),
+          selected_variant: item.selected_variant || null,
         }));
 
         const { error: insertError } = await supabase
@@ -530,9 +543,16 @@ export async function PATCH(request: NextRequest) {
           return NextResponse.json({ error: 'Failed to insert new order items' }, { status: 500 });
         }
 
-        // Adjust inventory transactions if order is active (not cancelled)
+        // Adjust inventory transactions and physical stock if order is active (not cancelled)
         const activeStatus = status !== undefined ? status : existingOrder.status;
         if (activeStatus !== 'cancelled') {
+          // Restore old items stock
+          if (oldItems && oldItems.length > 0) {
+            await syncProductStock(oldItems, 'restore');
+          }
+          // Deduct new items stock
+          await syncProductStock(orderItems, 'deduct');
+
           // Delete old sale transactions for this order
           await supabase
             .from('oh_inventory_transactions')

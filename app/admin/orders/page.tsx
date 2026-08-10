@@ -310,6 +310,7 @@ function OrdersPageContent() {
       setShowCreateModal(false);
       showSuccessAlert('সফল!', 'নতুন অর্ডার সফলভাবে তৈরি করা হয়েছে!');
       fetchOrders(); // Refresh list
+      fetchProductsCatalog(); // Refresh live stock & variant counts
     } catch (err: any) {
       console.error(err);
       showErrorAlert('ত্রুটি', err.message || 'অর্ডার তৈরি করতে ব্যর্থ হয়েছে।');
@@ -551,6 +552,8 @@ function OrdersPageContent() {
       setSelectedOrder(updatedOrder);
       setIsEditing(false);
       showSuccessAlert('সফল!', 'অর্ডার সফলভাবে আপডেট করা হয়েছে!');
+      fetchProductsCatalog();
+      fetchOrders(true);
     } catch (err: any) {
       console.error(err);
       showErrorAlert('ত্রুটি', err.message || 'অর্ডার আপডেট করতে সমস্যা হয়েছে।');
