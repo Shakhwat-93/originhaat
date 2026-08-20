@@ -209,42 +209,15 @@ export function Header({ initialSettings }: HeaderProps) {
   useEffect(() => {
     const fetchHeaderCategories = async () => {
       try {
-        const { data: cats, error: catErr } = await supabase
-          .from('oh_categories')
-          .select('*')
-          .eq('is_active', true)
-          .order('sort_order', { ascending: true });
-
-        if (catErr) throw catErr;
-
-        if (cats && cats.length > 0) {
-          const { data: countsData, error: countErr } = await supabase
-            .from('oh_products')
-            .select('category_id')
-            .eq('is_active', true);
-
-          const countsMap: Record<string, number> = {};
-          if (!countErr && countsData) {
-            countsData.forEach((p: any) => {
-              if (p.category_id) {
-                countsMap[p.category_id] = (countsMap[p.category_id] || 0) + 1;
-              }
-            });
+        const res = await fetch('/api/categories');
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setCategoriesList(data);
           }
-
-          const formattedCats = cats.map(cat => ({
-            id: cat.id,
-            name_bn: cat.name_bn,
-            name_en: cat.name_en,
-            slug: cat.slug,
-            icon: cat.icon,
-            product_count: countsMap[cat.id] || 0
-          }));
-
-          setCategoriesList(formattedCats);
         }
       } catch (err) {
-        console.error('Failed to fetch dynamic categories for header:', err);
+        // Silently preserve default categories list on connection hiccup
       }
     };
     fetchHeaderCategories();

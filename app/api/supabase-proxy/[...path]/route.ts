@@ -62,7 +62,15 @@ async function handleProxy(request: NextRequest, pathParams: string[]) {
       }
     });
 
-    const resData = res.status === 204 ? null : await res.arrayBuffer();
+    if (res.status === 304 || res.status === 204) {
+      return new NextResponse(null, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: resHeaders,
+      });
+    }
+
+    const resData = await res.arrayBuffer();
     return new NextResponse(resData, {
       status: res.status,
       statusText: res.statusText,
