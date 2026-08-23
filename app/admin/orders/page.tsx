@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck, Trash2, Plus, Edit, User, Package, MessageCircle } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAlert } from '@/lib/alerts';
 import { bangladeshDistricts } from '@/data/products';
-import { formatImageUrl } from '@/lib/utils';
+import { formatImageUrl, formatName } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 
 interface OrderItem {
@@ -13,6 +13,7 @@ interface OrderItem {
   product_name: string;
   quantity: number;
   price: number;
+  subtotal?: number;
   product_id?: string;
   product_slug?: string;
   product_image?: string | null;
@@ -188,7 +189,7 @@ function OrdersPageContent() {
           id: Math.random().toString(),
           product_id: product.id,
           product_slug: product.slug,
-          product_name: product.name_bn || product.name_en,
+          product_name: formatName(product.name_bn, product.name_en, product.display_name_lang),
           product_image: variantImg,
           price: activePrice,
           quantity: 1,
@@ -326,7 +327,7 @@ function OrdersPageContent() {
     try {
       const { data, error } = await supabase
         .from('oh_products')
-        .select('id, name_bn, name_en, price, slug, images, stock, variants')
+        .select('id, name_bn, name_en, display_name_lang, price, slug, images, stock, variants')
         .eq('is_active', true);
       if (error) throw error;
       setProductsList(data || []);
@@ -349,7 +350,7 @@ function OrdersPageContent() {
       product_image: item.product_image || null,
       price: item.price,
       quantity: item.quantity,
-      subtotal: item.price * item.quantity,
+      subtotal: item.subtotal || item.price * item.quantity,
       selected_variant: item.selected_variant || null
     })) || [];
 
@@ -471,7 +472,7 @@ function OrdersPageContent() {
           id: Math.random().toString(),
           product_id: product.id,
           product_slug: product.slug,
-          product_name: product.name_bn || product.name_en,
+          product_name: formatName(product.name_bn, product.name_en, product.display_name_lang),
           product_image: product.images?.[0] || null,
           price: activePrice,
           quantity: 1,
@@ -2913,7 +2914,7 @@ function OrdersPageContent() {
                         <option value="">{loadingProducts ? 'Loading products...' : 'Select a product to add...'}</option>
                         {productsList.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name_bn || p.name_en} (মূল্য: ৳{p.price}{p.variants && p.variants.length > 0 ? ` · ${p.variants.length} টি ভেরিয়েন্ট/কালার আছে` : ''})
+                            {formatName(p.name_bn, p.name_en, p.display_name_lang)} (মূল্য: ৳{p.price}{p.variants && p.variants.length > 0 ? ` · ${p.variants.length} টি ভেরিয়েন্ট/কালার আছে` : ''})
                           </option>
                         ))}
                       </select>
@@ -2938,7 +2939,7 @@ function OrdersPageContent() {
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <h5 className="font-bold text-gray-900 text-xs truncate">{selectedProd.name_bn || selectedProd.name_en}</h5>
+                                <h5 className="font-bold text-gray-900 text-xs truncate">{formatName(selectedProd.name_bn, selectedProd.name_en, selectedProd.display_name_lang)}</h5>
                                 <span className="text-[11px] text-gray-500 font-bold">মূল্য: ৳{selectedProd.price}</span>
                               </div>
                             </div>
@@ -3889,7 +3890,7 @@ function OrdersPageContent() {
                       <option value="">{loadingProducts ? 'Loading products...' : 'Select a product to add...'}</option>
                       {productsList.map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.name_bn || p.name_en} (মূল্য: ৳{p.price}{p.variants && p.variants.length > 0 ? ` · ${p.variants.length} টি ভেরিয়েন্ট/কালার আছে` : ''})
+                          {formatName(p.name_bn, p.name_en, p.display_name_lang)} (মূল্য: ৳{p.price}{p.variants && p.variants.length > 0 ? ` · ${p.variants.length} টি ভেরিয়েন্ট/কালার আছে` : ''})
                         </option>
                       ))}
                     </select>
@@ -3914,7 +3915,7 @@ function OrdersPageContent() {
                               )}
                             </div>
                             <div className="min-w-0">
-                              <h5 className="font-bold text-gray-900 text-xs truncate">{selectedProd.name_bn || selectedProd.name_en}</h5>
+                              <h5 className="font-bold text-gray-900 text-xs truncate">{formatName(selectedProd.name_bn, selectedProd.name_en, selectedProd.display_name_lang)}</h5>
                               <span className="text-[11px] text-gray-500 font-bold">মূল্য: ৳{selectedProd.price}</span>
                             </div>
                           </div>
