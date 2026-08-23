@@ -1,7 +1,14 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Phone, Mail, MapPin } from 'lucide-react';
-import { categories } from '@/data/products';
+import { formatName } from '@/lib/utils';
+
+interface DBCategory {
+  id: string;
+  name_bn: string;
+  name_en?: string;
+  slug: string;
+}
 
 interface FooterProps {
   settings?: {
@@ -17,9 +24,10 @@ interface FooterProps {
     instagram_url?: string;
     youtube_url?: string;
   };
+  categories?: DBCategory[];
 }
 
-export function Footer({ settings }: FooterProps) {
+export function Footer({ settings, categories = [] }: FooterProps) {
   const hotlineNumber = settings?.hotline_number || '01XXXXXXXXX';
   const contactEmail = settings?.contact_email || 'support@originhaat.com';
   const contactAddress = settings?.contact_address || 'ঢাকা, বাংলাদেশ';
@@ -37,6 +45,8 @@ export function Footer({ settings }: FooterProps) {
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+
+  const displayCategories = categories && categories.length > 0 ? categories : [];
 
   return (
     <footer className="bg-white text-gray-600 border-t border-[#e5e7eb] mt-16">
@@ -88,17 +98,20 @@ export function Footer({ settings }: FooterProps) {
             </div>
           </div>
 
-          {/* Quick Links */}
+          {/* Dynamic Categories */}
           <div>
             <h3 className="text-gray-900 font-bold mb-4">ক্যাটাগরি</h3>
             <ul className="space-y-2.5 text-sm">
-              {categories.slice(0, 6).map((cat) => (
+              {displayCategories.slice(0, 8).map((cat) => (
                 <li key={cat.id}>
                   <Link href={`/category/${cat.slug}`} className="hover:text-[#ff6b35] transition-colors">
-                    {cat.name_bn}
+                    {formatName(cat.name_bn, cat.name_en)}
                   </Link>
                 </li>
               ))}
+              {displayCategories.length === 0 && (
+                <li className="text-xs text-gray-400">কোনো ক্যাটাগরি পাওয়া যায়নি</li>
+              )}
             </ul>
           </div>
 
