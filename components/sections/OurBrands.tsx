@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Tag } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { formatImageUrl } from '@/lib/utils';
 import { Brand } from '@/lib/db';
 
@@ -13,11 +13,31 @@ export function OurBrands({ brands }: OurBrandsProps) {
     return null;
   }
 
+  // Ensure enough items to create a truly seamless infinite marquee on any screen resolution
+  const multiplier = Math.max(2, Math.ceil(10 / brands.length));
+  const loopedList = Array.from({ length: multiplier }, () => brands).flat();
+
   return (
-    <section id="our-brands" className="py-10 md:py-14 bg-[#fbfcfd] border-t border-b border-gray-100">
+    <section id="our-brands" className="py-10 md:py-14 bg-white border-b border-gray-100 overflow-hidden">
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes marquee-brands {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
+        }
+        .animate-marquee-brands {
+          display: flex;
+          width: max-content;
+          animation: marquee-brands 28s linear infinite;
+          will-change: transform;
+        }
+        .animate-marquee-brands:hover {
+          animation-play-state: paused;
+        }
+      `}} />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section Header matching exact visual specifications */}
-        <div className="flex items-end justify-between border-b border-gray-200/80 pb-4 mb-8">
+        <div className="flex items-end justify-between border-b border-gray-200/80 pb-4 mb-6 md:mb-8">
           <div>
             <div className="relative inline-block">
               <h2 className="text-2xl sm:text-3xl font-black text-[#111827] tracking-tight">
@@ -37,32 +57,57 @@ export function OurBrands({ brands }: OurBrandsProps) {
           </Link>
         </div>
 
-        {/* Brand Cards Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-          {brands.map((brand) => (
-            <Link
-              key={brand.id}
-              href={`/brands/${brand.slug}`}
-              className="group bg-white rounded-2xl p-5 sm:p-6 border border-gray-200/80 shadow-2xs hover:border-[#ff6b35] hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center h-36 sm:h-40 md:h-44 relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/40"
-            >
-              {/* Brand Logo - Perfectly centered, never stretched or cropped */}
-              <div className="w-full flex-1 flex items-center justify-center p-2">
-                <img
-                  src={formatImageUrl(brand.logo_url)}
-                  alt={brand.name}
-                  className="max-h-14 sm:max-h-16 md:max-h-20 max-w-[80%] w-auto object-contain transition-transform duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
-              </div>
+        {/* Brands Infinite Auto-Slide Marquee */}
+        <div className="relative">
+          {/* Fading Overlays on Left & Right */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-16 md:w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-16 md:w-24 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
 
-              {/* Brand Name Label */}
-              <div className="w-full pt-1.5 border-t border-gray-50 flex items-center justify-center">
-                <span className="text-xs sm:text-sm font-bold text-gray-700 group-hover:text-[#ff6b35] transition-colors truncate max-w-[90%]">
-                  {brand.name}
-                </span>
-              </div>
-            </Link>
-          ))}
+          <div className="overflow-hidden py-2 sm:py-3">
+            <div className="animate-marquee-brands gap-4 sm:gap-5 md:gap-6">
+              {/* Set 1 */}
+              {loopedList.map((brand, idx) => (
+                <Link
+                  key={`brand-s1-${brand.id}-${idx}`}
+                  href={`/brands/${brand.slug}`}
+                  className="group flex-shrink-0 w-[150px] sm:w-[180px] md:w-[210px] h-[100px] sm:h-[115px] md:h-[125px] bg-white rounded-2xl sm:rounded-3xl p-4 border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:border-[#ff6b35] hover:shadow-[0_12px_28px_rgba(255,107,53,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/40"
+                >
+                  <div className="w-full flex-1 flex items-center justify-center p-1">
+                    <img
+                      src={formatImageUrl(brand.logo_url)}
+                      alt={brand.name}
+                      className="max-h-10 sm:max-h-12 md:max-h-14 max-w-[85%] w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-bold text-gray-500 group-hover:text-[#ff6b35] transition-colors truncate max-w-full">
+                    {brand.name}
+                  </span>
+                </Link>
+              ))}
+
+              {/* Set 2 (for seamless loop) */}
+              {loopedList.map((brand, idx) => (
+                <Link
+                  key={`brand-s2-${brand.id}-${idx}`}
+                  href={`/brands/${brand.slug}`}
+                  className="group flex-shrink-0 w-[150px] sm:w-[180px] md:w-[210px] h-[100px] sm:h-[115px] md:h-[125px] bg-white rounded-2xl sm:rounded-3xl p-4 border border-gray-200/80 shadow-[0_4px_16px_rgba(0,0,0,0.02)] hover:border-[#ff6b35] hover:shadow-[0_12px_28px_rgba(255,107,53,0.08)] hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/40"
+                >
+                  <div className="w-full flex-1 flex items-center justify-center p-1">
+                    <img
+                      src={formatImageUrl(brand.logo_url)}
+                      alt={brand.name}
+                      className="max-h-10 sm:max-h-12 md:max-h-14 max-w-[85%] w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-bold text-gray-500 group-hover:text-[#ff6b35] transition-colors truncate max-w-full">
+                    {brand.name}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </section>
