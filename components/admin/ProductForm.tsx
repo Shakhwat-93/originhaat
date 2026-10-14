@@ -12,6 +12,12 @@ interface Category {
   name_bn: string;
 }
 
+interface BrandItem {
+  id: string;
+  name: string;
+  logo_url?: string;
+}
+
 interface FAQItem {
   question: string;
   answer: string;
@@ -31,6 +37,7 @@ interface ProductFormProps {
 export default function ProductForm({ productId }: ProductFormProps) {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<BrandItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -47,6 +54,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
   const [stock, setStock] = useState<number>(10);
   const [sortOrder, setSortOrder] = useState<number>(0);
   const [categoryId, setCategoryId] = useState('');
+  const [brandId, setBrandId] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [images, setImages] = useState<string[]>([]);
@@ -68,6 +76,15 @@ export default function ProductForm({ productId }: ProductFormProps) {
           .select('id, name_bn')
           .eq('is_active', true);
         if (cats) setCategories(cats);
+
+        // Fetch brands
+        const { data: brs } = await supabase
+          .from('oh_brands')
+          .select('id, name, logo_url')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+          .order('name', { ascending: true });
+        if (brs) setBrands(brs);
 
         if (productId) {
           // Fetch product
@@ -91,6 +108,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             setStock(prod.stock || 0);
             setSortOrder(prod.sort_order ?? 0);
             setCategoryId(prod.category_id || '');
+            setBrandId(prod.brand_id || '');
             setIsFeatured(prod.is_featured || false);
             setIsActive(prod.is_active ?? true);
             setImages(prod.images || []);
@@ -268,6 +286,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
         sort_order: Number(sortOrder),
         category_id: categoryId,
         category_slug: cat?.slug || '',
+        brand_id: brandId || null,
         is_featured: isFeatured,
         is_active: isActive,
         images,
@@ -430,7 +449,7 @@ export default function ProductForm({ productId }: ProductFormProps) {
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category (ক্যাটাগরি)</label>
             <select
               value={categoryId}
               onChange={(e) => setCategoryId(e.target.value)}
@@ -440,6 +459,19 @@ export default function ProductForm({ productId }: ProductFormProps) {
               <option value="">Select Category</option>
               {categories.map(c => (
                 <option key={c.id} value={c.id}>{c.name_bn}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Brand (ব্র্যান্ড)</label>
+            <select
+              value={brandId}
+              onChange={(e) => setBrandId(e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:border-[#ff6b35] focus:outline-none text-sm text-black cursor-pointer bg-white"
+            >
+              <option value="">No Brand (কোনো ব্র্যান্ড নেই)</option>
+              {brands.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
               ))}
             </select>
           </div>

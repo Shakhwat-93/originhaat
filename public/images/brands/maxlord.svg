@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" fill="none">
+  <path d="M24 16L32 30L40 16L46 34H18L24 16Z" fill="#ff6b35" opacity="0.9"/>
+  <circle cx="32" cy="13" r="2.5" fill="#ff6b35"/>
+  <circle cx="19" cy="18" r="2" fill="#ff6b35"/>
+  <circle cx="45" cy="18" r="2" fill="#ff6b35"/>
+  <text x="60" y="36" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="24" letter-spacing="4" fill="#111827">MAXLORD</text>
+  <text x="62" y="47" font-family="'Inter', -apple-system, sans-serif" font-weight="600" font-size="7" letter-spacing="3" fill="#6b7280">SWISS TIMEPIECES</text>
+</svg>

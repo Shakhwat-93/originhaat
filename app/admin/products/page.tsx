@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Sparkles, RefreshCw, Flame, X, Check } from 'lucide-react';
-import { showConfirmAlert, showSuccessAlert } from '@/lib/alerts';
-import { formatImageUrl, formatName } from '@/lib/utils';
+import { Plus, Trash2, Edit2, Search, Filter, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Sparkles, RefreshCw, Flame, X, Check, Tag } from 'lucide-react';
+import { showConfirmAlert, showSuccessAlert, showErrorAlert } from '@/lib/alerts';
+import { cn, formatImageUrl, formatName } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -20,6 +20,7 @@ interface Product {
   sort_order: number;
   images: string[];
   category_id: string;
+  brand_id?: string | null;
   slug: string;
   code?: string | null;
 }
@@ -29,16 +30,31 @@ interface Category {
   name_bn: string;
 }
 
+interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string;
+}
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingOrder, setSavingOrder] = useState(false);
   
   // Search & Filter state
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [brandFilter, setBrandFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'featured' | 'out-of-stock' | 'inactive'>('all');
+
+  // Bulk Selection State
+  const [selectedProdIds, setSelectedProdIds] = useState<string[]>([]);
+  const [bulkBrandModalOpen, setBulkBrandModalOpen] = useState(false);
+  const [targetBrandId, setTargetBrandId] = useState('');
+  const [isAssigningBulk, setIsAssigningBulk] = useState(false);
 
   // Best Seller Modal state
   const [showBestSellerModal, setShowBestSellerModal] = useState(false);
@@ -53,6 +69,15 @@ export default function AdminProductsPage() {
         .from('oh_categories')
         .select('id, name_bn');
       if (catData) setCategories(catData);
+
+      // 1b. Fetch brands
+      const { data: brandData } = await supabase
+        .from('oh_brands')
+        .select('id, name, slug, logo_url')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true });
+      if (brandData) setBrands(brandData);
 
       // 2. Fetch products sorted by sort_order ASC, then created_at DESC
       const { data: prodData, error } = await supabase
@@ -77,6 +102,13 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     fetchData();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const bId = params.get('brand_id');
+      if (bId) {
+        setBrandFilter(bId);
+      }
+    }
   }, []);
 
   const handleUpdateSortOrder = async (prodId: string, newOrder: number) => {
@@ -184,6 +216,46 @@ export default function AdminProductsPage() {
     }
   };
 
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProdIds(filteredProducts.map(p => p.id));
+    } else {
+      setSelectedProdIds([]);
+    }
+  };
+
+  const handleToggleSelectProd = (prodId: string) => {
+    setSelectedProdIds(prev =>
+      prev.includes(prodId) ? prev.filter(id => id !== prodId) : [...prev, prodId]
+    );
+  };
+
+  const handleExecuteBulkAssign = async () => {
+    if (!targetBrandId || selectedProdIds.length === 0) return;
+    setIsAssigningBulk(true);
+    try {
+      const res = await fetch('/api/brands/bulk-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_ids: selectedProdIds,
+          brand_id: targetBrandId === 'none' ? null : targetBrandId,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to bulk assign brand');
+      showSuccessAlert('Success', data.message || 'Products brand updated successfully!');
+      setBulkBrandModalOpen(false);
+      setSelectedProdIds([]);
+      setTargetBrandId('');
+      fetchData();
+    } catch (err: any) {
+      showErrorAlert('Bulk Assign Failed', err.message || 'Error assigning brand');
+    } finally {
+      setIsAssigningBulk(false);
+    }
+  };
+
   const filteredProducts = products.filter((prod) => {
     const displayName = formatName(prod.name_bn, prod.name_en, prod.display_name_lang);
     const matchesSearch = displayName.toLowerCase().includes(search.toLowerCase()) || 
@@ -192,6 +264,13 @@ export default function AdminProductsPage() {
                           (prod.name_en || '').toLowerCase().includes(search.toLowerCase());
     const matchesCategory = categoryFilter === '' || prod.category_id === categoryFilter;
     
+    let matchesBrand = true;
+    if (brandFilter === 'unassigned') {
+      matchesBrand = !prod.brand_id;
+    } else if (brandFilter !== '') {
+      matchesBrand = prod.brand_id === brandFilter;
+    }
+
     let matchesType = true;
     if (typeFilter === 'featured') {
       matchesType = prod.is_featured === true;
@@ -201,7 +280,7 @@ export default function AdminProductsPage() {
       matchesType = prod.is_active === false;
     }
 
-    return matchesSearch && matchesCategory && matchesType;
+    return matchesSearch && matchesCategory && matchesBrand && matchesType;
   });
 
   // Modal products (supports search in English, Bengali, Slug, and Code)
@@ -309,7 +388,7 @@ export default function AdminProductsPage() {
         </div>
         
         {/* Category filter */}
-        <div className="relative w-full md:w-64 flex items-center gap-2 bg-gray-50 px-3.5 py-2.5 border border-gray-200 rounded-xl shrink-0">
+        <div className="relative w-full md:w-56 flex items-center gap-2 bg-gray-50 px-3.5 py-2.5 border border-gray-200 rounded-xl shrink-0">
           <Filter size={15} className="text-gray-400" />
           <select
             value={categoryFilter}
@@ -319,6 +398,22 @@ export default function AdminProductsPage() {
             <option value="">All Categories</option>
             {categories.map(c => (
               <option key={c.id} value={c.id}>{c.name_bn}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Brand filter */}
+        <div className="relative w-full md:w-56 flex items-center gap-2 bg-gray-50 px-3.5 py-2.5 border border-gray-200 rounded-xl shrink-0">
+          <Tag size={15} className="text-gray-400" />
+          <select
+            value={brandFilter}
+            onChange={(e) => setBrandFilter(e.target.value)}
+            className="bg-transparent text-sm focus:outline-none text-black w-full cursor-pointer"
+          >
+            <option value="">All Brands</option>
+            <option value="unassigned">Unassigned / No Brand</option>
+            {brands.map(b => (
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
         </div>
@@ -351,6 +446,15 @@ export default function AdminProductsPage() {
           <table className="w-full text-sm text-left text-black">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+                <th className="px-3 py-4 text-center w-10">
+                  <input
+                    type="checkbox"
+                    checked={filteredProducts.length > 0 && selectedProdIds.length === filteredProducts.length}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="w-4 h-4 text-[#ff6b35] rounded-md focus:ring-0 cursor-pointer"
+                    title="Select All"
+                  />
+                </th>
                 <th className="px-4 py-4 text-center w-28">Order / ক্রম</th>
                 <th className="px-6 py-4">Image</th>
                 <th className="px-6 py-4">Product Name</th>
@@ -366,8 +470,19 @@ export default function AdminProductsPage() {
               {filteredProducts.map((prod, idx) => {
                 const mainImage = prod.images?.[0] || '';
                 const categoryName = categories.find(c => c.id === prod.category_id)?.name_bn || 'Uncategorized';
+                const assignedBrand = brands.find(b => b.id === prod.brand_id);
+                const isSelected = selectedProdIds.includes(prod.id);
                 return (
-                  <tr key={prod.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr key={prod.id} className={cn("transition-colors", isSelected ? "bg-orange-50/40" : "hover:bg-gray-50/50")}>
+                    {/* Checkbox */}
+                    <td className="px-3 py-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelectProd(prod.id)}
+                        className="w-4 h-4 text-[#ff6b35] rounded-md focus:ring-0 cursor-pointer"
+                      />
+                    </td>
                     {/* Reorder Buttons & Position Input */}
                     <td className="px-4 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
@@ -412,7 +527,15 @@ export default function AdminProductsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-semibold text-gray-900 line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-gray-900 line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</span>
+                        {assignedBrand && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200/60 shrink-0">
+                            <Tag size={10} />
+                            <span>{assignedBrand.name}</span>
+                          </span>
+                        )}
+                      </div>
                       <div className="text-xs text-gray-400 mt-0.5">{categoryName} · {prod.slug}{prod.code ? ` · Code: ${prod.code}` : ''}</div>
                     </td>
                     <td className="px-6 py-4 font-bold text-gray-900">৳{prod.price}</td>
@@ -491,7 +614,7 @@ export default function AdminProductsPage() {
               })}
               {filteredProducts.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-6 py-12 text-center text-gray-400">
+                  <td colSpan={10} className="px-6 py-12 text-center text-gray-400">
                     No products found.
                   </td>
                 </tr>
@@ -506,11 +629,19 @@ export default function AdminProductsPage() {
         {filteredProducts.map((prod, idx) => {
           const mainImage = prod.images?.[0] || '';
           const categoryName = categories.find(c => c.id === prod.category_id)?.name_bn || 'Uncategorized';
+          const assignedBrand = brands.find(b => b.id === prod.brand_id);
+          const isSelected = selectedProdIds.includes(prod.id);
           return (
-            <div key={prod.id} className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm space-y-4">
-              {/* Header with Position Control */}
+            <div key={prod.id} className={cn("bg-white rounded-2xl border p-5 shadow-sm space-y-4 transition-colors", isSelected ? "border-[#ff6b35] bg-orange-50/20" : "border-gray-100")}>
+              {/* Header with Position Control & Checkbox */}
               <div className="flex items-center justify-between pb-2 border-b border-gray-50">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => handleToggleSelectProd(prod.id)}
+                    className="w-4 h-4 text-[#ff6b35] rounded-md focus:ring-0 cursor-pointer"
+                  />
                   <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Position:</span>
                   <input
                     type="number"
@@ -551,7 +682,15 @@ export default function AdminProductsPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</h4>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h4 className="font-bold text-gray-900 text-sm line-clamp-1">{formatName(prod.name_bn, prod.name_en, prod.display_name_lang)}</h4>
+                    {assignedBrand && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                        <Tag size={9} />
+                        <span>{assignedBrand.name}</span>
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-gray-400 mt-0.5">{categoryName}{prod.code ? ` · Code: ${prod.code}` : ''}</p>
                 </div>
                 <span className="text-xs text-gray-400 font-mono shrink-0">slug: {prod.slug.substring(0, 8)}...</span>
@@ -801,6 +940,95 @@ export default function AdminProductsPage() {
                 className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-xl text-xs font-bold transition-all cursor-pointer"
               >
                 সম্পন্ন (Done)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {selectedProdIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-gray-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-4 animate-in fade-in slide-in-from-bottom-4 border border-gray-700 max-w-[90vw]">
+          <div className="text-xs font-bold flex items-center gap-2">
+            <span className="w-5 h-5 bg-[#ff6b35] rounded-full flex items-center justify-center text-[10px] font-black">
+              {selectedProdIds.length}
+            </span>
+            <span>Products Selected</span>
+          </div>
+          <div className="h-4 w-px bg-gray-700" />
+          <button
+            onClick={() => setBulkBrandModalOpen(true)}
+            className="px-3.5 py-1.5 bg-[#ff6b35] hover:bg-[#e55520] text-white text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+          >
+            <Tag size={13} />
+            <span>Assign Brand</span>
+          </button>
+          <button
+            onClick={() => setSelectedProdIds([])}
+            className="text-xs text-gray-400 hover:text-white transition-colors cursor-pointer"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Brand Assignment Modal */}
+      {bulkBrandModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-150 space-y-4">
+            <div className="flex items-center justify-between border-b pb-3 border-gray-100">
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-[#fff3ef] text-[#ff6b35] rounded-lg">
+                  <Tag size={16} />
+                </span>
+                <h3 className="font-bold text-gray-900 text-base">Bulk Assign Brand</h3>
+              </div>
+              <button
+                onClick={() => setBulkBrandModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-600">
+              You are assigning a brand to{' '}
+              <strong className="text-gray-900 font-bold">{selectedProdIds.length} selected product(s)</strong>.
+            </p>
+
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                Target Brand (টার্গেট ব্র্যান্ড)
+              </label>
+              <select
+                value={targetBrandId}
+                onChange={(e) => setTargetBrandId(e.target.value)}
+                className="w-full text-xs font-semibold px-3 py-2.5 border border-gray-200 rounded-xl bg-white text-gray-900 focus:outline-none focus:border-[#ff6b35] cursor-pointer"
+              >
+                <option value="">-- Choose Brand --</option>
+                <option value="none">🚫 Remove Brand / Unassign (কোনো ব্র্যান্ড নয়)</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+              <button
+                onClick={() => setBulkBrandModalOpen(false)}
+                className="px-4 py-2 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExecuteBulkAssign}
+                disabled={!targetBrandId || isAssigningBulk}
+                className="px-5 py-2 text-xs font-bold text-white bg-[#ff6b35] hover:bg-[#e55520] rounded-xl shadow-xs transition-colors disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isAssigningBulk && <RefreshCw size={13} className="animate-spin" />}
+                <span>Apply to Selected</span>
               </button>
             </div>
           </div>

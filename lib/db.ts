@@ -170,3 +170,94 @@ export async function getProductSlugs() {
   }
   return data?.map(p => ({ slug: p.slug })) || [];
 }
+
+export interface Brand {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url: string;
+  description?: string | null;
+  is_active: boolean;
+  show_on_homepage: boolean;
+  sort_order: number;
+  seo_title?: string | null;
+  seo_description?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  product_count?: number;
+}
+
+export async function getBrands(): Promise<Brand[]> {
+  const { data, error } = await supabaseServer
+    .from('oh_brands')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching brands:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function getHomepageBrands(): Promise<Brand[]> {
+  const { data, error } = await supabaseServer
+    .from('oh_brands')
+    .select('*')
+    .eq('is_active', true)
+    .eq('show_on_homepage', true)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching homepage brands:', error);
+    return [];
+  }
+  return data || [];
+}
+
+export async function getBrandBySlug(slug: string): Promise<Brand | null> {
+  const decodedSlug = decodeURIComponent(slug);
+  const { data, error } = await supabaseServer
+    .from('oh_brands')
+    .select('*')
+    .eq('slug', decodedSlug)
+    .eq('is_active', true)
+    .single();
+
+  if (error || !data) {
+    return null;
+  }
+  return data;
+}
+
+export async function getBrandSlugs(): Promise<{ slug: string }[]> {
+  const { data, error } = await supabaseServer
+    .from('oh_brands')
+    .select('slug')
+    .eq('is_active', true);
+
+  if (error || !data) {
+    return [];
+  }
+  return data.map(b => ({ slug: b.slug }));
+}
+
+export async function getProductsByBrandId(brandId: string) {
+  const { data, error } = await supabaseServer
+    .from('oh_products')
+    .select('*, oh_categories(name_bn)')
+    .eq('brand_id', brandId)
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching products by brand id:', error);
+    return [];
+  }
+  return data || [];
+}
+

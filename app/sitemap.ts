@@ -39,6 +39,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  // Fetch all active brands
+  const { data: brands } = await supabaseServer
+    .from('oh_brands')
+    .select('slug, updated_at')
+    .eq('is_active', true);
+
+  const brandIndexPage: MetadataRoute.Sitemap = [
+    { url: `${baseUrl}/brands`, lastModified: now, changeFrequency: 'daily' as const, priority: 0.85 }
+  ];
+
+  const brandPages: MetadataRoute.Sitemap = (brands || []).map((b) => ({
+    url: `${baseUrl}/brands/${b.slug}`,
+    lastModified: b.updated_at ? new Date(b.updated_at) : now,
+    changeFrequency: 'weekly' as const,
+    priority: 0.8,
+  }));
+
   // Fetch published dynamic pages
   const { data: pages } = await supabaseServer
     .from('oh_pages')
@@ -52,5 +69,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticPages, ...productPages, ...categoryPages, ...dynamicPages];
+  return [...staticPages, ...productPages, ...categoryPages, ...brandIndexPage, ...brandPages, ...dynamicPages];
 }

@@ -57,6 +57,31 @@ export async function GET(request: NextRequest) {
 
     -- Add code column to oh_products
     ALTER TABLE oh_products ADD COLUMN IF NOT EXISTS code text;
+
+    -- Create oh_brands table if not exists
+    CREATE TABLE IF NOT EXISTS oh_brands (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      name text NOT NULL,
+      slug text NOT NULL UNIQUE,
+      logo_url text NOT NULL,
+      description text,
+      is_active boolean DEFAULT true,
+      show_on_homepage boolean DEFAULT true,
+      sort_order integer DEFAULT 0,
+      seo_title text,
+      seo_description text,
+      created_at timestamp with time zone DEFAULT now(),
+      updated_at timestamp with time zone DEFAULT now()
+    );
+
+    -- Add brand_id column to oh_products if not exists
+    ALTER TABLE oh_products ADD COLUMN IF NOT EXISTS brand_id uuid REFERENCES oh_brands(id) ON DELETE SET NULL;
+
+    -- Create indexes for performance
+    CREATE INDEX IF NOT EXISTS idx_oh_products_brand_id ON oh_products(brand_id);
+    CREATE INDEX IF NOT EXISTS idx_oh_brands_slug ON oh_brands(slug);
+    CREATE INDEX IF NOT EXISTS idx_oh_brands_sort_order ON oh_brands(sort_order);
+    CREATE INDEX IF NOT EXISTS idx_oh_brands_show_on_homepage ON oh_brands(show_on_homepage, is_active);
   `;
 
   // We will try to connect to the internal database container

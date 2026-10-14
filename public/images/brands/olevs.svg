@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 60" fill="none">
+  <path d="M22 18H42M32 18V38M26 38H38" stroke="#111827" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="12" r="3" fill="#ff6b35"/>
+  <text x="60" y="36" font-family="'Inter', -apple-system, sans-serif" font-weight="900" font-size="25" letter-spacing="5" fill="#111827">OLEVS</text>
+  <text x="62" y="47" font-family="'Inter', -apple-system, sans-serif" font-weight="600" font-size="7" letter-spacing="3" fill="#6b7280">PRECISION WATCHES</text>
+</svg>

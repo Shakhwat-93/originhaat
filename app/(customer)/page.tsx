@@ -3,10 +3,11 @@ import { HeroSection } from '@/components/sections/HeroSection';
 import { TrustBar } from '@/components/sections/TrustBar';
 import { BestSellers } from '@/components/sections/BestSellers';
 import { Categories } from '@/components/sections/Categories';
+import { OurBrands } from '@/components/sections/OurBrands';
 import { ReviewsSection } from '@/components/sections/ReviewsSection';
 import { WhyChooseUs } from '@/components/sections/WhyChooseUs';
 import { CTABanner } from '@/components/sections/CTABanner';
-import { getBanners, getCategories, getFeaturedProducts, getSettings, supabaseServer } from '@/lib/db';
+import { getBanners, getCategories, getFeaturedProducts, getHomepageBrands, getSettings, supabaseServer } from '@/lib/db';
 
 export const revalidate = 30; // cache for 30 seconds (ISR)
 
@@ -34,6 +35,7 @@ export default async function HomePage() {
   const bannersData = getBanners();
   const categoriesData = getCategories();
   const featuredProductsData = getFeaturedProducts();
+  const brandsData = getHomepageBrands();
   
   // Fetch reviews directly from supabaseServer
   const reviewsData = supabaseServer
@@ -44,10 +46,11 @@ export default async function HomePage() {
     .limit(6)
     .then(res => res.data || []);
 
-  const [banners, categories, featuredProducts, reviews] = await Promise.all([
+  const [banners, categories, featuredProducts, brands, reviews] = await Promise.all([
     bannersData,
     categoriesData,
     featuredProductsData,
+    brandsData,
     reviewsData
   ]);
 
@@ -58,6 +61,7 @@ export default async function HomePage() {
       <TrustBar />
       <Categories categories={categories} />
       <BestSellers products={featuredProducts} />
+      <OurBrands brands={brands} />
       <CTABanner />
       <ReviewsSection reviews={reviews} />
       <WhyChooseUs />

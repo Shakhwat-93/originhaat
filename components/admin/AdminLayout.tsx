@@ -84,6 +84,7 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/admin/products', label: 'Products List', badgeType: 'products' },
       { href: '/admin/inventory', label: 'Inventory Stock' },
       { href: '/admin/categories', label: 'Categories' },
+      { href: '/admin/brands', label: 'Brands' },
       { href: '/admin/banners', label: 'Banners' },
     ]
   },
@@ -158,6 +159,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/admin/products':   'Product Management',
   '/admin/inventory':  'Inventory Stock Management',
   '/admin/categories': 'Category Management',
+  '/admin/brands':     'Brand Management',
   '/admin/banners':    'Banner Management',
   '/admin/orders':     'Order Management',
   '/admin/courier':    'Courier Shipments',
