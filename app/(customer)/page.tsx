@@ -2,12 +2,23 @@ import type { Metadata } from 'next';
 import { HeroSection } from '@/components/sections/HeroSection';
 import { TrustBar } from '@/components/sections/TrustBar';
 import { TopSellingProducts } from '@/components/sections/TopSellingProducts';
+import { FeaturedProducts } from '@/components/sections/FeaturedProducts';
+import { CategoryWiseProducts } from '@/components/sections/CategoryWiseProducts';
 import { Categories } from '@/components/sections/Categories';
 import { OurBrands } from '@/components/sections/OurBrands';
 import { ReviewsSection } from '@/components/sections/ReviewsSection';
 import { WhyChooseUs } from '@/components/sections/WhyChooseUs';
 import { CTABanner } from '@/components/sections/CTABanner';
-import { getBanners, getCategories, getHomepageBrands, getSettings, getTopSellingProducts, supabaseServer } from '@/lib/db';
+import { 
+  getBanners, 
+  getCategories, 
+  getFeaturedProducts,
+  getCategoriesWithProducts,
+  getHomepageBrands, 
+  getSettings, 
+  getTopSellingProducts, 
+  supabaseServer 
+} from '@/lib/db';
 
 export const revalidate = 30; // cache for 30 seconds (ISR)
 
@@ -35,6 +46,8 @@ export default async function HomePage() {
   const bannersData = getBanners();
   const categoriesData = getCategories();
   const topSellingData = getTopSellingProducts();
+  const featuredProductsData = getFeaturedProducts();
+  const categoriesWithProductsData = getCategoriesWithProducts();
   const brandsData = getHomepageBrands();
   
   // Fetch reviews directly from supabaseServer
@@ -46,10 +59,20 @@ export default async function HomePage() {
     .limit(6)
     .then(res => res.data || []);
 
-  const [banners, categories, topSellingItems, brands, reviews] = await Promise.all([
+  const [
+    banners, 
+    categories, 
+    topSellingItems, 
+    featuredProducts,
+    categoriesWithProducts,
+    brands, 
+    reviews
+  ] = await Promise.all([
     bannersData,
     categoriesData,
     topSellingData,
+    featuredProductsData,
+    categoriesWithProductsData,
     brandsData,
     reviewsData
   ]);
@@ -62,6 +85,8 @@ export default async function HomePage() {
       <Categories categories={categories} />
       <OurBrands brands={brands} />
       <TopSellingProducts items={topSellingItems} />
+      <FeaturedProducts products={featuredProducts} limit={8} />
+      <CategoryWiseProducts categoriesWithProducts={categoriesWithProducts} />
       <CTABanner />
       <ReviewsSection reviews={reviews} />
       <WhyChooseUs />

@@ -334,4 +334,50 @@ export async function getTopSellingProducts(): Promise<TopSellingItem[]> {
   }
 }
 
+export interface CategoryWithProducts {
+  id: string;
+  name_bn: string;
+  name_en: string;
+  slug: string;
+  icon?: string;
+  image_url?: string;
+  sort_order?: number;
+  products: any[];
+}
+
+export async function getCategoriesWithProducts(): Promise<CategoryWithProducts[]> {
+  try {
+    const [cats, products] = await Promise.all([
+      getCategories(),
+      getAllProducts()
+    ]);
+
+    if (!cats || cats.length === 0) return [];
+
+    const result: CategoryWithProducts[] = [];
+    for (const cat of cats) {
+      const catProducts = (products || []).filter(
+        (p: any) => (p.category_id === cat.id || p.category_slug === cat.slug) && p.is_active !== false
+      );
+      if (catProducts.length > 0) {
+        result.push({
+          id: cat.id,
+          name_bn: cat.name_bn,
+          name_en: cat.name_en,
+          slug: cat.slug,
+          icon: cat.icon || cat.image_url,
+          image_url: cat.image_url,
+          sort_order: cat.sort_order ?? 0,
+          products: catProducts,
+        });
+      }
+    }
+    return result;
+  } catch (err) {
+    console.error('getCategoriesWithProducts error:', err);
+    return [];
+  }
+}
+
+
 
