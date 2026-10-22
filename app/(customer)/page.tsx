@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import { HeroSection } from '@/components/sections/HeroSection';
 import { TrustBar } from '@/components/sections/TrustBar';
-import { BestSellers } from '@/components/sections/BestSellers';
+import { TopSellingProducts } from '@/components/sections/TopSellingProducts';
 import { Categories } from '@/components/sections/Categories';
 import { OurBrands } from '@/components/sections/OurBrands';
 import { ReviewsSection } from '@/components/sections/ReviewsSection';
 import { WhyChooseUs } from '@/components/sections/WhyChooseUs';
 import { CTABanner } from '@/components/sections/CTABanner';
-import { getBanners, getCategories, getFeaturedProducts, getHomepageBrands, getSettings, supabaseServer } from '@/lib/db';
+import { getBanners, getCategories, getHomepageBrands, getSettings, getTopSellingProducts, supabaseServer } from '@/lib/db';
 
 export const revalidate = 30; // cache for 30 seconds (ISR)
 
@@ -34,7 +34,7 @@ export default async function HomePage() {
   // Fetch data in parallel
   const bannersData = getBanners();
   const categoriesData = getCategories();
-  const featuredProductsData = getFeaturedProducts();
+  const topSellingData = getTopSellingProducts();
   const brandsData = getHomepageBrands();
   
   // Fetch reviews directly from supabaseServer
@@ -46,10 +46,10 @@ export default async function HomePage() {
     .limit(6)
     .then(res => res.data || []);
 
-  const [banners, categories, featuredProducts, brands, reviews] = await Promise.all([
+  const [banners, categories, topSellingItems, brands, reviews] = await Promise.all([
     bannersData,
     categoriesData,
-    featuredProductsData,
+    topSellingData,
     brandsData,
     reviewsData
   ]);
@@ -61,7 +61,7 @@ export default async function HomePage() {
       <TrustBar />
       <Categories categories={categories} />
       <OurBrands brands={brands} />
-      <BestSellers products={featuredProducts} />
+      <TopSellingProducts items={topSellingItems} />
       <CTABanner />
       <ReviewsSection reviews={reviews} />
       <WhyChooseUs />

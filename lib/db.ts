@@ -261,3 +261,77 @@ export async function getProductsByBrandId(brandId: string) {
   return data || [];
 }
 
+export interface TopSellingItem {
+  id: string;
+  product_id: string;
+  sort_order: number;
+  is_active: boolean;
+  badge_text?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  product: any;
+}
+
+export async function getTopSellingProducts(): Promise<TopSellingItem[]> {
+  try {
+    const { data, error } = await supabaseServer
+      .from('oh_top_selling_products')
+      .select(`
+        id,
+        product_id,
+        sort_order,
+        is_active,
+        badge_text,
+        created_at,
+        updated_at,
+        product:oh_products (*)
+      `)
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching top selling products:', error);
+      const fallback = await getFeaturedProducts();
+      return (fallback || []).map((p: any, idx: number) => ({
+        id: `fallback-${p.id}`,
+        product_id: p.id,
+        sort_order: idx + 1,
+        is_active: true,
+        badge_text: 'BEST SELLER',
+        product: p,
+      }));
+    }
+
+    const validItems = (data || [])
+      .filter((item: any) => item.product && item.product.is_active !== false)
+      .map((item: any) => ({
+        id: item.id,
+        product_id: item.product_id,
+        sort_order: item.sort_order,
+        is_active: item.is_active,
+        badge_text: item.badge_text || 'BEST SELLER',
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        product: item.product,
+      }));
+
+    if (validItems.length === 0) {
+      const fallback = await getFeaturedProducts();
+      return (fallback || []).map((p: any, idx: number) => ({
+        id: `fallback-${p.id}`,
+        product_id: p.id,
+        sort_order: idx + 1,
+        is_active: true,
+        badge_text: 'BEST SELLER',
+        product: p,
+      }));
+    }
+
+    return validItems;
+  } catch (err) {
+    console.error('getTopSellingProducts error:', err);
+    return [];
+  }
+}
+
+

@@ -82,6 +82,22 @@ export async function GET(request: NextRequest) {
     CREATE INDEX IF NOT EXISTS idx_oh_brands_slug ON oh_brands(slug);
     CREATE INDEX IF NOT EXISTS idx_oh_brands_sort_order ON oh_brands(sort_order);
     CREATE INDEX IF NOT EXISTS idx_oh_brands_show_on_homepage ON oh_brands(show_on_homepage, is_active);
+
+    -- Create oh_top_selling_products table if not exists
+    CREATE TABLE IF NOT EXISTS oh_top_selling_products (
+      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      product_id uuid NOT NULL REFERENCES oh_products(id) ON DELETE CASCADE,
+      sort_order integer NOT NULL DEFAULT 0,
+      is_active boolean NOT NULL DEFAULT true,
+      badge_text text DEFAULT 'BEST SELLER',
+      created_at timestamp with time zone DEFAULT now(),
+      updated_at timestamp with time zone DEFAULT now(),
+      CONSTRAINT uq_oh_top_selling_product UNIQUE (product_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_oh_top_selling_sort_order ON oh_top_selling_products(sort_order);
+    CREATE INDEX IF NOT EXISTS idx_oh_top_selling_active ON oh_top_selling_products(is_active);
+    CREATE INDEX IF NOT EXISTS idx_oh_top_selling_product_id ON oh_top_selling_products(product_id);
   `;
 
   // We will try to connect to the internal database container
