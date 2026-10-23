@@ -83,8 +83,8 @@ export default async function HomePage() {
       <HeroSection banners={banners} />
       <TrustBar />
       <Categories categories={categories} />
-      <OurBrands brands={brands} />
       <TopSellingProducts items={topSellingItems} />
+      <OurBrands brands={brands} />
       <FeaturedProducts products={featuredProducts} limit={8} />
       <CategoryWiseProducts categoriesWithProducts={categoriesWithProducts} />
       <CTABanner />

@@ -312,10 +312,10 @@ export default function AdminTopSellingPage() {
             <span className="text-xs font-bold text-[#ff6b35] uppercase">Storefront Carousel</span>
           </div>
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-            Top Selling Products
+            Hot & Top Selling Products
           </h1>
           <p className="text-xs sm:text-sm text-gray-500 mt-1">
-            Control the exact curated products and custom badges displayed on the homepage Top Selling carousel.
+            Control the curated products and custom badges displayed on the homepage Hot & Top Selling auto-slide carousel.
           </p>
         </div>
 
