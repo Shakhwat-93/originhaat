@@ -280,10 +280,18 @@ export async function GET(request: NextRequest) {
 
   // 1. Product Filter (requires inner join for child items)
   if (productFilter) {
-    query = supabase
-      .from('oh_orders')
-      .select('*, oh_order_items!inner (*)', { count: 'exact' })
-      .eq('oh_order_items.product_name', productFilter);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productFilter);
+    if (isUuid) {
+      query = supabase
+        .from('oh_orders')
+        .select('*, oh_order_items!inner (*)', { count: 'exact' })
+        .eq('oh_order_items.product_id', productFilter);
+    } else {
+      query = supabase
+        .from('oh_orders')
+        .select('*, oh_order_items!inner (*)', { count: 'exact' })
+        .ilike('oh_order_items.product_name', `%${productFilter}%`);
+    }
   }
 
   // 2. Status Filter
@@ -340,20 +348,67 @@ export async function GET(request: NextRequest) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 
-  const { data, error, count } = await query
-    .order('created_at', { ascending: false })
-    .range(from, to);
+  const [queryResult, statusRes, itemsRes] = await Promise.all([
+    query.order('created_at', { ascending: false }).range(from, to),
+    supabase.from('oh_orders').select('status'),
+    supabase.from('oh_order_items').select('product_id, product_name, quantity, oh_orders!inner(status)'),
+  ]);
+
+  const { data, error, count } = queryResult;
 
   if (error) {
     console.error('Failed to fetch orders:', error);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 
+  const statusCounts: Record<string, number> = {
+    all: 0,
+    processing: 0,
+    pending: 0,
+    confirmed: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+    incomplete: 0,
+    trash: 0,
+  };
+
+  (statusRes.data || []).forEach((row: any) => {
+    const s = row.status || 'processing';
+    if (s !== 'trash') {
+      statusCounts.all = (statusCounts.all || 0) + 1;
+    }
+    if (statusCounts[s] !== undefined) {
+      statusCounts[s] += 1;
+    } else {
+      statusCounts[s] = 1;
+    }
+  });
+
+  const productOrderCounts: Record<string, number> = {};
+  let totalOrderedItems = 0;
+
+  (itemsRes.data || []).forEach((item: any) => {
+    if (item.oh_orders?.status !== 'trash') {
+      const qty = item.quantity || 1;
+      totalOrderedItems += qty;
+      if (item.product_id) {
+        productOrderCounts[item.product_id] = (productOrderCounts[item.product_id] || 0) + 1;
+      }
+      if (item.product_name) {
+        productOrderCounts[item.product_name] = (productOrderCounts[item.product_name] || 0) + 1;
+      }
+    }
+  });
+
   return NextResponse.json({
     orders: data,
     totalCount: count || 0,
     page,
     totalPages: Math.ceil((count || 0) / limit),
+    statusCounts,
+    productOrderCounts,
+    totalOrderedItems,
   });
 }
 

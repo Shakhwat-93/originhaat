@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, Suspense, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, Eye, Filter, RefreshCw, Phone, Download, Printer, X, AlertCircle, CheckCircle2, TrendingUp, UserCheck, ShieldAlert, Award, Truck, Trash2, Plus, Edit, User, Package, MessageCircle } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert, showWarningAlert, showConfirmAlert } from '@/lib/alerts';
@@ -639,9 +639,21 @@ function OrdersPageContent() {
   const [assignedToFilter, setAssignedToFilter] = useState<string>('all');
   const [adminUsers, setAdminUsers] = useState<any[]>([]);
 
-  // Pagination
+  // Pagination & Counts
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({
+    all: 0,
+    processing: 0,
+    pending: 0,
+    confirmed: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+    incomplete: 0,
+    trash: 0,
+  });
+  const [productOrderCounts, setProductOrderCounts] = useState<Record<string, number>>({});
   const limit = 30;
 
   // Debounce search input
@@ -1011,6 +1023,8 @@ function OrdersPageContent() {
       const json = await res.json();
       if (json.orders) setOrders(json.orders);
       if (typeof json.totalCount === 'number') setTotalCount(json.totalCount);
+      if (json.statusCounts) setStatusCounts(json.statusCounts);
+      if (json.productOrderCounts) setProductOrderCounts(json.productOrderCounts);
     } catch (err) {
       console.error(err);
     } finally {
@@ -1044,6 +1058,7 @@ function OrdersPageContent() {
         body: JSON.stringify({ orderId, status: newStatus }),
       });
       if (!res.ok) throw new Error('Status update failed');
+      fetchOrders(true);
     } catch (err) {
       console.error(err);
       fetchOrders(true); // revert on failure
@@ -1579,10 +1594,19 @@ function OrdersPageContent() {
 
   const filteredOrders = orders;
 
-  const uniqueProducts = productsList.map(p => ({
-    name: p.name_bn || p.name_en || p.slug,
-    count: p.stock
-  }));
+  const uniqueProducts = useMemo(() => {
+    return productsList
+      .map(p => {
+        const name = p.name_bn || p.name_en || p.slug;
+        const count = productOrderCounts[p.id] || productOrderCounts[name] || productOrderCounts[p.name_en] || productOrderCounts[p.name_bn] || 0;
+        return {
+          id: p.id,
+          name,
+          count
+        };
+      })
+      .sort((a, b) => b.count - a.count);
+  }, [productsList, productOrderCounts]);
 
   const TAB_STYLE_MAP: Record<string, {
     active: string;
@@ -1724,8 +1748,8 @@ function OrdersPageContent() {
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide w-full px-2 py-1">
           {statusTabs.map((tab) => {
             const count = tab.value === ''
-              ? orders.filter(o => o.status !== 'trash').length
-              : orders.filter(o => o.status === tab.value).length;
+              ? (statusCounts.all ?? 0)
+              : (statusCounts[tab.value] ?? 0);
             const isActive = statusFilter === tab.value;
             const styles = TAB_STYLE_MAP[tab.value] || {
               active: 'bg-indigo-650 text-white border-indigo-600 shadow-xs',
@@ -1834,7 +1858,7 @@ function OrdersPageContent() {
         <div className="flex items-center justify-center md:justify-start gap-2 px-3.5 py-2.5 bg-[#f0f0fe] border border-[#e0e0fd] rounded-xl shrink-0 select-none w-full md:w-auto">
           <span className="w-2 h-2 rounded-full bg-[#5c59f6] animate-pulse shrink-0" />
           <span className="text-[13px] font-bold text-[#5c59f6] whitespace-nowrap">
-            {orders.filter(o => o.status === 'processing').length} UNREAD
+            {statusCounts.processing ?? 0} UNREAD
           </span>
         </div>
       </div>
@@ -1863,19 +1887,19 @@ function OrdersPageContent() {
           >
             <span>All Products</span>
             <span className={`text-[11px] font-bold tabular-nums ${selectedProductFilter === '' ? 'text-white/60' : 'text-gray-400'}`}>
-              {orders.reduce((acc, o) => acc + (o.oh_order_items?.reduce((s, i) => s + i.quantity, 0) || 0), 0)}
+              {statusCounts.all ?? 0}
             </span>
           </button>
 
           {uniqueProducts.slice(0, 15).map((product) => {
-            const isSelected = selectedProductFilter === product.name;
+            const isSelected = selectedProductFilter === product.id || selectedProductFilter === product.name;
             const colors = ['bg-[#ff6b35]', 'bg-[#5c59f6]', 'bg-emerald-500', 'bg-indigo-500', 'bg-pink-500'];
             const dotColor = colors[Math.abs(product.name.charCodeAt(0)) % colors.length];
             return (
               <button
-                key={product.name}
+                key={product.id || product.name}
                 type="button"
-                onClick={() => setSelectedProductFilter(isSelected ? '' : product.name)}
+                onClick={() => setSelectedProductFilter(isSelected ? '' : product.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-gray-900 text-white'
