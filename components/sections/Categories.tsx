@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { categories as defaultCategories } from '@/data/products';
-import { Grid2x2 } from 'lucide-react';
 import { formatImageUrl, formatName } from '@/lib/utils';
 
 interface DBCategory {
@@ -40,15 +39,13 @@ export function Categories({ categories }: CategoriesProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 mb-3 bg-[#fff3ef] px-4 py-1.5 rounded-full border border-[#ff6b35]/10">
-            <Grid2x2 size={16} className="text-[#ff6b35]" />
-            <span className="text-xs font-bold text-[#ff6b35] uppercase tracking-wider">
-              ক্যাটাগরি
-            </span>
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="relative inline-block">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111827] tracking-tight">
+              প্রোডাক্ট ক্যাটাগরি
+            </h2>
+            <div className="w-12 h-1 bg-[#ff6b35] rounded-full mx-auto mt-2" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#111827] tracking-tight">প্রোডাক্ট ক্যাটাগরি</h2>
-          <p className="text-[#6b7280] mt-2 text-sm md:text-base max-w-md mx-auto">পছন্দের ক্যাটাগরি বেছে নিয়ে স্টোরের সেরা ডিল ও নতুন কালেকশন এক্সপ্লোর করুন</p>
         </div>
 
         {/* Categories Infinite Slider */}
