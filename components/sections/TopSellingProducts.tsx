@@ -5,13 +5,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  Flame, 
   ChevronLeft, 
   ChevronRight, 
   ShoppingCart, 
   Zap, 
   Star, 
-  ArrowRight,
   Sparkles
 } from 'lucide-react';
 import { calculateDiscount, formatBDTNumeric, formatImageUrl, formatName, cn } from '@/lib/utils';
@@ -203,47 +201,13 @@ export function TopSellingProducts({ items = [] }: TopSellingProductsProps) {
       aria-label="Hot Selling Products Carousel"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Section Header - Centered & Agency-Tier */}
-        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 px-4">
-          {/* Subtle Glowing Pill Badge */}
-          <div className="inline-flex items-center gap-2 mb-3 bg-gradient-to-r from-[#fff3ef] via-white to-[#fff3ef] px-4 py-1.5 rounded-full border border-[#ff6b35]/20 shadow-[0_2px_10px_rgba(255,107,53,0.06)]">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff6b35] opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ff6b35]" />
-            </span>
-            <Flame size={15} className="text-[#ff6b35] animate-pulse" />
-            <span className="text-xs font-bold text-[#ff6b35] uppercase tracking-wider">
-              হট কালেকশন • TOP SELLING
-            </span>
-          </div>
-
-          {/* Main Title - Premium Typography with Gradient Accent */}
+        {/* Section Header - Clean Centered Headline */}
+        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
           <div className="relative inline-block">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111827] tracking-tight">
               হট সেলিং <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b35] via-[#ff5722] to-[#e63946]">প্রোডাক্টস</span>
             </h2>
-            {/* Centered Accent Underline */}
-            <div className="flex items-center justify-center gap-1.5 mt-2.5">
-              <span className="w-2.5 h-1 bg-[#ff6b35]/30 rounded-full" />
-              <span className="w-12 h-1 bg-gradient-to-r from-[#ff6b35] to-[#f43f5e] rounded-full shadow-xs" />
-              <span className="w-2.5 h-1 bg-[#ff6b35]/30 rounded-full" />
-            </div>
-          </div>
-
-          {/* Subtitle */}
-          <p className="text-xs sm:text-sm text-[#6b7280] font-medium mt-2.5 max-w-md mx-auto leading-relaxed">
-            কাস্টমারদের পছন্দের সেরা ও সর্বাধিক বিক্রিত হট কালেকশন
-          </p>
-
-          {/* View All CTA Button */}
-          <div className="mt-3.5">
-            <Link
-              href="/shop"
-              className="group inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-gray-200 hover:border-[#ff6b35] hover:bg-[#fff7f4] text-xs font-bold text-gray-700 hover:text-[#ff6b35] transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-95"
-            >
-              <span>সব দেখুন</span>
-              <ArrowRight size={13} className="text-[#ff6b35] transition-transform group-hover:translate-x-1" />
-            </Link>
+            <div className="w-12 h-1 bg-[#ff6b35] rounded-full mx-auto mt-2" />
           </div>
         </div>
 
