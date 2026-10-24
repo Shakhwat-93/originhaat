@@ -27,10 +27,16 @@ export function Header({ initialSettings }: HeaderProps) {
   const pathname = usePathname();
   const { isInstallable, installApp } = usePWAInstallable();
   const [scrolled, setScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryOpen, setCategoryOpen] = useState(false);
   const getTotalItems = useCartStore((s) => s.getTotalItems);
   const { mobileMenuOpen, setMobileMenuOpen } = useUIStore();
+
+  // Reset header visibility on route change
+  useEffect(() => {
+    setIsVisible(true);
+  }, [pathname]);
 
   // Real-time search states
   const [allProducts, setAllProducts] = useState<any[]>([]);
@@ -249,11 +255,63 @@ export function Header({ initialSettings }: HeaderProps) {
     fetchHeaderSettings();
   }, [initialSettings]);
 
+  // Smooth smart-hide on scroll down, reveal on scroll up
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+    let lastScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
+    let ticking = false;
+
+    const updateHeaderVisibility = () => {
+      const currentScrollY = window.scrollY;
+
+      // Update scrolled state for shadow styling
+      setScrolled(currentScrollY > 10);
+
+      // Always show when near the top of the page
+      if (currentScrollY <= 80) {
+        setIsVisible(true);
+        lastScrollY = currentScrollY;
+        ticking = false;
+        return;
+      }
+
+      // Check max scroll bounds (guard against mobile bounce/overscroll)
+      const maxScrollY = document.documentElement.scrollHeight - window.innerHeight;
+      if (currentScrollY < 0 || currentScrollY > maxScrollY) {
+        ticking = false;
+        return;
+      }
+
+      // Small threshold to ignore micro-scroll jitter
+      const diff = currentScrollY - lastScrollY;
+      if (Math.abs(diff) < 8) {
+        ticking = false;
+        return;
+      }
+
+      // Scrolling down -> smoothly hide
+      if (diff > 0) {
+        if (!mobileMenuOpen && !focusedInput) {
+          setIsVisible(false);
+        }
+      } else {
+        // Scrolling up -> smoothly reveal
+        setIsVisible(true);
+      }
+
+      lastScrollY = currentScrollY;
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateHeaderVisibility);
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [mobileMenuOpen, focusedInput]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,20 +325,23 @@ export function Header({ initialSettings }: HeaderProps) {
 
   return (
     <>
-      {/* Announcement Bar */}
-      {announcementActive && announcementText && (
-        <div className="bg-[#ff6b35] text-white text-center text-sm py-2 px-4 font-medium">
-          {announcementText}
-        </div>
-      )}
-
-      {/* Main Header */}
-      <header
+      {/* Sticky Header Wrapper with Smooth Hide on Scroll Down */}
+      <div
         className={cn(
-          'sticky top-0 z-50 bg-white transition-shadow duration-200',
-          scrolled ? 'shadow-md' : 'border-b border-[#e5e7eb]'
+          'sticky top-0 z-50 w-full transition-transform duration-300 ease-in-out will-change-transform',
+          isVisible ? 'translate-y-0' : '-translate-y-full',
+          scrolled ? 'shadow-md' : ''
         )}
       >
+        {/* Announcement Bar */}
+        {announcementActive && announcementText && (
+          <div className="bg-[#ff6b35] text-white text-center text-sm py-2 px-4 font-medium">
+            {announcementText}
+          </div>
+        )}
+
+        {/* Main Header */}
+        <header className="bg-white border-b border-[#e5e7eb]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           {/* Mobile Header Row */}
           <div className="flex md:hidden items-center justify-between h-16">
@@ -467,6 +528,7 @@ export function Header({ initialSettings }: HeaderProps) {
           </nav>
         </div>
       </header>
+    </div>
 
       {/* Mobile Menu */}
       {mobileMenuOpen && (
