@@ -203,53 +203,47 @@ export function TopSellingProducts({ items = [] }: TopSellingProductsProps) {
       aria-label="Hot Selling Products Carousel"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 md:mb-8">
-          <div>
-            <div className="inline-flex items-center gap-1.5 mb-2 bg-[#fff3ef] px-3.5 py-1.5 rounded-full border border-[#ff6b35]/15">
-              <Flame size={15} className="text-[#ff6b35] animate-pulse" />
-              <span className="text-xs font-bold text-[#ff6b35] uppercase tracking-wider">
-                হট কালেকশন
-              </span>
-            </div>
-            <div className="relative inline-block">
-              <h2 className="text-2xl sm:text-3xl font-black text-[#111827] tracking-tight">
-                Hot Selling Products
-              </h2>
-              <div className="w-12 h-1 bg-[#ff6b35] rounded-full mt-1.5" />
-            </div>
-            <p className="text-xs sm:text-sm text-[#6b7280] mt-1.5 max-w-md">
-              কাস্টমারদের পছন্দের সেরা ও সর্বাধিক বিক্রিত হট কালেকশন
-            </p>
+        {/* Section Header - Centered & Agency-Tier */}
+        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 px-4">
+          {/* Subtle Glowing Pill Badge */}
+          <div className="inline-flex items-center gap-2 mb-3 bg-gradient-to-r from-[#fff3ef] via-white to-[#fff3ef] px-4 py-1.5 rounded-full border border-[#ff6b35]/20 shadow-[0_2px_10px_rgba(255,107,53,0.06)]">
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ff6b35] opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#ff6b35]" />
+            </span>
+            <Flame size={15} className="text-[#ff6b35] animate-pulse" />
+            <span className="text-xs font-bold text-[#ff6b35] uppercase tracking-wider">
+              হট কালেকশন • TOP SELLING
+            </span>
           </div>
 
-          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-            {/* View All Link */}
+          {/* Main Title - Premium Typography with Gradient Accent */}
+          <div className="relative inline-block">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-[#111827] tracking-tight">
+              হট সেলিং <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ff6b35] via-[#ff5722] to-[#e63946]">প্রোডাক্টস</span>
+            </h2>
+            {/* Centered Accent Underline */}
+            <div className="flex items-center justify-center gap-1.5 mt-2.5">
+              <span className="w-2.5 h-1 bg-[#ff6b35]/30 rounded-full" />
+              <span className="w-12 h-1 bg-gradient-to-r from-[#ff6b35] to-[#f43f5e] rounded-full shadow-xs" />
+              <span className="w-2.5 h-1 bg-[#ff6b35]/30 rounded-full" />
+            </div>
+          </div>
+
+          {/* Subtitle */}
+          <p className="text-xs sm:text-sm text-[#6b7280] font-medium mt-2.5 max-w-md mx-auto leading-relaxed">
+            কাস্টমারদের পছন্দের সেরা ও সর্বাধিক বিক্রিত হট কালেকশন
+          </p>
+
+          {/* View All CTA Button */}
+          <div className="mt-3.5">
             <Link
               href="/shop"
-              className="group flex items-center gap-1 text-xs sm:text-sm font-bold text-[#ff6b35] hover:text-[#e55520] transition-colors uppercase tracking-wider"
+              className="group inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-white border border-gray-200 hover:border-[#ff6b35] hover:bg-[#fff7f4] text-xs font-bold text-gray-700 hover:text-[#ff6b35] transition-all duration-200 shadow-2xs hover:shadow-xs active:scale-95"
             >
               <span>সব দেখুন</span>
-              <ArrowRight size={15} className="transition-transform group-hover:translate-x-1" />
+              <ArrowRight size={13} className="text-[#ff6b35] transition-transform group-hover:translate-x-1" />
             </Link>
-
-            {/* Desktop Navigation Arrow Controls */}
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                onClick={handlePrev}
-                aria-label="Previous products"
-                className="w-9 h-9 rounded-xl bg-white border border-gray-200 shadow-2xs hover:border-[#ff6b35] hover:text-[#ff6b35] text-gray-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/30"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <button
-                onClick={handleNext}
-                aria-label="Next products"
-                className="w-9 h-9 rounded-xl bg-white border border-gray-200 shadow-2xs hover:border-[#ff6b35] hover:text-[#ff6b35] text-gray-700 flex items-center justify-center transition-all cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-[#ff6b35]/30"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
           </div>
         </div>
 
@@ -267,6 +261,21 @@ export function TopSellingProducts({ items = [] }: TopSellingProductsProps) {
             setIsDragging(false);
           }}
         >
+          {/* Floating Desktop Navigation Arrows */}
+          <button
+            onClick={handlePrev}
+            aria-label="Previous products"
+            className="hidden sm:flex absolute -left-3 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 backdrop-blur-md border border-gray-200/90 shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:border-[#ff6b35] hover:text-[#ff6b35] text-gray-700 items-center justify-center transition-all cursor-pointer active:scale-90 hover:scale-105 focus:outline-none"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={handleNext}
+            aria-label="Next products"
+            className="hidden sm:flex absolute -right-3 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/95 backdrop-blur-md border border-gray-200/90 shadow-[0_4px_16px_rgba(0,0,0,0.1)] hover:border-[#ff6b35] hover:text-[#ff6b35] text-gray-700 items-center justify-center transition-all cursor-pointer active:scale-90 hover:scale-105 focus:outline-none"
+          >
+            <ChevronRight size={20} />
+          </button>
           {/* Scrollable Track - Exactly 2 cards on mobile screen */}
           <div
             ref={carouselRef}
