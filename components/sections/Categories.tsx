@@ -21,7 +21,7 @@ export function Categories({ categories }: CategoriesProps) {
     : defaultCategories;
 
   return (
-    <section id="categories" className="py-10 md:py-16 bg-[#fcfdfe] overflow-hidden">
+    <section id="categories" className="pt-6 pb-3 sm:pt-8 sm:pb-4 md:pt-10 md:pb-6 bg-[#fcfdfe] overflow-hidden">
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes marquee-categories {
           0% { transform: translate3d(0, 0, 0); }
