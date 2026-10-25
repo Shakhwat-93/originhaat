@@ -86,7 +86,7 @@ export function CategoryWiseProducts({
     : categoriesWithProducts.filter((c) => c.id === selectedCatId);
 
   return (
-    <section id="category-products" className="py-12 md:py-16 bg-[#fcfdfe] border-b border-gray-100">
+    <section id="category-products" className="pt-4 pb-10 sm:pt-6 sm:pb-12 md:pt-8 md:pb-14 bg-[#fcfdfe] border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Main Section Header - Clean Centered Headline */}
         <div className="text-center mb-6 sm:mb-8">

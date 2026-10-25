@@ -13,7 +13,7 @@ export function FeaturedProducts({ products = [], limit = 8 }: FeaturedProductsP
   const displayProducts = limit ? products.slice(0, limit) : products;
 
   return (
-    <section id="featured-products" className="py-12 md:py-16 bg-white border-b border-gray-100">
+    <section id="featured-products" className="pt-4 pb-8 sm:pt-6 sm:pb-10 md:pt-8 md:pb-12 bg-white border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section Header - Clean Centered Headline */}
         <div className="text-center mb-6 sm:mb-8">

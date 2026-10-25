@@ -18,7 +18,7 @@ export function OurBrands({ brands }: OurBrandsProps) {
   const loopedList = Array.from({ length: multiplier }, () => brands).flat();
 
   return (
-    <section id="our-brands" className="py-10 md:py-14 bg-white border-b border-gray-100 overflow-hidden">
+    <section id="our-brands" className="pt-4 pb-3 sm:pt-6 sm:pb-4 md:pt-8 md:pb-6 bg-white border-b border-gray-100 overflow-hidden">
       <style dangerouslySetInnerHTML={{ __html: `
         @keyframes marquee-brands {
           0% { transform: translate3d(0, 0, 0); }
@@ -37,7 +37,7 @@ export function OurBrands({ brands }: OurBrandsProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section Header matching exact visual specifications */}
-        <div className="flex items-end justify-between border-b border-gray-200/80 pb-4 mb-6 md:mb-8">
+        <div className="flex items-end justify-between border-b border-gray-200/80 pb-3 mb-4 sm:mb-5 md:mb-6">
           <div>
             <div className="relative inline-block">
               <h2 className="text-2xl sm:text-3xl font-black text-[#111827] tracking-tight">

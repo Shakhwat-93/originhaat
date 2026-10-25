@@ -58,7 +58,7 @@ export function TopSellingProducts({ items = [] }: TopSellingProductsProps) {
   return (
     <section 
       id="top-selling" 
-      className="pt-3 pb-8 sm:pt-5 sm:pb-12 md:pt-6 md:pb-14 bg-[#fbfcfd] border-b border-gray-100 overflow-hidden"
+      className="pt-3 pb-4 sm:pt-5 sm:pb-6 md:pt-6 md:pb-8 bg-[#fbfcfd] border-b border-gray-100 overflow-hidden"
       aria-label="Hot Selling Products"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
