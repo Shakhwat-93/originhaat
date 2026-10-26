@@ -176,10 +176,10 @@ export function WhyChooseUs() {
   };
 
   return (
-    <section className="py-12 md:py-16 bg-white overflow-hidden">
+    <section className="pt-4 pb-4 sm:pt-6 sm:pb-6 md:pt-8 md:pb-8 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="text-center mb-8 md:mb-12">
+        <div className="text-center mb-4 sm:mb-6 md:mb-8">
           <span className="text-xs sm:text-sm font-bold text-[#ff6b35] uppercase tracking-wider">
             {badge}
           </span>
@@ -268,7 +268,7 @@ export function WhyChooseUs() {
         </div>
 
         {/* Stats Row */}
-        <div className="mt-10 md:mt-14 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div className="mt-6 sm:mt-8 md:mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           {stats.map((stat, i) => (
             <div key={i} className="text-center p-4 sm:p-5 bg-[#f8f9fa] rounded-2xl border border-gray-100">
               <p className="text-2xl sm:text-3xl font-black text-[#ff6b35]">{stat.number}</p>

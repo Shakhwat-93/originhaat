@@ -198,10 +198,10 @@ export function ReviewsSection({ reviews }: ReviewsSectionProps) {
   };
 
   return (
-    <section className="py-12 md:py-16 bg-[#f8f9fa] text-black font-sans overflow-hidden">
+    <section className="pt-4 pb-4 sm:pt-6 sm:pb-6 md:pt-8 md:pb-8 bg-[#f8f9fa] text-black font-sans overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
-        <div className="text-center mb-8 md:mb-12">
+        <div className="text-center mb-4 sm:mb-6 md:mb-8">
           <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200/60 mb-2.5">
             <Star size={15} className="fill-[#f59e0b] text-[#f59e0b]" />
             <span className="text-xs font-bold text-[#f59e0b] uppercase tracking-wider">
@@ -314,7 +314,7 @@ export function ReviewsSection({ reviews }: ReviewsSectionProps) {
 
           {/* Pagination Indicators / Dots */}
           {displayReviews.length > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-6">
+            <div className="flex items-center justify-center gap-2 mt-4 sm:mt-5">
               {displayReviews.map((_, i) => (
                 <button
                   key={i}

@@ -40,7 +40,7 @@ export function CTABanner() {
 
   return (
     <section
-      className="relative py-20 md:py-28 overflow-hidden"
+      className="relative py-8 sm:py-10 md:py-14 overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #fff7f3 0%, #fff1eb 40%, #fde8dc 100%)',
       }}
@@ -113,12 +113,12 @@ export function CTABanner() {
         <p className="text-base md:text-lg font-medium mb-2" style={{ color: '#4b2e1a' }}>
           {subtitle}
         </p>
-        <p className="text-sm mb-10" style={{ color: '#9a6b52' }}>
+        <p className="text-sm mb-6 sm:mb-8" style={{ color: '#9a6b52' }}>
           {desc}
         </p>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6 sm:mb-8">
           {/* Primary */}
           <Link
             href="/#best-sellers"

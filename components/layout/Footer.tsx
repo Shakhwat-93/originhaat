@@ -49,9 +49,9 @@ export function Footer({ settings, categories = [] }: FooterProps) {
   const displayCategories = categories && categories.length > 0 ? categories : [];
 
   return (
-    <footer className="bg-white text-gray-600 border-t border-[#e5e7eb] mt-16">
+    <footer className="bg-white text-gray-600 border-t border-[#e5e7eb] mt-2 sm:mt-4 md:mt-6">
       {/* Main Footer */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-10 sm:pt-8 sm:pb-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div>
