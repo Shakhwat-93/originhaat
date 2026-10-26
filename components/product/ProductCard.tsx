@@ -25,7 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.stock === 0) return;
+    if ((product.stock || 0) <= 0) return;
     addItem(product, 1);
     trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, 1);
     showToast(`${product.name_bn} কার্টে যোগ হয়েছে ✓`, 'success');
@@ -34,7 +34,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const handleOrderNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (product.stock === 0) return;
+    if ((product.stock || 0) <= 0) return;
     addItem(product, 1);
     trackAddToCart({ id: product.id, name_bn: product.name_bn, price: product.price }, 1);
     router.push('/checkout');
@@ -69,7 +69,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
           {/* Out of stock overlay */}
-          {product.stock === 0 && (
+          {(product.stock || 0) <= 0 && (
             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
               <span className="bg-white text-[#374151] text-sm font-bold px-3 py-1.5 rounded-lg">
                 স্টক শেষ
@@ -126,7 +126,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Add to Cart button */}
         <button
           onClick={handleAddToCart}
-          disabled={product.stock === 0}
+          disabled={(product.stock || 0) <= 0}
           className="w-full flex items-center justify-center gap-1 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 text-[10px] min-[360px]:text-xs font-semibold py-2 px-1 rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ShoppingCart size={13} className="text-gray-500 hidden min-[360px]:inline-block shrink-0" />
@@ -136,7 +136,7 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Order Now button (gradient) */}
         <button
           onClick={handleOrderNow}
-          disabled={product.stock === 0}
+          disabled={(product.stock || 0) <= 0}
           className="w-full flex items-center justify-center gap-1 bg-gradient-to-r from-[#ff804e] to-[#ff6b35] hover:from-[#ff6b35] hover:to-[#e55520] text-white text-[10px] min-[360px]:text-xs font-bold py-2 px-1 rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Zap size={13} className="fill-white text-white hidden min-[360px]:inline-block shrink-0" />

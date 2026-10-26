@@ -4,7 +4,13 @@ import { getSettings } from '@/lib/db';
 import { sendServerPurchaseEvent } from '@/lib/capi';
 import { writeAuditLog } from '@/lib/audit';
 import { formatName } from '@/lib/utils';
-import { syncProductStock } from '@/lib/inventory';
+import { 
+  validateStockAvailability, 
+  atomicDeductStock, 
+  atomicRestoreStock, 
+  syncOrderStockOnStatusChange,
+  StockItemToSync 
+} from '@/lib/inventory';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -60,11 +66,56 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 1. Prepare items for stock validation and deduction
+    const stockItemsToSync: StockItemToSync[] = items.map((item: any) => {
+      const productId = item.product_id || item.product?.id;
+      const quantity = Math.max(1, Number(item.quantity) || 1);
+      const selectedVariant = item.selected_variant || item.selectedVariant || null;
+      return {
+        product_id: productId,
+        quantity,
+        selected_variant: selectedVariant,
+      };
+    });
+
+    // 2. Pre-validate stock availability before creating order
+    const validation = await validateStockAvailability(stockItemsToSync);
+    if (!validation.valid) {
+      return NextResponse.json({
+        error: validation.code || 'OUT_OF_STOCK',
+        message: validation.error,
+        details: validation.details,
+      }, { status: 409 });
+    }
+
+    // 3. Check incomplete order idempotency to avoid duplicate processing
+    if (incompleteOrderId) {
+      const { data: existingIncOrder } = await supabase
+        .from('oh_orders')
+        .select('id, status, order_number')
+        .eq('id', incompleteOrderId)
+        .single();
+
+      if (existingIncOrder && existingIncOrder.status !== 'incomplete') {
+        // Order was already placed and finalized! Return existing order without re-deducting stock
+        return NextResponse.json({ success: true, order: existingIncOrder, order_number: existingIncOrder.order_number });
+      }
+    }
+
+    // 4. Atomically deduct stock using Optimistic Concurrency Control (OCC)
+    const deductionResult = await atomicDeductStock(stockItemsToSync, order_number);
+    if (!deductionResult.success) {
+      return NextResponse.json({
+        error: 'OUT_OF_STOCK',
+        message: deductionResult.error || 'পণ্যটির পর্যাপ্ত স্টক নেই। অনুগ্রহ করে পুনরায় চেষ্টা করুন।',
+      }, { status: 409 });
+    }
+
     let order = null;
     let orderError = null;
 
     if (incompleteOrderId) {
-      // Upgrade existing incomplete order to pending
+      // Upgrade existing incomplete order to pending/processing
       const { data, error } = await supabase
         .from('oh_orders')
         .update({
@@ -127,6 +178,8 @@ export async function POST(request: NextRequest) {
 
     if (orderError || !order) {
       console.error('Order upsert error:', orderError);
+      // Rollback deducted stock immediately
+      await atomicRestoreStock(stockItemsToSync, order_number, 'Rollback Failed Order');
       return NextResponse.json({ error: 'Failed to create order' }, { status: 500 });
     }
 
@@ -166,20 +219,10 @@ export async function POST(request: NextRequest) {
     const { error: itemsError } = await supabase.from('oh_order_items').insert(orderItems);
     if (itemsError) {
       console.error('Order items insert error:', itemsError);
-    } else if (orderItems.length > 0) {
-      // 1. Record sale in inventory transactions log
-      const inventoryTransactions = orderItems.map((item: any) => ({
-        product_id: item.product_id,
-        quantity: -Number(item.quantity),
-        transaction_type: 'sale',
-        reference: `Order #${order.order_number}`,
-        created_by: 'system'
-      }));
-      const { error: invError } = await supabase.from('oh_inventory_transactions').insert(inventoryTransactions);
-      if (invError) console.error('Inventory log insert error:', invError);
-
-      // 2. Real-time deduct stock from oh_products and its selected color/variant inside variants JSON
-      await syncProductStock(orderItems, 'deduct');
+      // Rollback order and stock
+      await atomicRestoreStock(stockItemsToSync, order_number, 'Rollback Failed Items');
+      await supabase.from('oh_orders').delete().eq('id', order.id);
+      return NextResponse.json({ error: 'Failed to insert order items' }, { status: 500 });
     }
 
     // Fetch settings dynamically to get CAPI keys
@@ -516,45 +559,9 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update order' }, { status: 500 });
     }
 
-    // Handle status change inventory sync
+    // Handle status change inventory sync idempotently
     if (status !== undefined && status !== existingOrder.status) {
-      if (status === 'cancelled') {
-        // Return products to stock (record positive transaction and restore product/variant stock)
-        const { data: currentItems } = await supabase
-          .from('oh_order_items')
-          .select('product_id, quantity, selected_variant')
-          .eq('order_id', orderId);
-        
-        if (currentItems && currentItems.length > 0) {
-          const returnLogs = currentItems.map(item => ({
-            product_id: item.product_id,
-            quantity: Number(item.quantity),
-            transaction_type: 'return',
-            reference: `Cancelled Order #${existingOrder.order_number}`,
-            created_by: 'system'
-          }));
-          await supabase.from('oh_inventory_transactions').insert(returnLogs);
-          await syncProductStock(currentItems, 'restore');
-        }
-      } else if (existingOrder.status === 'cancelled') {
-        // Restore order: deduct products from stock (record negative transaction and deduct product/variant stock)
-        const { data: currentItems } = await supabase
-          .from('oh_order_items')
-          .select('product_id, quantity, selected_variant')
-          .eq('order_id', orderId);
-        
-        if (currentItems && currentItems.length > 0) {
-          const saleLogs = currentItems.map(item => ({
-            product_id: item.product_id,
-            quantity: -Number(item.quantity),
-            transaction_type: 'sale',
-            reference: `Restored Order #${existingOrder.order_number}`,
-            created_by: 'system'
-          }));
-          await supabase.from('oh_inventory_transactions').insert(saleLogs);
-          await syncProductStock(currentItems, 'deduct');
-        }
-      }
+      await syncOrderStockOnStatusChange(orderId, status, existingOrder.status, existingOrder.order_number);
     }
 
     // If items are provided, replace them in the database and sync stock
@@ -598,15 +605,16 @@ export async function PATCH(request: NextRequest) {
           return NextResponse.json({ error: 'Failed to insert new order items' }, { status: 500 });
         }
 
-        // Adjust inventory transactions and physical stock if order is active (not cancelled)
+        // Adjust inventory transactions and physical stock if order is active (not cancelled, trash, fake)
         const activeStatus = status !== undefined ? status : existingOrder.status;
-        if (activeStatus !== 'cancelled') {
+        const ACTIVE_ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+        if (ACTIVE_ORDER_STATUSES.includes(activeStatus)) {
           // Restore old items stock
           if (oldItems && oldItems.length > 0) {
-            await syncProductStock(oldItems, 'restore');
+            await atomicRestoreStock(oldItems, existingOrder.order_number, 'Replaced Item');
           }
           // Deduct new items stock
-          await syncProductStock(orderItems, 'deduct');
+          await atomicDeductStock(orderItems, existingOrder.order_number);
 
           // Delete old sale transactions for this order
           await supabase
@@ -680,12 +688,19 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 });
     }
 
-    // Get order number before deletion
+    // Get order details before deletion
     const { data: orderToDelete } = await supabase
       .from('oh_orders')
-      .select('order_number')
+      .select('id, order_number, status')
       .eq('id', id)
       .single();
+
+    if (orderToDelete) {
+      const ACTIVE_ORDER_STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+      if (ACTIVE_ORDER_STATUSES.includes(orderToDelete.status)) {
+        await syncOrderStockOnStatusChange(orderToDelete.id, 'cancelled', orderToDelete.status, orderToDelete.order_number);
+      }
+    }
 
     // Delete order permanently
     const { error } = await supabase

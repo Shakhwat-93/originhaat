@@ -108,16 +108,17 @@ export default function InventoryPage() {
 
         if (newStock === originalStock && newPrice === originalPrice) continue;
 
-        updatePromises.push(
-          supabase
-            .from('oh_products')
-            .update({
-              stock: newStock,
-              price: newPrice,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', id)
-        );
+        if (newPrice !== originalPrice) {
+          updatePromises.push(
+            supabase
+              .from('oh_products')
+              .update({
+                price: newPrice,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', id)
+          );
+        }
 
         if (newStock !== originalStock) {
           transactionLogs.push({
@@ -243,33 +244,40 @@ export default function InventoryPage() {
     if (!selectedProduct) return;
 
     let finalQty = adjustQuantity;
+    let targetNewStock = selectedProduct.stock;
+
     if (actionType === 'out' || actionType === 'damage') {
       finalQty = -Math.abs(adjustQuantity);
+      targetNewStock = Math.max(0, selectedProduct.stock - Math.abs(adjustQuantity));
     } else if (actionType === 'audit') {
       finalQty = adjustQuantity - selectedProduct.stock;
+      targetNewStock = Math.max(0, adjustQuantity);
       if (finalQty === 0) {
         showErrorAlert('Invalid Audit', 'Entered stock is identical to current stock. No adjustment needed.');
         return;
       }
     } else {
       finalQty = Math.abs(adjustQuantity);
+      targetNewStock = selectedProduct.stock + Math.abs(adjustQuantity);
     }
 
     setSavingTransaction(true);
     try {
+      // Insert transaction log in oh_inventory_transactions.
+      // The database trigger automatically updates oh_products.stock by finalQty.
       const { error } = await supabase
         .from('oh_inventory_transactions')
         .insert({
           product_id: selectedProduct.id,
           quantity: finalQty,
           transaction_type: actionType,
-          reference: adjustReference.trim() || 'Manual adjustment',
+          reference: adjustReference.trim() || `Manual ${actionType} adjustment`,
           created_by: 'admin'
         });
 
       if (error) throw error;
 
-      showSuccessAlert('Success!', `Stock level successfully synced for ${selectedProduct.name_en}`);
+      showSuccessAlert('Success!', `Stock level successfully synced for ${selectedProduct.name_en} (New Stock: ${targetNewStock})`);
       setSelectedProduct(null);
       fetchData(true);
     } catch (err: any) {

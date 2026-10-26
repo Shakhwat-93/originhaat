@@ -34,16 +34,21 @@ export const useCartStore = create<CartStore>()(
             ? variantObj.stock
             : product.stock;
 
+        // Prevent adding out-of-stock items to cart
+        if (maxStock <= 0) return;
+
+        const safeQty = Math.max(1, Math.min(quantity, maxStock));
+
         if (existing) {
           set({
             items: items.map((item) =>
               item.product.id === product.id && item.selectedVariant === selectedVariant
-                ? { ...item, quantity: Math.min(item.quantity + quantity, maxStock) }
+                ? { ...item, quantity: Math.min(item.quantity + safeQty, maxStock) }
                 : item
             ),
           });
         } else {
-          set({ items: [...items, { product, quantity, selectedVariant }] });
+          set({ items: [...items, { product, quantity: safeQty, selectedVariant }] });
         }
       },
 

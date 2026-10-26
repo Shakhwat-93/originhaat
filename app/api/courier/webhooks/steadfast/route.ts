@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { syncOrderStockOnStatusChange } from '@/lib/inventory';
 
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find the corresponding order
-    let query = supabase.from('oh_orders').select('id, status');
+    let query = supabase.from('oh_orders').select('id, status, order_number');
     if (consignment_id) {
       query = query.eq('steadfast_consignment_id', consignment_id);
     } else {
@@ -51,6 +52,11 @@ export async function POST(req: NextRequest) {
       mainStatus = 'cancelled';
     } else if (cleanStatus.includes('transit') || cleanStatus.includes('ship') || cleanStatus.includes('picked_up')) {
       mainStatus = 'shipped';
+    }
+
+    // Sync inventory if order status is transitioning
+    if (mainStatus !== order.status) {
+      await syncOrderStockOnStatusChange(order.id, mainStatus, order.status, order.order_number);
     }
 
     // Update order stats

@@ -247,6 +247,10 @@ export default function CheckoutPage() {
           setWarningMessage(result.message || 'আপনি ইতিমধ্যে একটি অর্ডার করেছেন। নতুন অর্ডার করতে হোয়াটসঅ্যাপে যোগাযোগ করুন।');
           return;
         }
+        if (result.error === 'OUT_OF_STOCK' || res.status === 409) {
+          setWarningMessage(result.message || 'দুঃখিত, আপনার কার্টের কিছু পণ্য পর্যাপ্ত স্টকে নেই। অনুগ্রহ করে পরিমাণ পরিবর্তন করুন।');
+          return;
+        }
         throw new Error(result.message || result.error || 'Order failed');
       }
 

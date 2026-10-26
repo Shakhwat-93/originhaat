@@ -113,7 +113,7 @@ export function ProductInfo({ product }: ProductInfoProps) {
 
       {/* Badges Section */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        {product.stock > 0 ? (
+        {maxStock > 0 ? (
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#ecfdf5] text-[#047857] border border-[#d1fae5]">
             <span className="w-2 h-2 rounded-full bg-[#10b981]" />
             In stock

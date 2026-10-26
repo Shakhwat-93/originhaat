@@ -180,14 +180,22 @@ export default function AdminProductsPage() {
 
   const handleToggleStock = async (prod: Product) => {
     const newStock = prod.stock > 0 ? 0 : 50;
+    const diff = newStock - prod.stock;
     setProducts(prev => prev.map(p => p.id === prod.id ? { ...p, stock: newStock } : p));
     
+    // Inserting transaction with transaction_type: 'audit' updates oh_products.stock via the DB trigger
     const { error } = await supabase
-      .from('oh_products')
-      .update({ stock: newStock })
-      .eq('id', prod.id);
+      .from('oh_inventory_transactions')
+      .insert({
+        product_id: prod.id,
+        quantity: diff,
+        transaction_type: 'audit',
+        reference: `Admin Stock Toggle to ${newStock}`,
+        created_by: 'admin'
+      });
+
     if (error) {
-      console.error(error);
+      console.error('Failed to toggle stock:', error);
       fetchData();
     }
   };
