@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2, Clock, MessageSquare, HelpCircle } from 'lucide-react';
+import { Save, RefreshCw, AlertCircle, CheckCircle2, Globe, Phone, Truck, Share2, Eye, EyeOff, Zap, Package, Sparkles, Trash2, Clock, MessageSquare, HelpCircle, Layers, ExternalLink } from 'lucide-react';
 import { showSuccessAlert, showErrorAlert } from '@/lib/alerts';
 import type { ChangeEvent } from 'react';
 
@@ -1753,6 +1754,26 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+        </div>
+
+        {/* Promotional & Featured Banners Quick Link */}
+        <div className="bg-gradient-to-r from-orange-50/80 via-white to-orange-50/50 rounded-2xl border border-orange-200/80 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-orange-100 text-[#ff6b35] shrink-0">
+              <Layers size={20} />
+            </span>
+            <div>
+              <h3 className="font-bold text-sm text-gray-900">হোমপেজ ব্যানার ম্যানেজমেন্ট (Hero & Featured Section Banners)</h3>
+              <p className="text-xs text-gray-500 mt-0.5">টপ হিরো স্লাইডার ও ফিচার্ড প্রোডাক্টসের নিচের প্রমোশনাল ব্যানার পরিবর্তন ও আপলোড করুন</p>
+            </div>
+          </div>
+          <Link
+            href="/admin/banners"
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#ff6b35] hover:bg-[#e55520] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 shrink-0"
+          >
+            <span>ব্যানার ম্যানেজমেন্টে যান</span>
+            <ExternalLink size={14} />
+          </Link>
         </div>
 
         {/* Dynamic CTA Banner Config */}

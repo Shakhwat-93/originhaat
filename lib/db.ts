@@ -53,6 +53,7 @@ export async function getBanners() {
     .from('oh_banners')
     .select('*')
     .eq('is_active', true)
+    .neq('subtitle', 'featured_bottom')
     .order('sort_order', { ascending: true });
 
   if (error) {
@@ -60,6 +61,22 @@ export async function getBanners() {
     return [];
   }
   return data || [];
+}
+
+export async function getFeaturedBottomBanner() {
+  const { data, error } = await supabaseServer
+    .from('oh_banners')
+    .select('*')
+    .eq('subtitle', 'featured_bottom')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching featured bottom banner:', error);
+    return null;
+  }
+  return data || null;
 }
 
 export async function getCategories() {

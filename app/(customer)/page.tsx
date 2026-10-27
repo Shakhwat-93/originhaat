@@ -3,6 +3,7 @@ import { HeroSection } from '@/components/sections/HeroSection';
 import { TrustBar } from '@/components/sections/TrustBar';
 import { TopSellingProducts } from '@/components/sections/TopSellingProducts';
 import { FeaturedProducts } from '@/components/sections/FeaturedProducts';
+import { FeaturedBottomBanner } from '@/components/sections/FeaturedBottomBanner';
 import { CategoryWiseProducts } from '@/components/sections/CategoryWiseProducts';
 import { Categories } from '@/components/sections/Categories';
 import { OurBrands } from '@/components/sections/OurBrands';
@@ -11,6 +12,7 @@ import { WhyChooseUs } from '@/components/sections/WhyChooseUs';
 import { CTABanner } from '@/components/sections/CTABanner';
 import { 
   getBanners, 
+  getFeaturedBottomBanner,
   getCategories, 
   getFeaturedProducts,
   getCategoriesWithProducts,
@@ -44,6 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   // Fetch data in parallel
   const bannersData = getBanners();
+  const featuredBottomBannerData = getFeaturedBottomBanner();
   const categoriesData = getCategories();
   const topSellingData = getTopSellingProducts();
   const featuredProductsData = getFeaturedProducts();
@@ -61,6 +64,7 @@ export default async function HomePage() {
 
   const [
     banners, 
+    featuredBottomBanner,
     categories, 
     topSellingItems, 
     featuredProducts,
@@ -69,6 +73,7 @@ export default async function HomePage() {
     reviews
   ] = await Promise.all([
     bannersData,
+    featuredBottomBannerData,
     categoriesData,
     topSellingData,
     featuredProductsData,
@@ -86,6 +91,7 @@ export default async function HomePage() {
       <TopSellingProducts items={topSellingItems} />
       <OurBrands brands={brands} />
       <FeaturedProducts products={featuredProducts} limit={8} />
+      <FeaturedBottomBanner banner={featuredBottomBanner} />
       <CategoryWiseProducts categoriesWithProducts={categoriesWithProducts} />
       <CTABanner />
       <ReviewsSection reviews={reviews} />
