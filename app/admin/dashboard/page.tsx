@@ -22,6 +22,9 @@ const statusColors: Record<string, string> = {
   shipped: 'bg-sky-50 text-sky-700 border border-sky-200/50',
   delivered: 'bg-emerald-50 text-emerald-700 border border-emerald-200/50',
   cancelled: 'bg-rose-50 text-rose-700 border border-rose-200/50',
+  fake: 'bg-red-50 text-red-600 border border-red-200/50',
+  incomplete: 'bg-gray-100 text-gray-600 border border-gray-200',
+  trash: 'bg-gray-100 text-gray-500 border border-gray-200',
 };
 
 const statusLabels: Record<string, string> = {
@@ -31,6 +34,9 @@ const statusLabels: Record<string, string> = {
   shipped: 'Shipped',
   delivered: 'Delivered',
   cancelled: 'Cancelled',
+  fake: 'Fake',
+  incomplete: 'Incomplete',
+  trash: 'Trash',
 };
 
 export default function AdminDashboardPage() {
@@ -49,7 +55,7 @@ export default function AdminDashboardPage() {
     else setRefreshing(true);
 
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch('/api/orders?limit=10', {
         headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123' },
       });
 
@@ -59,15 +65,24 @@ export default function AdminDashboardPage() {
 
       setOrders(data);
 
-      const todayStr = new Date().toDateString();
-      setStats({
-        totalOrders: data.length,
-        pendingOrders: data.filter(o => o.status === 'pending').length,
-        todayOrders: data.filter(o => new Date(o.created_at).toDateString() === todayStr).length,
-        totalRevenue: data
-          .filter(o => o.status !== 'cancelled')
-          .reduce((sum, o) => sum + (o.grand_total || 0), 0),
-      });
+      if (json.stats) {
+        setStats({
+          totalOrders: Number(json.stats.totalOrders) || 0,
+          pendingOrders: Number(json.stats.pendingOrders) || 0,
+          todayOrders: Number(json.stats.todayOrders) || 0,
+          totalRevenue: Number(json.stats.totalRevenue) || 0,
+        });
+      } else {
+        const todayDhakaStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' });
+        setStats({
+          totalOrders: json.statusCounts?.all ?? json.totalCount ?? data.length,
+          pendingOrders: json.statusCounts?.pending ?? data.filter((o: any) => o.status === 'pending').length,
+          todayOrders: data.filter((o: any) => new Date(o.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' }) === todayDhakaStr).length,
+          totalRevenue: data
+            .filter((o: any) => !['cancelled', 'fake', 'trash', 'incomplete'].includes(o.status))
+            .reduce((sum: number, o: any) => sum + (o.grand_total || 0), 0),
+        });
+      }
     } catch (err) {
       console.error('Error fetching dashboard stats:', err);
     } finally {
@@ -174,8 +189,8 @@ export default function AdminDashboardPage() {
                   <td className="px-6 py-4 text-gray-500">{order.district}</td>
                   <td className="px-6 py-4 font-bold text-gray-900">৳{order.grand_total}</td>
                   <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColors[order.status]}`}>
-                      {statusLabels[order.status]}
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${statusColors[order.status] || 'bg-gray-50 text-gray-700 border border-gray-200/50'}`}>
+                      {statusLabels[order.status] || order.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-gray-400 text-xs">
@@ -200,8 +215,8 @@ export default function AdminDashboardPage() {
             <div key={order.id} className="p-4 space-y-2">
               <div className="flex justify-between items-center">
                 <span className="font-mono font-bold text-[#ff6b35] text-xs">#{order.order_number}</span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${statusColors[order.status]}`}>
-                  {statusLabels[order.status]}
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${statusColors[order.status] || 'bg-gray-50 text-gray-700 border border-gray-200/50'}`}>
+                  {statusLabels[order.status] || order.status}
                 </span>
               </div>
               <div className="text-xs text-gray-600 space-y-0.5">

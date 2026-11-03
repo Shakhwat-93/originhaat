@@ -393,7 +393,7 @@ export async function GET(request: NextRequest) {
 
   const [queryResult, statusRes, itemsRes] = await Promise.all([
     query.order('created_at', { ascending: false }).range(from, to),
-    supabase.from('oh_orders').select('status'),
+    supabase.from('oh_orders').select('status, grand_total, created_at'),
     supabase.from('oh_order_items').select('product_id, product_name, quantity, oh_orders!inner(status)'),
   ]);
 
@@ -413,8 +413,13 @@ export async function GET(request: NextRequest) {
     delivered: 0,
     cancelled: 0,
     incomplete: 0,
+    fake: 0,
     trash: 0,
   };
+
+  let totalRevenue = 0;
+  let todayOrdersCount = 0;
+  const todayDhakaStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' });
 
   (statusRes.data || []).forEach((row: any) => {
     const s = row.status || 'processing';
@@ -426,7 +431,27 @@ export async function GET(request: NextRequest) {
     } else {
       statusCounts[s] = 1;
     }
+
+    // Revenue calculation: exclude cancelled, fake, trash, incomplete
+    if (!['cancelled', 'fake', 'trash', 'incomplete'].includes(s)) {
+      totalRevenue += Number(row.grand_total) || 0;
+    }
+
+    // Today's orders count (excluding trash and incomplete)
+    if (!['trash', 'incomplete'].includes(s) && row.created_at) {
+      const orderDateStr = new Date(row.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Dhaka' });
+      if (orderDateStr === todayDhakaStr) {
+        todayOrdersCount += 1;
+      }
+    }
   });
+
+  const stats = {
+    totalRevenue,
+    totalOrders: (statusCounts.all || 0) - (statusCounts.incomplete || 0),
+    todayOrders: todayOrdersCount,
+    pendingOrders: statusCounts.pending || 0,
+  };
 
   const productOrderCounts: Record<string, number> = {};
   let totalOrderedItems = 0;
@@ -452,6 +477,7 @@ export async function GET(request: NextRequest) {
     statusCounts,
     productOrderCounts,
     totalOrderedItems,
+    stats,
   });
 }
 
