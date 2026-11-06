@@ -55,8 +55,13 @@ export default function AdminDashboardPage() {
     else setRefreshing(true);
 
     try {
-      const res = await fetch('/api/orders?limit=10', {
-        headers: { 'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123' },
+      const res = await fetch(`/api/orders?limit=10&_t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'x-admin-key': process.env.NEXT_PUBLIC_ADMIN_KEY || 'admin123' 
+        },
       });
 
       if (!res.ok) throw new Error('Failed to fetch orders');

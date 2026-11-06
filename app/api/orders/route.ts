@@ -12,6 +12,9 @@ import {
   StockItemToSync 
 } from '@/lib/inventory';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
 const supabaseUrl = rawUrl.startsWith('https://') ? rawUrl.replace('https://', 'http://') : rawUrl;
 const supabase = createClient(
